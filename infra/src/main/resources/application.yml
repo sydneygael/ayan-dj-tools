@@ -1,0 +1,12 @@
+audio:
+  supported-extensions:
+    - mp3
+    - flac
+    - wav
+    - aiff
+    - m4a
+    - ogg
+
+logging:
+  level:
+    com.djtools.ayan: DEBUG

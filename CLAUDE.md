@@ -1,0 +1,141 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**Ayan DJ Tools** — Desktop app for DJs to manage and auto-enrich audio file tags using an AI agent (Ayan). Scans user-selected audio files, detects missing tags, enriches metadata via Spotify API, and proposes modifications in 3 modes (Plan/Manual/Apply).
+
+Full specification: `SPEC.md`
+
+## Tech Stack
+
+- **Backend**: Java 25, Spring Boot 4.0.2, Gradle 9.2 (Kotlin DSL)
+- **AI**: Spring AI 2.0.0-M2, Ollama/Mistral, Qdrant (vector DB), redis
+- **Audio**: JAudiotagger 3.0.1
+- **API**: Spotify Web API via `@HttpExchange` declarative client
+- **DB**: PostgreSQL + pgvector
+- **Frontend**: Angular 21, Electron, Angular Material 21
+- **Language**: French project (comments, agent name, docs) but English code identifiers
+
+## Build & Run Commands
+
+```bash
+# Build all modules
+./gradlew build
+
+# Run all tests
+./gradlew test
+
+# Run tests per module
+./gradlew domain:test    # 11 tests (domain only, no Spring)
+./gradlew infra:test     # 8 tests (Spring Boot context)
+
+# Run single test class
+./gradlew domain:test --tests "com.djtools.ayan.musictagger.domain.model.vo.FilepathTest"
+./gradlew infra:test --tests "com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.JAudioTaggerAdapterTest"
+
+# Run Spring Boot
+./gradlew infra:bootRun
+
+# Docker services (Ollama, Qdrant, PostgreSQL)
+docker-compose up -d
+
+# Pull AI models after Docker is up
+docker exec -it dj-tagger-ollama ollama pull mistral
+docker exec -it dj-tagger-ollama ollama pull nomic-embed-text
+
+# Frontend
+cd music-tagger-frontend && npm install && npm run start
+```
+
+## Architecture (Hexagonal + DDD, 2 Gradle modules)
+
+Le projet est séparé en 2 modules Gradle pour enforcer la règle de dépendance :
+
+```
+ayan-dj-tools/
+├── build.gradle.kts           # Root — plugins apply false, subprojects config
+├── settings.gradle.kts        # include("domain", "infra")
+│
+├── domain/                    # Module java-library — ZÉRO dépendance Spring
+│   ├── build.gradle.kts
+│   └── src/main/java/com/djtools/ayan/musictagger/domain/
+│       ├── exception/         # AudioProcessingException
+│       ├── model/             # MusicFileInfo, MissingTagsReport
+│       │   └── vo/            # Filepath (+ futurs: BPM, MusicalKey, CamelotKey)
+│       ├── port/
+│       │   ├── in/            # Inbound ports (futurs: MusicMetadataProvider)
+│       │   └── out/           # AudioFileReader (+ futurs: AudioRepository, VectorStorePort, AIAgentPort)
+│       ├── service/           # Domain services (futurs)
+│       └── usecase/           # ScanMusicUseCase (plain class, pas de @Service)
+│
+└── infra/                     # Module Spring Boot — dépend de :domain
+    ├── build.gradle.kts
+    └── src/main/java/com/djtools/ayan/musictagger/
+        ├── MusicTaggerApplication.java
+        └── infrastructure/
+            ├── adapter/in/    # Futurs: REST controllers, MCP tools, Spotify client
+            ├── adapter/out/
+            │   └── audio/     # JAudioTaggerAdapter, AudioScannerService
+            └── config/        # DomainConfig (@Bean pour wiring des use cases du domaine)
+```
+
+**Dependency rule**: `infra` → `domain`. Le module domain ne connaît ni Spring, ni JAudiotagger.
+- `ScanMusicUseCase` est une classe pure Java (pas de `@Service`)
+- `DomainConfig.java` dans infra crée les beans domaine via `@Bean`
+
+**Port in `MusicMetadataProvider`**: Le domaine définit une abstraction générique pour l'enrichissement de métadonnées musicales (recherche, audio features, artiste). Spotify est une implémentation dans l'infrastructure — le domaine ne connaît pas Spotify. Cela permet de brancher d'autres sources (Discogs, MusicBrainz) sans toucher au domaine.
+
+## Key Patterns
+
+- **Records everywhere**: All DTOs, value objects, API responses use Java records
+- **@HttpExchange**: Declarative Spotify API client (no external Spotify lib)
+- **Spring AI Structured Outputs**: `chatClient.prompt().call().entity(MyRecord.class)` for type-safe AI responses
+- **@Tool functions**: MCP tools in `AyanMusicTools.java` — scan, enrich, suggest, apply tags
+- **3 operating modes**: PLAN (batch review), MANUAL (one-by-one confirm), APPLY (auto)
+
+## Security Constraints
+
+- **File access**: ONLY files explicitly selected via Electron file picker are allowed. NO recursive scanning by backend.
+- Backend receives pre-approved file paths only. Validate against path traversal.
+- Spotify credentials via environment variables only.
+
+## Skills Reference
+
+Detailed implementation patterns live in `.claude/skills/`:
+
+| Skill | Purpose |
+|-------|---------|
+| `hexagonal-ddd.skill.md` | Architecture rules, domain/infra separation |
+| `backend-java.skill.md` | Java 25 + Spring Boot 4 + Gradle 9 patterns |
+| `spring-ai.skill.md` | Spring AI 2.0, @Tool, structured outputs, Camelot Wheel |
+| `spotify-integration.skill.md` | @HttpExchange client, OAuth2, cache, rate limiting |
+| `audio-processing.skill.md` | JAudiotagger read/write, validation, backup |
+| `rag-vectordb.skill.md` | Qdrant vectorization, similarity search |
+| `frontend-angular.skill.md` | Angular 21 standalone components, signals, Electron |
+
+## Implementation Phases
+
+Project follows 12 phases (details in `SPEC.md`):
+1. Foundation Backend (scan files)
+2. Spotify Integration
+3. Spring AI + Agent
+4. Mode PLAN
+5. Tag Application
+6. RAG + Vector Store
+7. Frontend Structure
+8. Frontend Modes & Plan Review
+9. Mode MANUAL & APPLY
+10. Polish & UX
+11. Tests & Quality
+12. Packaging & Distribution
+
+**Current state**: Phase 1 complete — scan files, read tags, detect missing tags. Multi-module split done (domain + infra).
+
+## Code Style
+
+- Concise code. Favor self-documenting method names over comments.
+- French for documentation/agent personality, English for code identifiers.
+- Use records with compact constructors for validation.
+- Prefer `@HttpExchange` interfaces over manual WebClient calls.

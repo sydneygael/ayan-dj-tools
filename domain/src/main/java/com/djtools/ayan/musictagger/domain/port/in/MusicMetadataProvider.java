@@ -1,4 +1,4 @@
-package com.djtools.ayan.musictagger.domain.port.out;
+package com.djtools.ayan.musictagger.domain.port.in;
 
 import com.djtools.ayan.musictagger.domain.model.EnrichmentResult;
 

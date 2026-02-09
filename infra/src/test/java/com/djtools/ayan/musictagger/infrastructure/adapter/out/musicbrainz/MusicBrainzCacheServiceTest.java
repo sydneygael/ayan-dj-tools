@@ -1,4 +1,4 @@
-package com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify;
+package com.djtools.ayan.musictagger.infrastructure.adapter.out.musicbrainz;
 
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
 import com.djtools.ayan.musictagger.domain.model.EnrichmentResult;
@@ -8,9 +8,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SpotifyCacheServiceTest {
+class MusicBrainzCacheServiceTest {
 
-    private final SpotifyCacheService cacheService = new SpotifyCacheService(60);
+    private final MusicBrainzCacheService cacheService = new MusicBrainzCacheService(120);
 
     @Test
     void shouldReturnEmptyForUnknownKey() {
@@ -38,9 +38,9 @@ class SpotifyCacheServiceTest {
 
     private static EnrichedTrackMetadata sampleMetadata() {
         return new EnrichedTrackMetadata(
-                "id1", "Artist", "Title", "Album",
-                List.of("Electronic"), List.of(), null, null, null, List.of(),
-                2024, 80, 210000, null
+                "mb:1", "Artist", "Title", "Album",
+                List.of(), List.of(), null, null, "GBAYE1234567", List.of("electronic"),
+                2024, 0, 210000, null
         );
     }
 }

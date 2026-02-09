@@ -11,7 +11,8 @@ class EnrichmentResultTest {
 
     private static final EnrichedTrackMetadata SAMPLE_METADATA = new EnrichedTrackMetadata(
             "spotify:123", "Artist", "Title", "Album",
-            List.of("Electronic"), 2024, 80, 210000, null
+            List.of("Electronic"), List.of(), null, null, null, List.of(),
+            2024, 80, 210000, null
     );
 
     @Test

@@ -1,6 +1,6 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify;
 
-import com.djtools.ayan.musictagger.domain.port.out.MusicMetadataProvider;
+import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,8 +51,8 @@ public class SpotifyConfig {
         return new SpotifyMapper();
     }
 
-    @Bean
-    MusicMetadataProvider musicMetadataProvider(
+    @Bean("spotifyMetadataProvider")
+    MusicMetadataProvider spotifyMetadataProvider(
             SpotifyApiClient apiClient,
             SpotifyRateLimiter rateLimiter,
             SpotifyCacheService cacheService,

@@ -3,7 +3,7 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.audio;
 import com.djtools.ayan.musictagger.domain.exception.AudioProcessingException;
 import com.djtools.ayan.musictagger.domain.model.MusicFileInfo;
 import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
-import com.djtools.ayan.musictagger.domain.port.out.AudioFileReader;
+import com.djtools.ayan.musictagger.domain.port.in.AudioFileReader;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;

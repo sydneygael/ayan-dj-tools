@@ -3,9 +3,8 @@ package com.djtools.ayan.musictagger.domain.usecase;
 import com.djtools.ayan.musictagger.domain.model.MissingTagsReport;
 import com.djtools.ayan.musictagger.domain.model.MusicFileInfo;
 import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
-import com.djtools.ayan.musictagger.domain.port.out.AudioFileReader;
+import com.djtools.ayan.musictagger.domain.port.in.AudioFileReader;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ScanMusicUseCase {

@@ -19,8 +19,8 @@ public sealed interface EnrichmentResult {
     }
 
     default EnrichedTrackMetadata data() {
-        if (this instanceof Success s) {
-            return s.metadata();
+        if (this instanceof Success(EnrichedTrackMetadata metadata)) {
+            return metadata;
         }
         throw new IllegalStateException("No data available for " + getClass().getSimpleName());
     }

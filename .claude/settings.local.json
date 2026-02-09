@@ -1,5 +1,13 @@
 {
   "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.discogs.com)",
+      "WebFetch(domain:musicbrainz.org)",
+      "Bash(./gradlew domain:test:*)",
+      "Bash(./gradlew infra:test:*)",
+      "Bash(./gradlew build:*)"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",

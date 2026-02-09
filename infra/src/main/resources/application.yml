@@ -15,6 +15,20 @@ spotify:
     requests-per-second: 10
     cache-ttl-minutes: 60
 
+discogs:
+  token: ${DISCOGS_TOKEN:}
+  base-url: https://api.discogs.com
+  rate-limit:
+    requests-per-second: 1.0
+    cache-ttl-minutes: 60
+
+musicbrainz:
+  base-url: https://musicbrainz.org
+  user-agent: AyanDJTools/1.0 (contact@example.com)
+  rate-limit:
+    requests-per-second: 1.0
+    cache-ttl-minutes: 120
+
 logging:
   level:
     com.djtools.ayan: DEBUG

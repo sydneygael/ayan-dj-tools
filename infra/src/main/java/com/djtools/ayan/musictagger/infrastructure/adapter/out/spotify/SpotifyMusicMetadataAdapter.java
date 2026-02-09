@@ -1,7 +1,7 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify;
 
 import com.djtools.ayan.musictagger.domain.model.EnrichmentResult;
-import com.djtools.ayan.musictagger.domain.port.out.MusicMetadataProvider;
+import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.SpotifyAudioFeatures;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.SpotifySearchResponse;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.SpotifyTrackItem;

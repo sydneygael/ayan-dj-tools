@@ -7,6 +7,14 @@ audio:
     - m4a
     - ogg
 
+spotify:
+  client-id: ${SPOTIFY_CLIENT_ID:}
+  client-secret: ${SPOTIFY_CLIENT_SECRET:}
+  auth-url: https://accounts.spotify.com/api/token
+  rate-limit:
+    requests-per-second: 10
+    cache-ttl-minutes: 60
+
 logging:
   level:
     com.djtools.ayan: DEBUG

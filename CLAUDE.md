@@ -28,12 +28,13 @@ Full specification: `SPEC.md`
 ./gradlew test
 
 # Run tests per module
-./gradlew domain:test    # 11 tests (domain only, no Spring)
-./gradlew infra:test     # 8 tests (Spring Boot context)
+./gradlew domain:test    # 22 tests (domain only, no Spring)
+./gradlew infra:test     # 22 tests (Spring Boot context)
 
 # Run single test class
 ./gradlew domain:test --tests "com.djtools.ayan.musictagger.domain.model.vo.FilepathTest"
 ./gradlew infra:test --tests "com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.JAudioTaggerAdapterTest"
+./gradlew infra:test --tests "com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyMusicMetadataAdapterTest"
 
 # Run Spring Boot
 ./gradlew infra:bootRun
@@ -62,11 +63,11 @@ ayan-dj-tools/
 │   ├── build.gradle.kts
 │   └── src/main/java/com/djtools/ayan/musictagger/domain/
 │       ├── exception/         # AudioProcessingException
-│       ├── model/             # MusicFileInfo, MissingTagsReport
+│       ├── model/             # MusicFileInfo, MissingTagsReport, AudioFeatures, EnrichedTrackMetadata, EnrichmentResult
 │       │   └── vo/            # Filepath (+ futurs: BPM, MusicalKey, CamelotKey)
 │       ├── port/
-│       │   ├── in/            # Inbound ports (futurs: MusicMetadataProvider)
-│       │   └── out/           # AudioFileReader (+ futurs: AudioRepository, VectorStorePort, AIAgentPort)
+│       │   ├── in/            # Inbound ports (futurs)
+│       │   └── out/           # AudioFileReader, MusicMetadataProvider (+ futurs: AudioRepository, VectorStorePort, AIAgentPort)
 │       ├── service/           # Domain services (futurs)
 │       └── usecase/           # ScanMusicUseCase (plain class, pas de @Service)
 │
@@ -75,10 +76,13 @@ ayan-dj-tools/
     └── src/main/java/com/djtools/ayan/musictagger/
         ├── MusicTaggerApplication.java
         └── infrastructure/
-            ├── adapter/in/    # Futurs: REST controllers, MCP tools, Spotify client
+            ├── adapter/in/    # Futurs: REST controllers, MCP tools
             ├── adapter/out/
-            │   └── audio/     # JAudioTaggerAdapter, AudioScannerService
-            └── config/        # DomainConfig (@Bean pour wiring des use cases du domaine)
+            │   ├── audio/     # JAudioTaggerAdapter, AudioScannerService
+            │   └── spotify/   # SpotifyMusicMetadataAdapter, SpotifyApiClient, SpotifyTokenService
+            │       ├── dto/   # SpotifySearchResponse, SpotifyTrackItem, SpotifyAudioFeatures, etc.
+            │       └── exception/ # SpotifyApiException, SpotifyAuthException, SpotifyRateLimitException
+            └── config/        # DomainConfig, SpotifyConfig, SpotifyProperties
 ```
 
 **Dependency rule**: `infra` → `domain`. Le module domain ne connaît ni Spring, ni JAudiotagger.
@@ -131,7 +135,7 @@ Project follows 12 phases (details in `SPEC.md`):
 11. Tests & Quality
 12. Packaging & Distribution
 
-**Current state**: Phase 1 complete — scan files, read tags, detect missing tags. Multi-module split done (domain + infra).
+**Current state**: Phase 1 & 2 complete — scan files, read tags, detect missing tags, Spotify enrichment (cache, rate limiter, graceful degradation). Multi-module split done (domain + infra).
 
 ## Code Style
 

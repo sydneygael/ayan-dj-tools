@@ -2,36 +2,22 @@ audio:
   supported-extensions:
     - mp3
     - flac
-    - wav
-    - aiff
-    - m4a
-    - ogg
 
 spotify:
-  client-id: ${SPOTIFY_CLIENT_ID:}
-  client-secret: ${SPOTIFY_CLIENT_SECRET:}
+  client-id: test-client-id
+  client-secret: test-client-secret
   auth-url: https://accounts.spotify.com/api/token
   rate-limit:
     requests-per-second: 10
     cache-ttl-minutes: 60
 
-
 spring:
-  data:
-    redis:
-      host: localhost
-      port: 6379
   ai:
     ollama:
       base-url: http://localhost:11434
       init:
-        pull-model-strategy: when_missing
-        timeout: 120s
+        pull-model-strategy: never
       chat:
         options:
           model: mistral
           temperature: 0.7
-
-logging:
-  level:
-    com.djtools.ayan: DEBUG

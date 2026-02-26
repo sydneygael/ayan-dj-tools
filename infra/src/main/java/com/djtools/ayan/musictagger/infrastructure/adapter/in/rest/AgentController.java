@@ -1,28 +1,49 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
+import com.djtools.ayan.musictagger.infrastructure.service.ConversationHistoryService;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/agent")
 public class AgentController {
 
     private final AyanAgentService agentService;
+    private final ConversationHistoryService historyService;
 
-    public AgentController(AyanAgentService agentService) {
+    public AgentController(AyanAgentService agentService, ConversationHistoryService historyService) {
         this.agentService = agentService;
+        this.historyService = historyService;
     }
 
     @PostMapping("/chat")
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        String reply = agentService.chat(request.message());
-        return new ChatResponse(reply);
+        String conversationId = request.conversationId() != null
+                ? request.conversationId()
+                : UUID.randomUUID().toString();
+
+        String reply = agentService.chat(conversationId, request.message());
+        long messageCount = historyService.getMessageCount(conversationId);
+
+        return new ChatResponse(reply, conversationId, messageCount, LocalDateTime.now());
     }
 
-    public record ChatRequest(String message) {}
+    @GetMapping("/conversations/{id}/history")
+    public List<ChatMessage> getHistory(@PathVariable String id) {
+        return historyService.getHistory(id);
+    }
 
-    public record ChatResponse(String reply) {}
+    @DeleteMapping("/conversations/{id}")
+    public void clearConversation(@PathVariable String id) {
+        historyService.clearHistory(id);
+    }
+
+    public record ChatRequest(String message, String conversationId) {}
+
+    public record ChatResponse(String reply, String conversationId, long messageCount, LocalDateTime timestamp) {}
 }

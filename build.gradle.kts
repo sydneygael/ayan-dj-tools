@@ -20,6 +20,8 @@ subprojects {
 
     repositories {
         mavenCentral()
+        maven { url = uri("https://mvn.0110.be/releases") }
+        maven { url = uri("https://repo.spring.io/milestone") }
     }
 
     tasks.withType<Test> {

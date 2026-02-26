@@ -15,19 +15,18 @@ spotify:
     requests-per-second: 10
     cache-ttl-minutes: 60
 
-discogs:
-  token: ${DISCOGS_TOKEN:}
-  base-url: https://api.discogs.com
-  rate-limit:
-    requests-per-second: 1.0
-    cache-ttl-minutes: 60
 
-musicbrainz:
-  base-url: https://musicbrainz.org
-  user-agent: AyanDJTools/1.0 (contact@example.com)
-  rate-limit:
-    requests-per-second: 1.0
-    cache-ttl-minutes: 120
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      init:
+        pull-model-strategy: when_missing
+        timeout: 120s
+      chat:
+        options:
+          model: mistral
+          temperature: 0.7
 
 logging:
   level:

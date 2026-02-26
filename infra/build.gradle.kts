@@ -12,6 +12,10 @@ dependencies {
     implementation("net.jthink:jaudiotagger:3.0.1")
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.google.guava:guava:33.4.0-jre")
+    implementation("be.tarsos.dsp:core:2.5")
+    implementation("be.tarsos.dsp:jvm:2.5")
+    implementation(platform("org.springframework.ai:spring-ai-bom:2.0.0-M2"))
+    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")

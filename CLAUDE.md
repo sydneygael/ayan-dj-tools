@@ -13,7 +13,7 @@ Full specification: `SPEC.md`
 - **Backend**: Java 25, Spring Boot 4.0.2, Gradle 9.2 (Kotlin DSL)
 - **AI**: Spring AI 2.0.0-M2, Ollama/Mistral, Qdrant (vector DB), redis
 - **Audio**: JAudiotagger 3.0.1
-- **API**: Spotify, Discogs, MusicBrainz via `@HttpExchange` declarative clients
+- **API**: Spotify via `@HttpExchange` declarative client
 - **DB**: PostgreSQL + pgvector
 - **Frontend**: Angular 21, Electron, Angular Material 21
 - **Language**: French project (comments, agent name, docs) but English code identifiers
@@ -28,8 +28,8 @@ Full specification: `SPEC.md`
 ./gradlew test
 
 # Run tests per module
-./gradlew domain:test    # 28 tests (domain only, no Spring)
-./gradlew infra:test     # 41 tests (Spring Boot context)
+./gradlew domain:test    # 22 tests (domain only, no Spring)
+./gradlew infra:test     # 22 tests (Spring Boot context)
 
 # Run single test class
 ./gradlew domain:test --tests "com.djtools.ayan.musictagger.domain.model.vo.FilepathTest"
@@ -68,7 +68,6 @@ ayan-dj-tools/
 │       ├── port/
 │       │   ├── in/            # AudioFileReader, MusicMetadataProvider
 │       │   └── out/           # (futurs: AudioRepository, VectorStorePort, AIAgentPort)
-│       ├── service/           # CompositeMetadataEnricher, MetadataMerger
 │       └── usecase/           # ScanMusicUseCase (plain class, pas de @Service)
 │
 └── infra/                     # Module Spring Boot — dépend de :domain
@@ -79,14 +78,9 @@ ayan-dj-tools/
             ├── adapter/in/    # Futurs: REST controllers, MCP tools
             ├── adapter/out/
             │   ├── audio/     # JAudioTaggerAdapter, AudioScannerService
-            │   ├── spotify/   # SpotifyMusicMetadataAdapter, SpotifyApiClient, SpotifyTokenService
-            │   │   ├── dto/   # SpotifySearchResponse, SpotifyTrackItem, SpotifyAudioFeatures, etc.
-            │   │   └── exception/ # SpotifyApiException, SpotifyAuthException, SpotifyRateLimitException
-            │   ├── discogs/   # DiscogsMusicMetadataAdapter, DiscogsApiClient, DiscogsMapper
-            │   │   ├── dto/   # DiscogsSearchResponse, DiscogsRelease, DiscogsLabel, etc.
-            │   │   └── exception/ # DiscogsApiException
-            │   └── musicbrainz/ # MusicBrainzMusicMetadataAdapter, MusicBrainzApiClient, MusicBrainzMapper
-            │       └── dto/   # MBRecordingSearchResponse, MBRecording, MBTag, etc.
+            │   └── spotify/   # SpotifyMusicMetadataAdapter, SpotifyApiClient, SpotifyTokenService
+            │       ├── dto/   # SpotifySearchResponse, SpotifyTrackItem, SpotifyAudioFeatures, etc.
+            │       └── exception/ # SpotifyApiException, SpotifyAuthException, SpotifyRateLimitException
             └── config/        # DomainConfig
 ```
 
@@ -94,13 +88,12 @@ ayan-dj-tools/
 - `ScanMusicUseCase` est une classe pure Java (pas de `@Service`)
 - `DomainConfig.java` dans infra crée les beans domaine via `@Bean`
 
-**Port `MusicMetadataProvider`**: Le domaine définit une abstraction générique pour l'enrichissement de métadonnées musicales. Trois implémentations dans l'infrastructure : Spotify (audioFeatures, popularity), Discogs (genres, styles, label, country), MusicBrainz (ISRC, tags). `CompositeMetadataEnricher` fans out vers les 3 providers en parallèle (virtual threads + CompletableFuture) et merge les résultats.
+**Port `MusicMetadataProvider`**: Le domaine définit une abstraction générique pour l'enrichissement de métadonnées musicales. Une implémentation dans l'infrastructure : `SpotifyMusicMetadataAdapter` (audioFeatures, popularity, genres, album, etc.).
 
 ## Key Patterns
 
 - **Records everywhere**: All DTOs, value objects, API responses use Java records
-- **@HttpExchange**: Declarative API clients for Spotify, Discogs, MusicBrainz (no external libs)
-- **Composite enrichment**: `CompositeMetadataEnricher` fans out to all `MusicMetadataProvider`s in parallel, merges results with priority order
+- **@HttpExchange**: Declarative API client for Spotify (no external libs)
 - **Spring AI Structured Outputs**: `chatClient.prompt().call().entity(MyRecord.class)` for type-safe AI responses
 - **@Tool functions**: MCP tools in `AyanMusicTools.java` — scan, enrich, suggest, apply tags
 - **3 operating modes**: PLAN (batch review), MANUAL (one-by-one confirm), APPLY (auto)
@@ -109,7 +102,7 @@ ayan-dj-tools/
 
 - **File access**: ONLY files explicitly selected via Electron file picker are allowed. NO recursive scanning by backend.
 - Backend receives pre-approved file paths only. Validate against path traversal.
-- Spotify/Discogs credentials via environment variables only.
+- Spotify credentials via environment variables only.
 
 ## Skills Reference
 
@@ -141,7 +134,7 @@ Project follows 12 phases (details in `SPEC.md`):
 11. Tests & Quality
 12. Packaging & Distribution
 
-**Current state**: Phase 1 & 2 complete — scan files, read tags, detect missing tags. Multi-source enrichment: Spotify + Discogs + MusicBrainz with composite parallel enrichment (cache, rate limiter, graceful degradation per adapter). Multi-module split done (domain + infra). Phase 3 next: Spring AI + Agent.
+**Current state**: Phase 1 & 2 complete — scan files, read tags, detect missing tags. Spotify enrichment (cache, rate limiter, graceful degradation). Multi-module split done (domain + infra). Phase 3 next: Spring AI + Agent.
 
 ## Code Style
 

@@ -33,12 +33,12 @@ public class SpotifyMapper {
             return null;
         }
         return new AudioFeatures(
-                src.danceability(),
-                src.energy(),
-                src.valence(),
-                src.acousticness(),
-                src.instrumentalness(),
-                src.speechiness(),
+                (double) src.danceability(),
+                (double) src.energy(),
+                (double) src.valence(),
+                (double) src.acousticness(),
+                (double) src.instrumentalness(),
+                (double) src.speechiness(),
                 src.bpm(),
                 src.musicalKey(),
                 src.musicalMode(),

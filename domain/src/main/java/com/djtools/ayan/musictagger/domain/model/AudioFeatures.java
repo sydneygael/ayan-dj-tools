@@ -1,20 +1,20 @@
 package com.djtools.ayan.musictagger.domain.model;
 
 public record AudioFeatures(
-        double danceability,
-        double energy,
-        double valence,
-        double acousticness,
-        double instrumentalness,
-        double speechiness,
-        double bpm,
+        Double danceability,
+        Double energy,
+        Double valence,
+        Double acousticness,
+        Double instrumentalness,
+        Double speechiness,
+        Double bpm,
         String musicalKey,
         String mode,
-        int timeSignature
+        Integer timeSignature
 ) {
 
     public AudioFeatures {
-        if (bpm < 0) {
+        if (bpm != null && bpm < 0) {
             throw new IllegalArgumentException("BPM must not be negative: " + bpm);
         }
     }
@@ -27,5 +27,23 @@ public record AudioFeatures(
             return musicalKey;
         }
         return musicalKey + " " + mode;
+    }
+
+    public AudioFeatures mergeWith(AudioFeatures other) {
+        if (other == null) {
+            return this;
+        }
+        return new AudioFeatures(
+                danceability != null ? danceability : other.danceability,
+                energy != null ? energy : other.energy,
+                valence != null ? valence : other.valence,
+                acousticness != null ? acousticness : other.acousticness,
+                instrumentalness != null ? instrumentalness : other.instrumentalness,
+                speechiness != null ? speechiness : other.speechiness,
+                bpm != null ? bpm : other.bpm,
+                musicalKey != null ? musicalKey : other.musicalKey,
+                mode != null ? mode : other.mode,
+                timeSignature != null ? timeSignature : other.timeSignature
+        );
     }
 }

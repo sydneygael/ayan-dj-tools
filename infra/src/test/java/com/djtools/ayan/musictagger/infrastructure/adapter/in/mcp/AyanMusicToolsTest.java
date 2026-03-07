@@ -5,17 +5,24 @@ import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
 import com.djtools.ayan.musictagger.domain.port.in.AudioFeatureExtractor;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
+import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
+import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,12 +31,14 @@ class AyanMusicToolsTest {
     @Mock ScanMusicUseCase scanMusicUseCase;
     @Mock MusicMetadataProvider musicMetadataProvider;
     @Mock AudioFeatureExtractor audioFeatureExtractor;
+    @Mock PlanManagementService planManagementService;
+    @Mock TrackVectorizationService vectorizationService;
 
     private AyanMusicTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor);
+        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, vectorizationService);
     }
 
     @Test
@@ -117,5 +126,93 @@ class AyanMusicToolsTest {
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.data().artist()).isEqualTo("Artist");
+    }
+
+    @Test
+    void createPlanForFiles_delegatesToService() {
+        var plan = new TaggingPlan("plan-1",
+                List.of(new TagOperation("/a.mp3", Map.of(), Map.of("genre", "Techno"), OperationStatus.PENDING, null)),
+                LocalDateTime.now(), PlanStatus.READY_FOR_REVIEW, 1, 1);
+        when(planManagementService.createPlan(any())).thenReturn(plan);
+
+        TaggingPlan result = tools.createPlanForFiles(List.of("/a.mp3"));
+
+        assertThat(result.planId()).isEqualTo("plan-1");
+        assertThat(result.operations()).hasSize(1);
+    }
+
+    @Test
+    void applyTagsPlan_delegatesToService() {
+        var batchResult = new BatchApplyResult("plan-1", 1, 1, 0,
+                List.of(new TagWriteResult("/a.mp3", OperationStatus.APPLIED, null)), Duration.ofMillis(50));
+        when(planManagementService.executePlan("plan-1")).thenReturn(batchResult);
+
+        BatchApplyResult result = tools.applyTagsPlan("plan-1");
+
+        assertThat(result.successCount()).isEqualTo(1);
+    }
+
+    @Test
+    void previewTagUpdate_delegatesToService() {
+        var preview = new TagPreview("/a.mp3", List.of(new TagChange("genre", null, "Techno")));
+        when(planManagementService.previewFile("/a.mp3", Map.of("genre", "Techno"))).thenReturn(preview);
+
+        TagPreview result = tools.previewTagUpdate("/a.mp3", Map.of("genre", "Techno"));
+
+        assertThat(result.changes()).hasSize(1);
+    }
+
+    @Test
+    void getTaggingHistory_delegatesToService() {
+        var entry = new TaggingHistoryEntry("/a.mp3", "plan-1", Map.of(), Map.of("genre", "Techno"),
+                OperationStatus.APPLIED, null, LocalDateTime.now());
+        when(planManagementService.getPlanHistory("plan-1")).thenReturn(List.of(entry));
+
+        List<TaggingHistoryEntry> result = tools.getTaggingHistory("plan-1");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().filepath()).isEqualTo("/a.mp3");
+    }
+
+    @Test
+    void enrichWithSpotify_triggersVectorization() {
+        var metadata = new EnrichedTrackMetadata(
+                "sp123", "Artist", "Title", "Album",
+                List.of("Electronic"), List.of(), "Label", "FR",
+                "ISRC123", List.of(), 2024, 80, 210000, null
+        );
+        when(musicMetadataProvider.enrich("Artist", "Title"))
+                .thenReturn(EnrichmentResult.success(metadata));
+
+        tools.enrichWithSpotify("Artist", "Title");
+
+        verify(vectorizationService).store(metadata);
+    }
+
+    @Test
+    void findSimilarTracks_delegatesToVectorizationService() {
+        var track = new EnrichedTrackMetadata(
+                "sp123", "Artist", "Title", "Album",
+                List.of("Electronic"), List.of(), null, null,
+                null, List.of(), 2024, 80, 210000, null
+        );
+        when(vectorizationService.findSimilarTracks("electronic", 3))
+                .thenReturn(List.of(new SimilarTrackResult(track, 0.9)));
+
+        List<SimilarTrackResult> results = tools.findSimilarTracks("electronic", 3);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().track().artist()).isEqualTo("Artist");
+    }
+
+    @Test
+    void smartSuggestTags_delegatesToVectorizationService() {
+        var suggestion = new SmartTagSuggestion("/test.mp3", Map.of("genre", "Techno"), List.of(), 0.8, "spotify+rag");
+        when(vectorizationService.smartSuggestTags("/test.mp3")).thenReturn(suggestion);
+
+        SmartTagSuggestion result = tools.smartSuggestTags("/test.mp3");
+
+        assertThat(result.filepath()).isEqualTo("/test.mp3");
+        assertThat(result.source()).isEqualTo("spotify+rag");
     }
 }

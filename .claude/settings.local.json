@@ -6,7 +6,8 @@
       "WebFetch(domain:musicbrainz.org)",
       "Bash(./gradlew domain:test:*)",
       "Bash(./gradlew infra:test:*)",
-      "Bash(./gradlew build:*)"
+      "Bash(./gradlew build:*)",
+      "WebFetch(domain:reccobeats.com)"
     ],
     "deny": [
       "Read(./.env)",

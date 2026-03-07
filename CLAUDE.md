@@ -75,13 +75,18 @@ ayan-dj-tools/
     └── src/main/java/com/djtools/ayan/musictagger/
         ├── MusicTaggerApplication.java
         └── infrastructure/
-            ├── adapter/in/    # Futurs: REST controllers, MCP tools
+            ├── adapter/in/
+            │   ├── mcp/       # AyanMusicTools (@Tool functions)
+            │   ├── rest/      # AgentController, PlanController
+            │   └── ws/        # AgentWebSocketController
             ├── adapter/out/
             │   ├── audio/     # JAudioTaggerAdapter, AudioScannerService
+            │   ├── persistence/ # RedisPlanRepository
             │   └── spotify/   # SpotifyMusicMetadataAdapter, SpotifyApiClient, SpotifyTokenService
             │       ├── dto/   # SpotifySearchResponse, SpotifyTrackItem, SpotifyAudioFeatures, etc.
             │       └── exception/ # SpotifyApiException, SpotifyAuthException, SpotifyRateLimitException
-            └── config/        # DomainConfig
+            ├── service/       # AyanAgentService, PlanManagementService, ConversationHistoryService
+            └── config/        # DomainConfig, AIConfig, RedisConfig, WebSocketConfig
 ```
 
 **Dependency rule**: `infra` → `domain`. Le module domain ne connaît ni Spring, ni JAudiotagger.
@@ -134,7 +139,7 @@ Project follows 12 phases (details in `SPEC.md`):
 11. Tests & Quality
 12. Packaging & Distribution
 
-**Current state**: Phase 1 & 2 complete — scan files, read tags, detect missing tags. Spotify enrichment (cache, rate limiter, graceful degradation). Multi-module split done (domain + infra). Phase 3 next: Spring AI + Agent.
+**Current state**: Phases 1–4 complete. Phase 5 next: Tag Application (write tags to files).
 
 ## Code Style
 

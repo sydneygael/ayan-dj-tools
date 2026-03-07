@@ -16,6 +16,7 @@ dependencies {
     implementation("be.tarsos.dsp:jvm:2.5")
     implementation(platform("org.springframework.ai:spring-ai-bom:2.0.0-M2"))
     implementation("org.springframework.ai:spring-ai-starter-model-ollama")
+    implementation("org.springframework.ai:spring-ai-starter-vector-store-qdrant")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
@@ -25,5 +26,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
     testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:qdrant:1.20.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -26,6 +26,21 @@ services:
       timeout: 5s
       retries: 3
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: dj-tagger-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   ollama-data:
   redis-data:
+  qdrant-data:

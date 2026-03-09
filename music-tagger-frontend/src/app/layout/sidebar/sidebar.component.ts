@@ -1,8 +1,10 @@
 import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { FileSelectionService } from '../../services/file-selection.service';
+import { PlanService } from '../../services/plan.service';
 import { FileListComponent } from '../../features/file-list/file-list.component';
 
 @Component({
@@ -23,6 +25,12 @@ import { FileListComponent } from '../../features/file-list/file-list.component'
       </button>
       @if (!fileService.isElectron()) {
         <p class="hint">Mode navigateur : file picker disponible uniquement en mode Electron</p>
+      }
+      @if (fileService.selectedFiles().length > 0) {
+        <button mat-stroked-button (click)="createPlan()" class="plan-btn" [disabled]="creatingPlan">
+          <mat-icon>assignment</mat-icon>
+          Creer un plan
+        </button>
       }
       <mat-divider />
       <app-file-list [files]="fileService.selectedFiles()" (fileRemoved)="fileService.removeFile($event)" />
@@ -52,6 +60,9 @@ import { FileListComponent } from '../../features/file-list/file-list.component'
     .select-btn {
       width: 100%;
     }
+    .plan-btn {
+      width: 100%;
+    }
     .hint {
       font-size: 0.75rem;
       color: var(--mat-sys-on-surface-variant);
@@ -59,6 +70,27 @@ import { FileListComponent } from '../../features/file-list/file-list.component'
     }
   `,
 })
+/**
+ * Sidebar de l'application — selection de fichiers audio, liste des fichiers selectionnes,
+ * et bouton « Creer un plan » qui appelle le backend puis navigue vers la page de revue.
+ */
 export class SidebarComponent {
   protected fileService = inject(FileSelectionService);
+  private planService = inject(PlanService);
+  private router = inject(Router);
+  protected creatingPlan = false;
+
+  /** Cree un plan via le backend et navigue vers /plan/:id pour la revue. */
+  createPlan(): void {
+    this.creatingPlan = true;
+    this.planService.create(this.fileService.selectedFiles()).subscribe({
+      next: plan => {
+        this.creatingPlan = false;
+        this.router.navigate(['/plan', plan.planId]);
+      },
+      error: () => {
+        this.creatingPlan = false;
+      },
+    });
+  }
 }

@@ -46,6 +46,7 @@ import { MatIconButton } from '@angular/material/button';
     }
   `,
 })
+/** Element unitaire de la liste de fichiers — affiche le nom de fichier et un bouton de suppression. */
 export class FileItemComponent {
   filepath = input.required<string>();
   removed = output<string>();

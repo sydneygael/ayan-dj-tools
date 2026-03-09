@@ -35,6 +35,7 @@ import { FileItemComponent } from './file-item/file-item.component';
     }
   `,
 })
+/** Liste des fichiers audio selectionnes, affichee dans la sidebar. Emet un evenement lors de la suppression d'un fichier. */
 export class FileListComponent {
   files = input.required<string[]>();
   fileRemoved = output<string>();

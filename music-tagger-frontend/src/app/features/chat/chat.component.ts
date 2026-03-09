@@ -110,6 +110,11 @@ import { ChatMessage } from '../../models/types';
     }
   `,
 })
+/**
+ * Composant principal de chat avec l'agent Ayan.
+ * Utilise WebSocket STOMP en priorite, avec fallback REST si la connexion WS echoue.
+ * Un effect() ecoute les messages entrants du WebSocket pour mettre a jour la conversation.
+ */
 export class ChatComponent implements OnInit, OnDestroy {
   private agentService = inject(AgentService);
   private wsService = inject(WebSocketService);
@@ -121,6 +126,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   inputText = '';
 
   constructor() {
+    // Ecoute les reponses WebSocket pour ajouter les messages de l'agent a la conversation
     effect(() => {
       const response = this.wsService.lastMessage();
       if (response) {
@@ -156,9 +162,10 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.scrollToBottom();
 
     if (this.wsService.connected()) {
+      // Envoi via WebSocket STOMP (temps reel)
       this.wsService.sendMessage(text, this.conversationId() ?? undefined);
     } else {
-      // REST fallback
+      // Fallback REST si WebSocket non connecte
       this.agentService.chat(text, this.conversationId() ?? undefined).subscribe({
         next: response => {
           this.conversationId.set(response.conversationId);
@@ -180,6 +187,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Scroll automatique vers le bas apres ajout d'un message (setTimeout pour attendre le rendu). */
   private scrollToBottom(): void {
     setTimeout(() => {
       const el = this.messagesContainer()?.nativeElement;

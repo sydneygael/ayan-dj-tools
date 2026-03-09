@@ -4,6 +4,12 @@ import SockJS from 'sockjs-client';
 import { environment } from '../../environments/environment';
 import { ChatResponse } from '../models/types';
 
+/**
+ * Service de communication WebSocket STOMP avec le backend.
+ * Se connecte via SockJS sur /ws, s'abonne a /topic/responses pour recevoir
+ * les reponses de l'agent, et publie les messages sur /app/chat.
+ * Reconnexion automatique toutes les 5 secondes en cas de deconnexion.
+ */
 @Injectable({ providedIn: 'root' })
 export class WebSocketService {
   private client: Client | null = null;
@@ -30,6 +36,7 @@ export class WebSocketService {
     this.client.activate();
   }
 
+  /** Publie un message utilisateur sur /app/chat via STOMP. */
   sendMessage(message: string, conversationId?: string): void {
     if (!this.client?.connected) return;
     this.client.publish({

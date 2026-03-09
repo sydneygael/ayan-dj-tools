@@ -1,5 +1,6 @@
 package com.djtools.ayan.musictagger.infrastructure.service;
 
+import com.djtools.ayan.musictagger.domain.model.OperatingMode;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,10 @@ public class AyanAgentService {
     }
 
     public String chat(String conversationId, String userMessage) {
+        return chat(conversationId, userMessage, OperatingMode.PLAN);
+    }
+
+    public String chat(String conversationId, String userMessage, OperatingMode mode) {
         if (conversationId == null || conversationId.isBlank()) {
             conversationId = UUID.randomUUID().toString();
         }
@@ -29,7 +34,7 @@ public class AyanAgentService {
         historyService.saveMessage(conversationId, new ChatMessage("user", userMessage, LocalDateTime.now()));
 
         List<ChatMessage> history = historyService.getHistory(conversationId);
-        String contextualPrompt = buildPromptWithHistory(history, userMessage);
+        String contextualPrompt = buildPromptWithHistory(history, userMessage, mode);
 
         String reply = chatClient.prompt()
                 .user(contextualPrompt)
@@ -47,9 +52,11 @@ public class AyanAgentService {
                 : conversationId;
     }
 
-    private String buildPromptWithHistory(List<ChatMessage> history, String currentMessage) {
+    private String buildPromptWithHistory(List<ChatMessage> history, String currentMessage, OperatingMode mode) {
+        String modePrefix = "[Mode actif : %s]\n\n".formatted(mode.name());
+
         if (history.size() <= 1) {
-            return currentMessage;
+            return modePrefix + currentMessage;
         }
 
         List<ChatMessage> recentHistory = history.size() > MAX_HISTORY_MESSAGES
@@ -61,10 +68,10 @@ public class AyanAgentService {
                 .collect(Collectors.joining("\n"));
 
         return """
-                Contexte de la conversation précédente :
+                %sContexte de la conversation précédente :
                 %s
 
                 Nouveau message de l'utilisateur :
-                %s""".formatted(context, currentMessage);
+                %s""".formatted(modePrefix, context, currentMessage);
     }
 }

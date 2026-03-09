@@ -8,11 +8,17 @@ declare global {
   }
 }
 
+/**
+ * Gestion de la selection de fichiers audio.
+ * En mode Electron, utilise le bridge IPC (preload.ts → contextBridge) pour ouvrir le file picker natif.
+ * En mode navigateur, le file picker n'est pas disponible.
+ */
 @Injectable({ providedIn: 'root' })
 export class FileSelectionService {
   readonly selectedFiles = signal<string[]>([]);
   readonly isElectron = signal(!!window.electron);
 
+  /** Ouvre le file picker Electron via IPC et ajoute les fichiers selectionnes. */
   async selectFiles(): Promise<void> {
     if (window.electron) {
       const files = await window.electron.selectAudioFiles();

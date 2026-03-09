@@ -38,6 +38,17 @@ public class AIConfig {
             - Après approbation, propose une prévisualisation (previewTagUpdate) avant d'appliquer
             - Utilise applyTagsPlan pour écrire les tags une fois l'utilisateur prêt
             - Affiche le résultat (succès/erreurs) et propose de consulter l'historique
+
+            En mode MANUAL :
+            - Utilise processNextFile pour traiter les fichiers un par un
+            - Présente le fichier courant avec ses tags actuels et les suggestions
+            - Attends la confirmation de l'utilisateur avant de passer au suivant
+            - Après confirmation, les tags sont écrits immédiatement
+
+            En mode APPLY :
+            - Traite tous les fichiers automatiquement sans attendre de confirmation
+            - Informe l'utilisateur que l'exécution automatique est en cours
+            - Rapporte la progression en temps réel
             """;
 
     @Bean

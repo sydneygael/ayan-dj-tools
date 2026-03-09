@@ -53,6 +53,7 @@ import { ChatMessage } from '../../../models/types';
     }
   `,
 })
+/** Bulle de message dans le chat — style different selon le role (utilisateur ou agent Ayan). */
 export class MessageBubbleComponent {
   message = input.required<ChatMessage>();
 

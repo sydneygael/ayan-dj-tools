@@ -1,14 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-
-export type OperatingMode = 'PLAN' | 'MANUAL' | 'APPLY';
+import { ModeService } from '../../services/mode.service';
 
 @Component({
   selector: 'app-mode-selector',
   standalone: true,
   imports: [MatButtonToggleModule],
   template: `
-    <mat-button-toggle-group [value]="mode()" (change)="mode.set($event.value)" appearance="standard">
+    <mat-button-toggle-group [value]="modeService.mode()" (change)="modeService.setMode($event.value)" appearance="standard">
       <mat-button-toggle value="PLAN">Plan</mat-button-toggle>
       <mat-button-toggle value="MANUAL">Manuel</mat-button-toggle>
       <mat-button-toggle value="APPLY">Auto</mat-button-toggle>
@@ -21,6 +20,7 @@ export type OperatingMode = 'PLAN' | 'MANUAL' | 'APPLY';
     }
   `,
 })
+/** Selecteur de mode operatoire (Plan / Manuel / Auto) affiche dans la toolbar. Delegue au ModeService global. */
 export class ModeSelectorComponent {
-  readonly mode = signal<OperatingMode>('PLAN');
+  protected modeService = inject(ModeService);
 }

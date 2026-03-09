@@ -5,6 +5,7 @@ import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
 import com.djtools.ayan.musictagger.domain.port.in.AudioFeatureExtractor;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
+import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
 import org.springframework.ai.tool.annotation.Tool;
@@ -26,17 +27,20 @@ public class AyanMusicTools {
     private final MusicMetadataProvider musicMetadataProvider;
     private final AudioFeatureExtractor audioFeatureExtractor;
     private final PlanManagementService planManagementService;
+    private final ManualModeService manualModeService;
     private final TrackVectorizationService vectorizationService;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
                           AudioFeatureExtractor audioFeatureExtractor,
                           PlanManagementService planManagementService,
+                          ManualModeService manualModeService,
                           TrackVectorizationService vectorizationService) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
         this.planManagementService = planManagementService;
+        this.manualModeService = manualModeService;
         this.vectorizationService = vectorizationService;
     }
 
@@ -113,6 +117,12 @@ public class AyanMusicTools {
             @ToolParam(description = "Chemin absolu du fichier audio") String filepath,
             @ToolParam(description = "Tags à appliquer (clé: nom du tag, valeur: nouvelle valeur)") java.util.Map<String, String> tags) {
         return planManagementService.previewFile(filepath, tags);
+    }
+
+    @Tool(description = "Traite le prochain fichier du plan en mode MANUAL — retourne l'operation courante")
+    public TagOperation processNextFile(
+            @ToolParam(description = "Identifiant du plan en cours") String planId) {
+        return manualModeService.prepareNextFile(planId);
     }
 
     @Tool(description = "Retourne l'historique des modifications de tags pour un plan donné")

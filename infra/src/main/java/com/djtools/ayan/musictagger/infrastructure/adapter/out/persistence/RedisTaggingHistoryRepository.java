@@ -44,7 +44,13 @@ public class RedisTaggingHistoryRepository implements TaggingHistoryRepository {
 
     @Override
     public List<TaggingHistoryEntry> findByFilepath(String filepath) {
-        // Simplified: scans all known history keys — acceptable for current scale
+        return findAll().stream()
+                .filter(entry -> filepath.equals(entry.filepath()))
+                .toList();
+    }
+
+    @Override
+    public List<TaggingHistoryEntry> findAll() {
         var keys = redisTemplate.keys(KEY_PREFIX + "*");
         if (keys == null) {
             return List.of();
@@ -56,7 +62,6 @@ public class RedisTaggingHistoryRepository implements TaggingHistoryRepository {
                     return raw.stream();
                 })
                 .map(obj -> objectMapper.convertValue(obj, TaggingHistoryEntry.class))
-                .filter(entry -> filepath.equals(entry.filepath()))
                 .toList();
     }
 }

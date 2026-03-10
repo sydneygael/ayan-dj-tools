@@ -24,6 +24,19 @@ body {
   height: 100%;
 }
 
+body.light-theme {
+  color-scheme: light;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$cyan-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: light,
+      ),
+    )
+  );
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -35,4 +48,20 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--mat-sys-outline-variant);
   border-radius: 3px;
+}
+
+// Snackbar couleurs
+.snack-success .mdc-snackbar__surface {
+  background-color: #388e3c !important;
+  color: #fff !important;
+}
+
+.snack-error .mdc-snackbar__surface {
+  background-color: #c62828 !important;
+  color: #fff !important;
+}
+
+.snack-warning .mdc-snackbar__surface {
+  background-color: #f57f17 !important;
+  color: #fff !important;
 }

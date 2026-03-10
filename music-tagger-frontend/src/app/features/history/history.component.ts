@@ -8,6 +8,7 @@ import { MatTableModule } from '@angular/material/table';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { PlanService } from '../../services/plan.service';
+import { NotificationService } from '../../services/notification.service';
 import { TaggingHistoryEntry } from '../../models/types';
 
 @Component({
@@ -167,6 +168,7 @@ import { TaggingHistoryEntry } from '../../models/types';
 export default class HistoryComponent {
   private planService = inject(PlanService);
   private route = inject(ActivatedRoute);
+  private notif = inject(NotificationService);
 
   searchPlanId = '';
   readonly entries = signal<TaggingHistoryEntry[]>([]);
@@ -200,6 +202,7 @@ export default class HistoryComponent {
         this.error.set('Erreur lors du chargement de l\'historique.');
         this.loading.set(false);
         this.searched.set(true);
+        this.notif.error('Erreur lors du chargement de l\'historique.');
       },
     });
   }

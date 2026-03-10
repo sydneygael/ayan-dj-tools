@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
 import { PlanService } from '../../services/plan.service';
+import { NotificationService } from '../../services/notification.service';
 import { TaggingPlan, BatchApplyResult, OperationStatus } from '../../models/types';
 import { PlanSummaryComponent } from './plan-summary/plan-summary.component';
 import { OperationCardComponent } from './operation-card/operation-card.component';
@@ -107,6 +108,7 @@ export default class PlanReviewComponent implements OnInit {
   private router = inject(Router);
   private planService = inject(PlanService);
   private dialog = inject(MatDialog);
+  private notif = inject(NotificationService);
 
   readonly plan = signal<TaggingPlan | null>(null);
   readonly loading = signal(false);
@@ -132,14 +134,21 @@ export default class PlanReviewComponent implements OnInit {
       error: () => {
         this.error.set('Impossible de charger le plan.');
         this.loading.set(false);
+        this.notif.error('Impossible de charger le plan.');
       },
     });
   }
 
   approveAll(): void {
     this.planService.approve(this.planId).subscribe({
-      next: plan => this.plan.set(plan),
-      error: () => this.error.set('Erreur lors de l\'approbation.'),
+      next: plan => {
+        this.plan.set(plan);
+        this.notif.success('Plan approuvé.');
+      },
+      error: () => {
+        this.error.set('Erreur lors de l\'approbation.');
+        this.notif.error('Erreur lors de l\'approbation.');
+      },
     });
   }
 
@@ -160,10 +169,12 @@ export default class PlanReviewComponent implements OnInit {
           this.executionResult.set(result);
           this.executing.set(false);
           this.loadPlan();
+          this.notif.success(`Exécution terminée : ${result.successCount} succès, ${result.failureCount} erreur(s).`);
         },
         error: () => {
           this.error.set('Erreur lors de l\'execution.');
           this.executing.set(false);
+          this.notif.error('Erreur lors de l\'exécution du plan.');
         },
       });
     });
@@ -181,8 +192,14 @@ export default class PlanReviewComponent implements OnInit {
     ref.afterClosed().subscribe(confirmed => {
       if (!confirmed) return;
       this.planService.delete(this.planId).subscribe({
-        next: () => this.router.navigate(['/']),
-        error: () => this.error.set('Erreur lors de la suppression.'),
+        next: () => {
+          this.notif.info('Plan supprimé.');
+          this.router.navigate(['/']);
+        },
+        error: () => {
+          this.error.set('Erreur lors de la suppression.');
+          this.notif.error('Erreur lors de la suppression du plan.');
+        },
       });
     });
   }

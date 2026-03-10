@@ -12,7 +12,7 @@ import { FileItemComponent } from './file-item/file-item.component';
       <div class="file-list">
         <p class="count">{{ files().length }} fichier(s)</p>
         @for (file of files(); track file) {
-          <app-file-item [filepath]="file" (removed)="fileRemoved.emit($event)" />
+          <app-file-item [filepath]="file" (removed)="fileRemoved.emit($event)" (selected)="fileSelected.emit($event)" />
         }
       </div>
     }
@@ -35,8 +35,9 @@ import { FileItemComponent } from './file-item/file-item.component';
     }
   `,
 })
-/** Liste des fichiers audio selectionnes, affichee dans la sidebar. Emet un evenement lors de la suppression d'un fichier. */
+/** Liste des fichiers audio selectionnes, affichee dans la sidebar. Emet lors de la suppression ou selection d'un fichier. */
 export class FileListComponent {
   files = input.required<string[]>();
   fileRemoved = output<string>();
+  fileSelected = output<string>();
 }

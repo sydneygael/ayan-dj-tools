@@ -11,4 +11,6 @@ public interface TaggingHistoryRepository {
     List<TaggingHistoryEntry> findByPlanId(String planId);
 
     List<TaggingHistoryEntry> findByFilepath(String filepath);
+
+    List<TaggingHistoryEntry> findAll();
 }

@@ -5,12 +5,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { FileSelectionService } from '../../services/file-selection.service';
 import { PlanService } from '../../services/plan.service';
+import { NotificationService } from '../../services/notification.service';
 import { FileListComponent } from '../../features/file-list/file-list.component';
+import { DragDropZoneComponent } from '../../features/drag-drop-zone/drag-drop-zone.component';
+import { AudioPlayerComponent } from '../../features/audio-player/audio-player.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatDividerModule, FileListComponent],
+  imports: [MatButtonModule, MatIconModule, MatDividerModule, FileListComponent, DragDropZoneComponent, AudioPlayerComponent],
   template: `
     <div class="sidebar">
       <div class="sidebar-header">
@@ -23,6 +26,7 @@ import { FileListComponent } from '../../features/file-list/file-list.component'
         <mat-icon>folder_open</mat-icon>
         Selectionner des fichiers
       </button>
+      <app-drag-drop-zone />
       @if (!fileService.isElectron()) {
         <p class="hint">Mode navigateur : file picker disponible uniquement en mode Electron</p>
       }
@@ -33,7 +37,13 @@ import { FileListComponent } from '../../features/file-list/file-list.component'
         </button>
       }
       <mat-divider />
-      <app-file-list [files]="fileService.selectedFiles()" (fileRemoved)="fileService.removeFile($event)" />
+      <app-file-list
+        [files]="fileService.selectedFiles()"
+        (fileRemoved)="fileService.removeFile($event)"
+        (fileSelected)="fileService.selectSingleFile($event)" />
+      <div class="player-area">
+        <app-audio-player />
+      </div>
     </div>
   `,
   styles: `
@@ -68,16 +78,19 @@ import { FileListComponent } from '../../features/file-list/file-list.component'
       color: var(--mat-sys-on-surface-variant);
       margin: 0;
     }
+    .player-area {
+      margin-top: auto;
+    }
   `,
 })
 /**
- * Sidebar de l'application — selection de fichiers audio, liste des fichiers selectionnes,
- * et bouton « Creer un plan » qui appelle le backend puis navigue vers la page de revue.
+ * Sidebar de l'application — selection de fichiers, drag & drop, liste, bouton plan, player audio.
  */
 export class SidebarComponent {
   protected fileService = inject(FileSelectionService);
   private planService = inject(PlanService);
   private router = inject(Router);
+  private notif = inject(NotificationService);
   protected creatingPlan = false;
 
   /** Cree un plan via le backend et navigue vers /plan/:id pour la revue. */
@@ -86,10 +99,12 @@ export class SidebarComponent {
     this.planService.create(this.fileService.selectedFiles()).subscribe({
       next: plan => {
         this.creatingPlan = false;
+        this.notif.success('Plan créé avec succès.');
         this.router.navigate(['/plan', plan.planId]);
       },
       error: () => {
         this.creatingPlan = false;
+        this.notif.error('Erreur lors de la création du plan.');
       },
     });
   }

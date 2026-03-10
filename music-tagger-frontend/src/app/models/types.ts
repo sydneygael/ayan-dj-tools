@@ -157,3 +157,12 @@ export interface ConfirmDialogData {
   cancelLabel?: string;
   warn?: boolean;
 }
+
+/** Statistiques agregees de la collection — retournees par GET /api/stats. */
+export interface StatsReport {
+  totalPlansCreated: number;
+  totalTagsApplied: number;
+  totalFilesEnriched: number;
+  tagsAppliedByType: Record<string, number>;
+  recentActivity: TaggingHistoryEntry[];
+}

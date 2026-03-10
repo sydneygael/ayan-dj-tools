@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ModeSelectorComponent } from '../../features/mode-selector/mode-selector.component';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -18,11 +19,17 @@ import { ModeSelectorComponent } from '../../features/mode-selector/mode-selecto
       </a>
       <span class="spacer"></span>
       <app-mode-selector />
-      <button mat-icon-button routerLink="/history" matTooltip="Historique">
+      <button mat-icon-button routerLink="/stats" matTooltip="Statistiques (Ctrl+S)">
+        <mat-icon>bar_chart</mat-icon>
+      </button>
+      <button mat-icon-button routerLink="/history" matTooltip="Historique (Ctrl+H)">
         <mat-icon>history</mat-icon>
       </button>
-      <button mat-icon-button routerLink="/settings" matTooltip="Parametres">
+      <button mat-icon-button routerLink="/settings" matTooltip="Parametres (Ctrl+,)">
         <mat-icon>settings</mat-icon>
+      </button>
+      <button mat-icon-button (click)="themeService.toggle()" [matTooltip]="themeService.isDark() ? 'Passer en clair' : 'Passer en sombre'">
+        <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
       </button>
     </mat-toolbar>
   `,
@@ -51,5 +58,7 @@ import { ModeSelectorComponent } from '../../features/mode-selector/mode-selecto
     }
   `,
 })
-/** Barre d'outils principale — logo, selecteur de mode, liens vers historique et parametres. */
-export class ToolbarComponent {}
+/** Barre d'outils principale — logo, selecteur de mode, liens vers stats/historique/parametres, toggle theme. */
+export class ToolbarComponent {
+  protected themeService = inject(ThemeService);
+}

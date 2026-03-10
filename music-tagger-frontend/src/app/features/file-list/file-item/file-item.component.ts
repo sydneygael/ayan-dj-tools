@@ -9,7 +9,7 @@ import { MatIconButton } from '@angular/material/button';
   template: `
     <div class="file-item">
       <mat-icon class="file-icon">audio_file</mat-icon>
-      <span class="filename" [title]="filepath()">{{ extractFilename(filepath()) }}</span>
+      <span class="filename" [title]="filepath()" (click)="selected.emit(filepath())">{{ extractFilename(filepath()) }}</span>
       <button mat-icon-button class="remove-btn" (click)="removed.emit(filepath())">
         <mat-icon>close</mat-icon>
       </button>
@@ -39,6 +39,7 @@ import { MatIconButton } from '@angular/material/button';
       text-overflow: ellipsis;
       white-space: nowrap;
       font-family: 'Roboto Mono', monospace;
+      cursor: pointer;
     }
     .remove-btn {
       opacity: 0.5;
@@ -46,10 +47,11 @@ import { MatIconButton } from '@angular/material/button';
     }
   `,
 })
-/** Element unitaire de la liste de fichiers — affiche le nom de fichier et un bouton de suppression. */
+/** Element unitaire de la liste de fichiers — affiche le nom de fichier, clic pour lecture audio, bouton de suppression. */
 export class FileItemComponent {
   filepath = input.required<string>();
   removed = output<string>();
+  selected = output<string>();
 
   extractFilename(path: string): string {
     return path.split(/[\\/]/).pop() ?? path;

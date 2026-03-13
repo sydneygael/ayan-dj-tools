@@ -111,17 +111,17 @@ ayan-dj-tools/
 
 ## Skills Reference
 
-Detailed implementation patterns live in `.claude/skills/`:
+Detailed implementation patterns live in `.claude/skills/` (auto-loaded when relevant):
 
 | Skill | Purpose |
 |-------|---------|
-| `hexagonal-ddd.skill.md` | Architecture rules, domain/infra separation |
-| `backend-java.skill.md` | Java 25 + Spring Boot 4 + Gradle 9 patterns |
-| `spring-ai.skill.md` | Spring AI 2.0, @Tool, structured outputs, Camelot Wheel |
-| `spotify-integration.skill.md` | @HttpExchange client, OAuth2, cache, rate limiting |
-| `audio-processing.skill.md` | JAudiotagger read/write, validation, backup |
-| `rag-vectordb.skill.md` | Qdrant vectorization, similarity search |
-| `frontend-angular.skill.md` | Angular 21 standalone components, signals, Electron |
+| `hexagonal-ddd/` | Architecture rules, domain/infra separation |
+| `backend-java/` | Java 25 + Spring Boot 4 + Gradle 9 patterns |
+| `spring-ai/` | Spring AI 2.0, @Tool, structured outputs, Camelot Wheel |
+| `spotify-integration/` | @HttpExchange client, OAuth2, cache, rate limiting |
+| `audio-processing/` | JAudiotagger read/write, validation, backup |
+| `rag-vectordb/` | Qdrant vectorization, similarity search |
+| `frontend-angular/` | Angular 21 standalone components, signals, Electron |
 
 ## Implementation Phases
 

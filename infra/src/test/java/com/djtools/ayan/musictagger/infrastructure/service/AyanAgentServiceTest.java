@@ -91,6 +91,8 @@ class AyanAgentServiceTest {
 
         var captor = ArgumentCaptor.forClass(String.class);
         verify(requestSpec).user(captor.capture());
-        assertThat(captor.getValue()).isEqualTo("Bonjour");
+        // With single message history (<=1), prompt is mode prefix + message (no conversation context)
+        assertThat(captor.getValue()).contains("Bonjour");
+        assertThat(captor.getValue()).doesNotContain("Contexte de la conversation");
     }
 }

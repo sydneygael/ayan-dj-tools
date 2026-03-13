@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class QdrantVectorStoreAdapter implements VectorStorePort {
@@ -35,7 +36,8 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
         String embeddingText = buildEmbeddingText(track);
         Map<String, Object> metadata = buildMetadata(track);
 
-        var document = new Document(track.sourceId(), embeddingText, metadata);
+        String documentId = UUID.nameUUIDFromBytes(track.sourceId().getBytes()).toString();
+        var document = new Document(documentId, embeddingText, metadata);
         vectorStore.add(List.of(document));
 
         log.debug("Stored track in vector store: {} - {} (id={})", track.artist(), track.title(), track.sourceId());

@@ -15,9 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -27,14 +28,24 @@ import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = {QdrantVectorStoreAdapter.class, QdrantVectorStoreAdapterIT.MockEmbeddingConfig.class})
+@SpringBootTest(
+        classes = {QdrantVectorStoreAdapter.class, QdrantVectorStoreAdapterIT.MockEmbeddingConfig.class},
+        properties = "dj-tagger.rag.similarity-threshold=0.0"
+)
 @EnableAutoConfiguration(exclude = {OllamaApiAutoConfiguration.class, OllamaChatAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class})
 @Testcontainers
 class QdrantVectorStoreAdapterIT {
 
     @Container
-    @ServiceConnection
-    static QdrantContainer qdrant = new QdrantContainer("qdrant/qdrant:latest");
+    static QdrantContainer qdrant = new QdrantContainer("qdrant/qdrant:v1.13.6");
+
+    @DynamicPropertySource
+    static void qdrantProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.ai.vectorstore.qdrant.host", qdrant::getHost);
+        registry.add("spring.ai.vectorstore.qdrant.port", qdrant::getGrpcPort);
+        registry.add("spring.ai.vectorstore.qdrant.collection-name", () -> "dj-tracks-test");
+        registry.add("spring.ai.vectorstore.qdrant.initialize-schema", () -> "true");
+    }
 
     @Autowired
     QdrantVectorStoreAdapter adapter;
@@ -93,7 +104,8 @@ class QdrantVectorStoreAdapterIT {
                 .build();
         var docs = vectorStore.similaritySearch(request);
 
-        long count = docs.stream().filter(d -> "sp-dedup-1".equals(d.getId())).count();
+        String expectedUuid = java.util.UUID.nameUUIDFromBytes("sp-dedup-1".getBytes()).toString();
+        long count = docs.stream().filter(d -> expectedUuid.equals(d.getId())).count();
         assertThat(count).isLessThanOrEqualTo(1);
     }
 

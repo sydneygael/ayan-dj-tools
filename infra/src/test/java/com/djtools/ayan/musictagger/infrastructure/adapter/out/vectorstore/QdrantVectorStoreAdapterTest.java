@@ -51,7 +51,8 @@ class QdrantVectorStoreAdapterTest {
 
         List<Document> docs = captor.getValue();
         assertThat(docs).hasSize(1);
-        assertThat(docs.getFirst().getId()).isEqualTo("sp123");
+        String expectedUuid = java.util.UUID.nameUUIDFromBytes("sp123".getBytes()).toString();
+        assertThat(docs.getFirst().getId()).isEqualTo(expectedUuid);
     }
 
     @Test

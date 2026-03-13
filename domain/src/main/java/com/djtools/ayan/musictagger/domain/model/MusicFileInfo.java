@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.domain.model;
 
 import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
 
+/** Informations extraites d'un fichier audio : métadonnées ID3 + infos fichier. */
 public record MusicFileInfo(
         Filepath filepath,
         String filename,

@@ -1,5 +1,10 @@
 package com.djtools.ayan.musictagger.domain.model;
 
+/**
+ * Résultat d'un enrichissement de métadonnées (sealed interface).
+ * Trois cas : Success (données trouvées), NotFound (aucun résultat), Error (erreur technique).
+ * Permet le pattern matching exhaustif dans les switch/if.
+ */
 public sealed interface EnrichmentResult {
 
     static EnrichmentResult success(EnrichedTrackMetadata metadata) {
@@ -18,6 +23,7 @@ public sealed interface EnrichmentResult {
         return this instanceof Success;
     }
 
+    /** Extrait les données — uniquement valide sur Success, sinon IllegalStateException. */
     default EnrichedTrackMetadata data() {
         if (this instanceof Success(EnrichedTrackMetadata metadata)) {
             return metadata;

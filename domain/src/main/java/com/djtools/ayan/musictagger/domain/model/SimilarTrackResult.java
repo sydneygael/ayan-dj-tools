@@ -1,5 +1,6 @@
 package com.djtools.ayan.musictagger.domain.model;
 
+/** Résultat de recherche par similarité (RAG). Score entre 0 (différent) et 1 (identique). */
 public record SimilarTrackResult(EnrichedTrackMetadata track, double similarityScore) {
 
     public SimilarTrackResult {

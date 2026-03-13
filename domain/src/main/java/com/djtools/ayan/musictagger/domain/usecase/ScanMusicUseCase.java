@@ -7,6 +7,10 @@ import com.djtools.ayan.musictagger.domain.port.in.AudioFileReader;
 
 import java.util.List;
 
+/**
+ * Scanne des fichiers audio pour lire leurs tags et détecter les tags manquants.
+ * Cas d'usage de base, sans enrichissement externe.
+ */
 public class ScanMusicUseCase {
 
     private static final List<String> ALL_TAGS = List.of("artist", "title", "album", "genre", "bpm", "key");
@@ -17,6 +21,7 @@ public class ScanMusicUseCase {
         this.audioFileReader = audioFileReader;
     }
 
+    /** Lit les tags de chaque fichier. Les fichiers illisibles sont ignorés. */
     public List<MusicFileInfo> execute(List<Filepath> paths) {
         return paths.stream()
                 .map(audioFileReader::readTags)
@@ -24,6 +29,7 @@ public class ScanMusicUseCase {
                 .toList();
     }
 
+    /** Détecte les tags manquants d'un fichier. Si illisible, tous les tags sont déclarés manquants. */
     public MissingTagsReport detectMissingTags(Filepath path) {
         return audioFileReader.readTags(path)
                 .map(info -> {

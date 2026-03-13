@@ -3,6 +3,7 @@ package com.djtools.ayan.musictagger.domain.model;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/** Entrée d'historique : snapshot avant/après d'une écriture de tags sur un fichier. */
 public record TaggingHistoryEntry(
         String filepath,
         String planId,

@@ -4,6 +4,7 @@ import com.djtools.ayan.musictagger.domain.model.TaggingHistoryEntry;
 
 import java.util.List;
 
+/** Port sortant : historique des opérations de tagging (audit trail). */
 public interface TaggingHistoryRepository {
 
     void save(TaggingHistoryEntry entry);

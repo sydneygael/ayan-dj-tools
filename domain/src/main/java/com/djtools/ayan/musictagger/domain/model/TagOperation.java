@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.domain.model;
 
 import java.util.Map;
 
+/** Opération unitaire d'un plan : tags actuels vs tags suggérés pour un fichier donné. Immutable. */
 public record TagOperation(
         String filepath,
         Map<String, String> currentTags,

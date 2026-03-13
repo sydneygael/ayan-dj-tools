@@ -3,6 +3,7 @@ package com.djtools.ayan.musictagger.domain.model;
 import java.util.List;
 import java.util.Map;
 
+/** Suggestion intelligente de tags combinant Spotify + RAG (morceaux similaires). */
 public record SmartTagSuggestion(
         String filepath,
         Map<String, String> suggestedTags,

@@ -3,6 +3,7 @@ package com.djtools.ayan.musictagger.domain.model;
 import java.time.Duration;
 import java.util.List;
 
+/** Résultat de l'exécution d'un plan : compteurs succès/erreur + détail par fichier. */
 public record BatchApplyResult(
         String planId,
         int totalOperations,

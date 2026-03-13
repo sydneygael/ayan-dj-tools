@@ -1,5 +1,9 @@
 package com.djtools.ayan.musictagger.domain.model;
 
+/**
+ * Caractéristiques audio d'un morceau (données Spotify Audio Features).
+ * Tous les champs sont nullable — un fichier local peut n'avoir aucune de ces infos.
+ */
 public record AudioFeatures(
         Double danceability,
         Double energy,
@@ -19,6 +23,7 @@ public record AudioFeatures(
         }
     }
 
+    /** Tonalité complète (ex: "C# minor"). Vide si pas de clé musicale. */
     public String fullKey() {
         if (musicalKey == null || musicalKey.isBlank()) {
             return "";
@@ -29,6 +34,7 @@ public record AudioFeatures(
         return musicalKey + " " + mode;
     }
 
+    /** Fusionne avec un autre AudioFeatures : garde les valeurs de this, comble les nulls avec other. */
     public AudioFeatures mergeWith(AudioFeatures other) {
         if (other == null) {
             return this;

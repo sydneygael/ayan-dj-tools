@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.domain.model;
 
 import java.util.List;
 
+/** Métadonnées enrichies d'un morceau (source : Spotify). Copie défensive des listes. */
 public record EnrichedTrackMetadata(
         String sourceId,
         String artist,

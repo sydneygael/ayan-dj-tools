@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.domain.model;
 
 import java.util.List;
 
+/** Question posée par l'agent IA à l'utilisateur pour lever une ambiguïté de tagging. */
 public record AgentQuestion(
         String questionId,
         String filepath,

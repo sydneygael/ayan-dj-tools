@@ -4,6 +4,7 @@ import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
 
 import java.util.List;
 
+/** Rapport des tags manquants pour un fichier audio donné. */
 public record MissingTagsReport(Filepath filepath, List<String> missingTags) {
 
     public MissingTagsReport {

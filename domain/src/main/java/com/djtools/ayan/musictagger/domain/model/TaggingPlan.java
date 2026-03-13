@@ -3,6 +3,11 @@ package com.djtools.ayan.musictagger.domain.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Agrégat représentant un plan de tagging : ensemble d'opérations sur des fichiers audio.
+ * Immutable — les méthodes with*() retournent une nouvelle instance.
+ * Cycle de vie : DRAFT → READY_FOR_REVIEW → APPROVED → APPLYING → COMPLETED.
+ */
 public record TaggingPlan(
         String planId,
         List<TagOperation> operations,
@@ -14,6 +19,7 @@ public record TaggingPlan(
         int currentIndex
 ) {
 
+    /** Copie défensive des opérations, valeurs par défaut pour status et mode. */
     public TaggingPlan {
         operations = operations != null ? List.copyOf(operations) : List.of();
         if (status == null) {
@@ -24,7 +30,7 @@ public record TaggingPlan(
         }
     }
 
-    /** Backward-compatible constructor (mode=PLAN, currentIndex=0). */
+    /** Constructeur rétro-compatible (mode=PLAN, currentIndex=0). */
     public TaggingPlan(String planId, List<TagOperation> operations, LocalDateTime createdAt,
                        PlanStatus status, int totalFiles, int filesWithMissingTags) {
         this(planId, operations, createdAt, status, totalFiles, filesWithMissingTags, OperatingMode.PLAN, 0);

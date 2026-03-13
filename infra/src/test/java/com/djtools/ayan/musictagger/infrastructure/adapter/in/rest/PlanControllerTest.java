@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 class PlanControllerTest {
 
     @Mock PlanManagementService planManagementService;
+    @Mock com.djtools.ayan.musictagger.infrastructure.service.ManualModeService manualModeService;
+    @Mock com.djtools.ayan.musictagger.infrastructure.service.ApplyModeService applyModeService;
     @InjectMocks PlanController controller;
 
     @Test
@@ -32,9 +34,9 @@ class PlanControllerTest {
         var plan = new TaggingPlan("plan-1",
                 List.of(new TagOperation("/a.mp3", Map.of(), Map.of("genre", "Techno"), OperationStatus.PENDING, null)),
                 LocalDateTime.of(2026, 3, 5, 10, 0), PlanStatus.READY_FOR_REVIEW, 1, 1);
-        when(planManagementService.createPlan(any())).thenReturn(plan);
+        when(planManagementService.createPlan(any(), any())).thenReturn(plan);
 
-        TaggingPlan result = controller.createPlan(new PlanController.CreatePlanRequest(List.of("/a.mp3")));
+        TaggingPlan result = controller.createPlan(new PlanController.CreatePlanRequest(List.of("/a.mp3"), null));
 
         assertThat(result.planId()).isEqualTo("plan-1");
         assertThat(result.status()).isEqualTo(PlanStatus.READY_FOR_REVIEW);

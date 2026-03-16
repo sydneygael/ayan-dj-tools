@@ -18,23 +18,23 @@ export interface MissingTagsReport {
   missingTags: string[];
 }
 
-/** Cycle de vie d'un plan de tagging : DRAFT → APPROVED → EXECUTING → COMPLETED/FAILED. */
+/** Cycle de vie d'un plan de tagging : DRAFT → READY_FOR_REVIEW → APPROVED → APPLYING → COMPLETED. */
 export const PlanStatus = {
   DRAFT: 'DRAFT',
+  READY_FOR_REVIEW: 'READY_FOR_REVIEW',
   APPROVED: 'APPROVED',
-  EXECUTING: 'EXECUTING',
+  APPLYING: 'APPLYING',
   COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED',
 } as const;
 export type PlanStatus = (typeof PlanStatus)[keyof typeof PlanStatus];
 
-/** Statut d'une operation individuelle dans un plan : PENDING → APPROVED/REJECTED → APPLIED/FAILED. */
+/** Statut d'une operation individuelle dans un plan : PENDING → APPROVED/REJECTED → APPLIED/ERROR. */
 export const OperationStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
   APPLIED: 'APPLIED',
-  FAILED: 'FAILED',
+  ERROR: 'ERROR',
 } as const;
 export type OperationStatus = (typeof OperationStatus)[keyof typeof OperationStatus];
 
@@ -55,6 +55,8 @@ export interface TaggingPlan {
   status: PlanStatus;
   totalFiles: number;
   filesWithMissingTags: number;
+  mode: OperatingMode;
+  currentIndex: number;
 }
 
 /** Changement unitaire d'un tag (ancienne valeur → nouvelle valeur). */
@@ -73,16 +75,28 @@ export interface TagPreview {
 /** Resultat de l'ecriture de tags sur un fichier individuel. */
 export interface TagWriteResult {
   filepath: string;
-  success: boolean;
+  status: OperationStatus;
   message: string;
 }
 
 /** Resultat agrege de l'application de tags sur un lot de fichiers. */
 export interface BatchApplyResult {
-  totalFiles: number;
+  planId: string;
+  totalOperations: number;
   successCount: number;
-  failureCount: number;
+  errorCount: number;
   results: TagWriteResult[];
+  duration: string;
+}
+
+/** Evenement de progression envoyé via WebSocket pendant l'execution d'un plan. */
+export interface TagProgressEvent {
+  planId: string;
+  index: number;
+  total: number;
+  filepath: string;
+  status: OperationStatus;
+  message: string;
 }
 
 /** Message de conversation (utilisateur ou agent Ayan). */

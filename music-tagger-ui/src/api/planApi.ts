@@ -4,17 +4,24 @@
  * Cycle de vie d'un plan : create → getPlan → approve → execute → history.
  */
 import { environment } from '../config/environment';
-import type { BatchApplyResult, TaggingHistoryEntry, TaggingPlan, TagPreview } from '../types/types';
+import type {
+  BatchApplyResult,
+  OperatingMode,
+  TaggingHistoryEntry,
+  TaggingPlan,
+  TagOperation,
+  TagPreview,
+} from '../types/types';
 
 /** URL de base de l'API plan. */
 const BASE = `${environment.apiUrl}/api/plan`;
 
 /** Crée un nouveau plan de tagging à partir d'une liste de chemins de fichiers audio. */
-export async function createPlan(filePaths: string[]): Promise<TaggingPlan> {
+export async function createPlan(filePaths: string[], mode: OperatingMode = 'PLAN'): Promise<TaggingPlan> {
   const res = await fetch(`${BASE}/create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(filePaths),
+    body: JSON.stringify({ filePaths, mode }),
   });
   if (!res.ok) throw new Error(`Create plan failed: ${res.status}`);
   return res.json();
@@ -59,4 +66,26 @@ export async function getPlanHistory(planId: string): Promise<TaggingHistoryEntr
 export async function deletePlan(planId: string): Promise<void> {
   const res = await fetch(`${BASE}/${planId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Delete plan failed: ${res.status}`);
+}
+
+/** Récupère l'opération courante en mode MANUAL (basée sur currentIndex). */
+export async function getCurrentOperation(planId: string): Promise<TagOperation> {
+  const res = await fetch(`${BASE}/${planId}/current`);
+  if (!res.ok) throw new Error(`Get current operation failed: ${res.status}`);
+  return res.json();
+}
+
+/** Confirme ou rejette une opération individuelle en mode MANUAL. */
+export async function confirmOperation(planId: string, index: number, approved: boolean): Promise<TagOperation> {
+  const res = await fetch(`${BASE}/${planId}/operations/${index}/confirm?approved=${approved}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Confirm operation failed: ${res.status}`);
+  return res.json();
+}
+
+/** Lance l'exécution automatique d'un plan en mode APPLY (retour 202 Accepted). */
+export async function autoExecute(planId: string): Promise<void> {
+  const res = await fetch(`${BASE}/${planId}/auto-execute`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Auto-execute failed: ${res.status}`);
 }

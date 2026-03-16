@@ -48,4 +48,4 @@ dj-tagger:
 
 logging:
   level:
-    com.djtools.ayan: DEBUG
+    com.djtools.ayan: INFO

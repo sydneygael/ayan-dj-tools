@@ -4,6 +4,7 @@ import com.djtools.ayan.musictagger.domain.model.*;
 import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
 import com.djtools.ayan.musictagger.domain.port.in.AudioFeatureExtractor;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
+import com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
@@ -29,19 +30,22 @@ public class AyanMusicTools {
     private final PlanManagementService planManagementService;
     private final ManualModeService manualModeService;
     private final TrackVectorizationService vectorizationService;
+    private final AudioFeaturesCacheRepository audioFeaturesCache;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
                           AudioFeatureExtractor audioFeatureExtractor,
                           PlanManagementService planManagementService,
                           ManualModeService manualModeService,
-                          TrackVectorizationService vectorizationService) {
+                          TrackVectorizationService vectorizationService,
+                          AudioFeaturesCacheRepository audioFeaturesCache) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
         this.planManagementService = planManagementService;
         this.manualModeService = manualModeService;
         this.vectorizationService = vectorizationService;
+        this.audioFeaturesCache = audioFeaturesCache;
     }
 
     @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
@@ -81,6 +85,11 @@ public class AyanMusicTools {
         EnrichmentResult result = musicMetadataProvider.enrich(artist, title);
         if (result.isSuccess()) {
             vectorizationService.store(result.data());
+            if (result.data().audioFeatures() != null) {
+                audioFeaturesCache.save(
+                        result.data().artist() + " - " + result.data().title(),
+                        result.data().audioFeatures());
+            }
         }
         return result;
     }

@@ -3,6 +3,8 @@ package com.djtools.ayan.musictagger.infrastructure.integration;
 import com.djtools.ayan.musictagger.domain.model.OperationStatus;
 import com.djtools.ayan.musictagger.domain.model.TaggingHistoryEntry;
 import com.djtools.ayan.musictagger.infrastructure.adapter.in.rest.StatsController;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisAudioFeaturesCacheRepository;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisPlanRepository;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisTaggingHistoryRepository;
 import com.djtools.ayan.musictagger.infrastructure.config.RedisConfig;
 import com.djtools.ayan.musictagger.infrastructure.service.StatsService;
@@ -35,6 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 StatsController.class,
                 StatsService.class,
                 RedisTaggingHistoryRepository.class,
+                RedisPlanRepository.class,
+                RedisAudioFeaturesCacheRepository.class,
                 RedisConfig.class
         },
         webEnvironment = SpringBootTest.WebEnvironment.MOCK

@@ -10,6 +10,7 @@ import { darkTheme, lightTheme } from './theme/theme';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import AppLayout from './components/layout/AppLayout';
 import ChatPage from './components/chat/ChatPage';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import ShortcutsHelpDialog from './components/dialogs/ShortcutsHelpDialog';
 
 // Chargement paresseux (lazy) des pages secondaires pour réduire le bundle initial.
@@ -42,38 +43,46 @@ function AppContent() {
       <Routes>
         <Route element={<AppLayout />}>
           {/* Route index = page de chat (accueil) */}
-          <Route index element={<ChatPage />} />
+          <Route index element={<ErrorBoundary><ChatPage /></ErrorBoundary>} />
           {/* Pages lazy-loadées avec Suspense et spinner de fallback */}
           <Route
             path="plan/:id"
             element={
-              <Suspense fallback={<Loading />}>
-                <PlanReviewPage />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <PlanReviewPage />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="history"
             element={
-              <Suspense fallback={<Loading />}>
-                <HistoryPage />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <HistoryPage />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="settings"
             element={
-              <Suspense fallback={<Loading />}>
-                <SettingsPage />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <SettingsPage />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="stats"
             element={
-              <Suspense fallback={<Loading />}>
-                <StatsPage />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <StatsPage />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
         </Route>

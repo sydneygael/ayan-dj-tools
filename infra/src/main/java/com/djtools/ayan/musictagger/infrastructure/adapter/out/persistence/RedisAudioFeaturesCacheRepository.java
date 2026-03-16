@@ -1,7 +1,7 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence;
 
-import com.djtools.ayan.musictagger.domain.model.TaggingPlan;
-import com.djtools.ayan.musictagger.domain.port.out.PlanRepository;
+import com.djtools.ayan.musictagger.domain.model.AudioFeatures;
+import com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.ObjectMapper;
@@ -12,41 +12,35 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class RedisPlanRepository implements PlanRepository {
+public class RedisAudioFeaturesCacheRepository implements AudioFeaturesCacheRepository {
 
-    private static final String KEY_PREFIX = "plan:";
-    private static final Duration TTL = Duration.ofHours(48);
+    private static final String KEY_PREFIX = "audio-features:";
+    private static final Duration TTL = Duration.ofDays(30);
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public RedisPlanRepository(RedisTemplate<String, Object> redisTemplate) {
+    public RedisAudioFeaturesCacheRepository(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = JsonMapper.builder().findAndAddModules().build();
     }
 
     @Override
-    public void save(TaggingPlan plan) {
-        String key = KEY_PREFIX + plan.planId();
-        redisTemplate.opsForValue().set(key, plan, TTL);
+    public void save(String filepath, AudioFeatures features) {
+        redisTemplate.opsForValue().set(KEY_PREFIX + filepath, features, TTL);
     }
 
     @Override
-    public Optional<TaggingPlan> findById(String planId) {
-        Object raw = redisTemplate.opsForValue().get(KEY_PREFIX + planId);
+    public Optional<AudioFeatures> findByFilepath(String filepath) {
+        Object raw = redisTemplate.opsForValue().get(KEY_PREFIX + filepath);
         if (raw == null) {
             return Optional.empty();
         }
-        return Optional.of(objectMapper.convertValue(raw, TaggingPlan.class));
+        return Optional.of(objectMapper.convertValue(raw, AudioFeatures.class));
     }
 
     @Override
-    public void delete(String planId) {
-        redisTemplate.delete(KEY_PREFIX + planId);
-    }
-
-    @Override
-    public List<TaggingPlan> findAll() {
+    public List<AudioFeatures> findAll() {
         var keys = redisTemplate.keys(KEY_PREFIX + "*");
         if (keys == null) {
             return List.of();
@@ -54,7 +48,7 @@ public class RedisPlanRepository implements PlanRepository {
         return keys.stream()
                 .map(key -> redisTemplate.opsForValue().get(key))
                 .filter(raw -> raw != null)
-                .map(raw -> objectMapper.convertValue(raw, TaggingPlan.class))
+                .map(raw -> objectMapper.convertValue(raw, AudioFeatures.class))
                 .toList();
     }
 }

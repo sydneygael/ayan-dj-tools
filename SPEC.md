@@ -80,7 +80,7 @@ Ce projet utilise un système de **skills spécialisés** pour organiser les bon
 6. [Records Clés](#records-clés)
 7. [Fonctions MCP (@Tool)](#fonctions-mcp-tool)
 8. [Configuration](#configuration)
-9. [Plan d'Implémentation (12 Phases)](#plan-dimplémentation-12-phases)
+9. [Plan d'Implémentation (13 Phases)](#plan-dimplémentation-13-phases)
 10. [Commandes Démarrage](#commandes-démarrage)
 
 ---
@@ -1882,26 +1882,93 @@ LOG_LEVEL=DEBUG
 
 ---
 
+### 📊 Phase 13 : Dashboard & Analyse Collection (Semaine 13)
+
+**Objectif** : Tableau de bord riche pour analyser sa collection musicale et suivre l'activité d'enrichissement.
+
+**Livrables** :
+
+#### 13a — Backend : Nouveaux endpoints stats
+
+Nouveau record domaine : `CollectionProfile`
+- Distribution des genres (`Map<String, Long>` — genre → count)
+- Histogramme BPM (`Map<String, Long>` — tranches type "120-125" → count)
+- Distribution des tonalités (`Map<String, Long>` — clé musicale → count, notation Camelot)
+- Moyenne des audio features (energy, danceability, valence — depuis `EnrichedTrackMetadata.audioFeatures`)
+- Total tracks scannés, total enrichis, total avec tags complets
+
+Nouveau record domaine : `EnrichmentStats`
+- Taux de match Spotify (enrichis / total scannés en pourcentage)
+- Types de tags les plus enrichis (`Map<String, Long>` — nom tag → count, trié desc)
+- Taux d'erreur (erreurs / total opérations)
+- Enrichissement par source ("spotify", "rag", "manual" → count)
+
+Nouveau record domaine : `ActivityTimeline`
+- Plans par période (`Map<String, Long>` — date string → count)
+- Tags appliqués par période (`Map<String, Long>`)
+- Répartition par mode (`Map<OperatingMode, Long>` — PLAN/MANUAL/APPLY → count)
+- Durée moyenne d'exécution par mode
+
+Nouveaux endpoints sur `StatsController` :
+- `GET /api/stats/collection` → `CollectionProfile`
+- `GET /api/stats/enrichment` → `EnrichmentStats`
+- `GET /api/stats/activity?period=week|month|all` → `ActivityTimeline`
+- Conserver `GET /api/stats` existant pour les KPIs de base
+
+`StatsService` enrichi pour calculer les trois depuis l'historique Redis + données des plans.
+
+#### 13b — Frontend : Page Dashboard (React + Angular)
+
+Remplacer la page Stats basique par un dashboard à onglets :
+
+**Onglet 1 — Ma Collection**
+- Donut/pie chart : distribution genres (top 10 + "Autres")
+- Bar chart : histogramme BPM (tranches de 5 BPM)
+- Visualisation Camelot Wheel : distribution tonalités mappée sur les positions de la roue
+- Radar chart : moyenne audio features (energy, danceability, valence, acousticness, instrumentalness)
+- KPI cards : total tracks, tracks enrichis, % tags complets
+
+**Onglet 2 — Enrichissement**
+- KPI cards : taux match Spotify %, taux erreur %, total enrichis
+- Horizontal bar chart : types de tags les plus enrichis
+- Pie chart : enrichissement par source (Spotify / RAG / Manuel)
+
+**Onglet 3 — Activité**
+- Line/area chart : tags appliqués dans le temps (toggle jour/semaine/mois)
+- Stacked bar chart : utilisation des modes (PLAN/MANUAL/APPLY) dans le temps
+- KPI cards : plans créés, temps d'exécution moyen
+- Table : activité récente (existante, avec pagination)
+
+**Librairie de charts** : Recharts (React) — léger, composable, compatible MUI. Angular : ngx-charts ou Chart.js via ng2-charts.
+
+**Tests** :
+- Tests unitaires pour toutes les nouvelles méthodes de StatsService
+- Test d'intégration pour chaque nouvel endpoint
+- Frontend : composants rendus avec données mockées
+
+**Point de validation** : Dashboard affiche des insights pertinents sur une collection de 100+ fichiers enrichis
+
+---
+
 ## 🚀 Phases Optionnelles (Post-MVP)
 
-### Phase 13 : Fonctionnalités Avancées
+### Phase 14 : Fonctionnalités Avancées
 - Analyse BPM/Key automatique (TarsosDSP)
 - Support autres sources (Discogs, MusicBrainz)
 - Détection doublons
 - Playlist generator
 - Backup/restore automatique
 
-### Phase 14 : Collaboration
+### Phase 15 : Collaboration
 - Multi-utilisateurs
 - Partage collections
 - Cloud sync optionnel
 - API publique pour intégrations
 
-### Phase 15 : Intelligence
+### Phase 16 : Intelligence
 - Apprentissage préférences utilisateur
 - Auto-catégorisation par style
 - Recommandations basées usage
-- Analytics DJ (tracks les plus joués, etc.)
 
 ---
 
@@ -1919,6 +1986,7 @@ LOG_LEVEL=DEBUG
 | 9 | Temps traitement 1000 fichiers | < 10min |
 | 11 | Code coverage | > 80% |
 | 12 | Taille installer | < 200MB |
+| 13 | Dashboard chargé en | < 500ms |
 
 ---
 
@@ -1930,9 +1998,11 @@ LOG_LEVEL=DEBUG
 **Sprint 7-8** : Phases 7-8 (Frontend base)  
 **Sprint 9-10** : Phases 9-10 (Modes + UX)  
 **Sprint 11-12** : Phases 11-12 (Tests + Release)
+**Sprint 13** : Phase 13 (Dashboard & Analytics)
 
-**MVP Ready** : Fin Sprint 9 (9 semaines)  
+**MVP Ready** : Fin Sprint 9 (9 semaines)
 **Production Ready** : Fin Sprint 12 (12 semaines)
+**Analytics Ready** : Fin Sprint 13 (13 semaines)
 
 ---
 

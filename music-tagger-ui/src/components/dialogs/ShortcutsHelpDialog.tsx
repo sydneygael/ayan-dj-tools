@@ -7,18 +7,7 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-
-/** Liste statique des raccourcis clavier disponibles dans l'application. */
-const shortcuts = [
-  { keys: 'Ctrl+P', action: 'Mode Plan' },
-  { keys: 'Ctrl+M', action: 'Mode Manuel' },
-  { keys: 'Ctrl+A', action: 'Mode Auto' },
-  { keys: 'Ctrl+H', action: 'Historique' },
-  { keys: 'Ctrl+S', action: 'Statistiques' },
-  { keys: 'Ctrl+,', action: 'Parametres' },
-  { keys: 'Ctrl+O', action: 'Ouvrir fichiers' },
-  { keys: '?', action: 'Aide raccourcis' },
-];
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   open: boolean;
@@ -31,9 +20,22 @@ interface Props {
  * Présente un tableau simple clé → action.
  */
 export default function ShortcutsHelpDialog({ open, onClose }: Props) {
+  const { t } = useTranslation();
+
+  const shortcuts = [
+    { keys: 'Ctrl+P', action: t('dialogs.modePlan') },
+    { keys: 'Ctrl+M', action: t('dialogs.modeManual') },
+    { keys: 'Ctrl+A', action: t('dialogs.modeAuto') },
+    { keys: 'Ctrl+H', action: t('dialogs.historyShortcut') },
+    { keys: 'Ctrl+S', action: t('dialogs.statsShortcut') },
+    { keys: 'Ctrl+,', action: t('dialogs.settingsShortcut') },
+    { keys: 'Ctrl+O', action: t('dialogs.openFiles') },
+    { keys: '?', action: t('dialogs.shortcutsHelp') },
+  ];
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Raccourcis clavier</DialogTitle>
+      <DialogTitle>{t('dialogs.shortcutsTitle')}</DialogTitle>
       <DialogContent>
         <Table size="small">
           <TableBody>
@@ -47,7 +49,7 @@ export default function ShortcutsHelpDialog({ open, onClose }: Props) {
         </Table>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Fermer</Button>
+        <Button onClick={onClose}>{t('common.close')}</Button>
       </DialogActions>
     </Dialog>
   );

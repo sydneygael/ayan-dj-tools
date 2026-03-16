@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { useTranslation } from 'react-i18next';
 import { isAudioFile } from '../../utils/helpers';
 import { useFileStore } from '../../stores/fileStore';
 
@@ -14,6 +15,7 @@ import { useFileStore } from '../../stores/fileStore';
 export default function DragDropZone() {
   const [dragging, setDragging] = useState(false);
   const addFiles = useFileStore((s) => s.addFiles);
+  const { t } = useTranslation();
 
   /** Traite le drop : filtre les fichiers audio, extrait les chemins, les ajoute au store. */
   const handleDrop = useCallback(
@@ -49,7 +51,7 @@ export default function DragDropZone() {
     >
       <CloudUploadIcon color={dragging ? 'primary' : 'disabled'} />
       <Typography variant="caption" display="block" color="text.secondary">
-        Glisser des fichiers audio ici
+        {t('files.dragDrop')}
       </Typography>
     </Box>
   );

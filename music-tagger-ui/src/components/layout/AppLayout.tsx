@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import { Outlet, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import Toolbar from './Toolbar';
 import Sidebar from './Sidebar';
 
@@ -15,6 +16,7 @@ const DRAWER_WIDTH = 280;
  */
 export default function AppLayout() {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -23,6 +25,7 @@ export default function AppLayout() {
         {/* Sidebar permanente : toujours visible, pas de toggle */}
         <Drawer
           variant="permanent"
+          aria-label={t('sidebar.sidebarLabel')}
           sx={{
             width: DRAWER_WIDTH,
             flexShrink: 0,

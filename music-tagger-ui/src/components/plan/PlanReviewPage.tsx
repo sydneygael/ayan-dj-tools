@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import CheckIcon from '@mui/icons-material/Check';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useTranslation } from 'react-i18next';
 import { getPlan, approvePlan, executePlan, deletePlan } from '../../api/planApi';
 import { useNotification } from '../../utils/notifications';
 import type { TaggingPlan, BatchApplyResult } from '../../types/types';
@@ -15,17 +16,19 @@ import PlanSummary from './PlanSummary';
 import OperationCard from './OperationCard';
 import PlanProgress from './PlanProgress';
 import ConfirmDialog from '../dialogs/ConfirmDialog';
+import ManualModeView from './ManualModeView';
+import ApplyModeView from './ApplyModeView';
 
 /**
  * Page de revue d'un plan de tagging (route /plan/:id).
- * Charge le plan depuis l'API, permet d'approuver/rejeter chaque opération individuellement,
- * d'approuver toutes les opérations d'un coup, d'exécuter le plan (avec dialog de confirmation),
- * ou de le supprimer. Affiche la progression pendant l'exécution et les résultats après.
+ * Dispatche vers ManualModeView ou ApplyModeView selon le mode du plan.
+ * En mode PLAN (défaut), affiche la revue complète avec approbation/exécution.
  */
 export default function PlanReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const notify = useNotification();
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<TaggingPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
@@ -40,14 +43,12 @@ export default function PlanReviewPage() {
       setPlan(await getPlan(id));
       setError(null);
     } catch {
-      setError('Impossible de charger le plan');
+      setError(t('plan.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
-  // Chargement du plan au montage et à chaque changement d'ID dans l'URL.
-  // loadPlan est mémorisé via useCallback et dépend de `id` (useParams).
   useEffect(() => {
     loadPlan();
   }, [loadPlan]);
@@ -56,9 +57,9 @@ export default function PlanReviewPage() {
     if (!id) return;
     try {
       setPlan(await approvePlan(id));
-      notify.success('Plan approuve');
+      notify.success(t('plan.approved'));
     } catch {
-      notify.error("Erreur lors de l'approbation");
+      notify.error(t('plan.approveError'));
     }
   };
 
@@ -69,10 +70,10 @@ export default function PlanReviewPage() {
     try {
       const res = await executePlan(id);
       setResult(res);
-      notify.success(`Execution terminee : ${res.successCount}/${res.totalFiles} succes`);
+      notify.success(t('plan.executionDone', { success: res.successCount, total: res.totalOperations }));
       await loadPlan();
     } catch {
-      notify.error("Erreur lors de l'execution");
+      notify.error(t('plan.executeError'));
     } finally {
       setExecuting(false);
     }
@@ -83,10 +84,10 @@ export default function PlanReviewPage() {
     setConfirmOpen(null);
     try {
       await deletePlan(id);
-      notify.success('Plan supprime');
+      notify.success(t('plan.deleted'));
       navigate('/');
     } catch {
-      notify.error('Erreur lors de la suppression');
+      notify.error(t('plan.deleteError'));
     }
   };
 
@@ -121,11 +122,73 @@ export default function PlanReviewPage() {
   if (error || !plan) {
     return (
       <Box sx={{ textAlign: 'center', mt: 8 }}>
-        <Typography color="error">{error ?? 'Plan introuvable'}</Typography>
+        <Typography color="error">{error ?? t('plan.notFound')}</Typography>
       </Box>
     );
   }
 
+  // Dispatch by mode: MANUAL and APPLY get dedicated views
+  if (plan.mode === 'MANUAL') {
+    return (
+      <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+        <PlanSummary plan={plan} />
+        <ManualModeView plan={plan} onDeleted={() => navigate('/')} />
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={() => setConfirmOpen('delete')}
+          >
+            {t('common.delete')}
+          </Button>
+        </Box>
+        <ConfirmDialog
+          open={confirmOpen === 'delete'}
+          onClose={() => setConfirmOpen(null)}
+          data={{
+            title: t('plan.deletePlan'),
+            message: t('plan.deleteIrreversible'),
+            confirmLabel: t('common.delete'),
+            warn: true,
+          }}
+          onConfirm={handleDelete}
+        />
+      </Box>
+    );
+  }
+
+  if (plan.mode === 'APPLY') {
+    return (
+      <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+        <PlanSummary plan={plan} />
+        <ApplyModeView plan={plan} onDeleted={() => navigate('/')} />
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={() => setConfirmOpen('delete')}
+          >
+            {t('common.delete')}
+          </Button>
+        </Box>
+        <ConfirmDialog
+          open={confirmOpen === 'delete'}
+          onClose={() => setConfirmOpen(null)}
+          data={{
+            title: t('plan.deletePlan'),
+            message: t('plan.deleteIrreversible'),
+            confirmLabel: t('common.delete'),
+            warn: true,
+          }}
+          onConfirm={handleDelete}
+        />
+      </Box>
+    );
+  }
+
+  // Default: PLAN mode — full review UI
   const canApprove = plan.status === PlanStatus.DRAFT;
   const canExecute = plan.status === PlanStatus.APPROVED;
 
@@ -136,7 +199,7 @@ export default function PlanReviewPage() {
       <Box sx={{ display: 'flex', gap: 1, my: 2 }}>
         {canApprove && (
           <Button variant="contained" startIcon={<CheckIcon />} onClick={handleApproveAll}>
-            Tout approuver
+            {t('plan.approveAll')}
           </Button>
         )}
         {canExecute && (
@@ -147,7 +210,7 @@ export default function PlanReviewPage() {
             onClick={() => setConfirmOpen('execute')}
             disabled={executing}
           >
-            Executer
+            {t('plan.execute')}
           </Button>
         )}
         <Button
@@ -156,7 +219,7 @@ export default function PlanReviewPage() {
           startIcon={<DeleteIcon />}
           onClick={() => setConfirmOpen('delete')}
         >
-          Supprimer
+          {t('common.delete')}
         </Button>
       </Box>
 
@@ -170,9 +233,9 @@ export default function PlanReviewPage() {
         open={confirmOpen === 'execute'}
         onClose={() => setConfirmOpen(null)}
         data={{
-          title: 'Executer le plan',
-          message: `Appliquer les tags sur ${plan.operations.length} fichier(s) ?`,
-          confirmLabel: 'Executer',
+          title: t('plan.executePlan'),
+          message: t('plan.applyTagsConfirm', { count: plan.operations.length }),
+          confirmLabel: t('plan.execute'),
           warn: true,
         }}
         onConfirm={handleExecute}
@@ -181,9 +244,9 @@ export default function PlanReviewPage() {
         open={confirmOpen === 'delete'}
         onClose={() => setConfirmOpen(null)}
         data={{
-          title: 'Supprimer le plan',
-          message: 'Cette action est irreversible.',
-          confirmLabel: 'Supprimer',
+          title: t('plan.deletePlan'),
+          message: t('plan.deleteIrreversible'),
+          confirmLabel: t('common.delete'),
           warn: true,
         }}
         onConfirm={handleDelete}

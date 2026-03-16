@@ -11,17 +11,20 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
+import { useTranslation } from 'react-i18next';
 import { environment } from '../../config/environment';
 import { useModeStore } from '../../stores/modeStore';
 import { useThemeStore } from '../../stores/themeStore';
+import { useLanguageStore } from '../../stores/languageStore';
 import { useNotification } from '../../utils/notifications';
 import type { OperatingMode } from '../../types/types';
 
 /**
  * Page de paramètres de l'application (route /settings).
- * Trois sections :
+ * Quatre sections :
  * - Connexion : URL API (lecture seule) + toggle WebSocket (persisté en localStorage)
  * - Préférences : mode par défaut (PLAN/MANUAL/APPLY) + thème sombre/clair
+ * - Langue : sélecteur FR/EN
  * - Export/Import : sauvegarde et restauration des paramètres au format JSON
  */
 export default function SettingsPage() {
@@ -29,7 +32,10 @@ export default function SettingsPage() {
   const setMode = useModeStore((s) => s.setMode);
   const isDark = useThemeStore((s) => s.isDark);
   const toggle = useThemeStore((s) => s.toggle);
+  const language = useLanguageStore((s) => s.language);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
   const notify = useNotification();
+  const { t } = useTranslation();
   // Initialisation lazy : lit la valeur depuis localStorage au premier rendu uniquement
   const [wsEnabled, setWsEnabled] = useState(() => localStorage.getItem('wsEnabled') !== 'false');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -47,6 +53,7 @@ export default function SettingsPage() {
       defaultMode: mode,
       darkTheme: isDark,
       wsEnabled,
+      language,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -55,7 +62,7 @@ export default function SettingsPage() {
     a.download = 'ayan-settings.json';
     a.click();
     URL.revokeObjectURL(url);
-    notify.success('Parametres exportes');
+    notify.success(t('settings.exported'));
   };
 
   /** Importe les paramètres depuis un fichier JSON sélectionné par l'utilisateur. */
@@ -69,9 +76,10 @@ export default function SettingsPage() {
         if (data.defaultMode) setMode(data.defaultMode);
         if (typeof data.darkTheme === 'boolean' && data.darkTheme !== isDark) toggle();
         if (typeof data.wsEnabled === 'boolean') saveWs(data.wsEnabled);
-        notify.success('Parametres importes');
+        if (data.language === 'fr' || data.language === 'en') setLanguage(data.language);
+        notify.success(t('settings.imported'));
       } catch {
-        notify.error('Fichier invalide');
+        notify.error(t('settings.invalidFile'));
       }
     };
     reader.readAsText(file);
@@ -79,24 +87,24 @@ export default function SettingsPage() {
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography variant="h6">Parametres</Typography>
+      <Typography variant="h6">{t('settings.title')}</Typography>
 
       <Card variant="outlined">
         <CardContent>
           <Typography variant="subtitle2" gutterBottom>
-            Connexion
+            {t('settings.connection')}
           </Typography>
           <TextField
             fullWidth
             size="small"
-            label="URL API"
+            label={t('settings.apiUrl')}
             value={environment.apiUrl}
             slotProps={{ input: { readOnly: true } }}
             sx={{ mb: 1 }}
           />
           <FormControlLabel
             control={<Switch checked={wsEnabled} onChange={(_, v) => saveWs(v)} />}
-            label="WebSocket active"
+            label={t('settings.wsEnabled')}
           />
         </CardContent>
       </Card>
@@ -104,10 +112,10 @@ export default function SettingsPage() {
       <Card variant="outlined">
         <CardContent>
           <Typography variant="subtitle2" gutterBottom>
-            Preferences
+            {t('settings.preferences')}
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Mode par defaut
+            {t('settings.defaultMode')}
           </Typography>
           <ToggleButtonGroup
             value={mode}
@@ -116,14 +124,14 @@ export default function SettingsPage() {
             size="small"
             sx={{ mb: 1 }}
           >
-            <ToggleButton value="PLAN">Plan</ToggleButton>
-            <ToggleButton value="MANUAL">Manuel</ToggleButton>
-            <ToggleButton value="APPLY">Auto</ToggleButton>
+            <ToggleButton value="PLAN">{t('mode.plan')}</ToggleButton>
+            <ToggleButton value="MANUAL">{t('mode.manual')}</ToggleButton>
+            <ToggleButton value="APPLY">{t('mode.apply')}</ToggleButton>
           </ToggleButtonGroup>
           <Box>
             <FormControlLabel
               control={<Switch checked={isDark} onChange={toggle} />}
-              label="Theme sombre"
+              label={t('settings.darkTheme')}
             />
           </Box>
         </CardContent>
@@ -132,14 +140,31 @@ export default function SettingsPage() {
       <Card variant="outlined">
         <CardContent>
           <Typography variant="subtitle2" gutterBottom>
-            Export / Import
+            {t('settings.language')}
+          </Typography>
+          <ToggleButtonGroup
+            value={language}
+            exclusive
+            onChange={(_, v) => v && setLanguage(v as 'fr' | 'en')}
+            size="small"
+          >
+            <ToggleButton value="fr">{t('settings.languageFr')}</ToggleButton>
+            <ToggleButton value="en">{t('settings.languageEn')}</ToggleButton>
+          </ToggleButtonGroup>
+        </CardContent>
+      </Card>
+
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="subtitle2" gutterBottom>
+            {t('settings.exportImport')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportSettings}>
-              Exporter
+              {t('settings.export')}
             </Button>
             <Button variant="outlined" startIcon={<UploadIcon />} onClick={() => fileInput.current?.click()}>
-              Importer
+              {t('settings.import')}
             </Button>
             <input ref={fileInput} type="file" accept=".json" hidden onChange={importSettings} />
           </Box>

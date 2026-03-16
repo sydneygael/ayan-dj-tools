@@ -1,5 +1,6 @@
 import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
+import { useTranslation } from 'react-i18next';
 import FileItem from './FileItem';
 
 interface Props {
@@ -14,10 +15,12 @@ interface Props {
  * Si aucun fichier n'est sélectionné, affiche un message d'indication.
  */
 export default function FileList({ files, onRemove, onSelect }: Props) {
+  const { t } = useTranslation();
+
   if (files.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ p: 1, textAlign: 'center' }}>
-        Aucun fichier selectionne
+        {t('files.noFilesSelected')}
       </Typography>
     );
   }
@@ -25,7 +28,7 @@ export default function FileList({ files, onRemove, onSelect }: Props) {
   return (
     <>
       <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-        {files.length} fichier{files.length > 1 ? 's' : ''}
+        {t('files.count', { count: files.length })}
       </Typography>
       <List dense sx={{ overflow: 'auto', flex: 1 }}>
         {files.map((f) => (

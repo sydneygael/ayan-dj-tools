@@ -4,6 +4,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import Grow from '@mui/material/Grow';
+import { useTranslation } from 'react-i18next';
 import type { ConfirmDialogData } from '../../types/types';
 
 interface Props {
@@ -21,20 +23,22 @@ interface Props {
  * Les labels des boutons sont personnalisables via data.cancelLabel / data.confirmLabel.
  */
 export default function ConfirmDialog({ open, onClose, data, onConfirm }: Props) {
+  const { t } = useTranslation();
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth TransitionComponent={Grow}>
       <DialogTitle>{data.title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{data.message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>{data.cancelLabel ?? 'Annuler'}</Button>
+        <Button onClick={onClose}>{data.cancelLabel ?? t('common.cancel')}</Button>
         <Button
           variant="contained"
           color={data.warn ? 'error' : 'primary'}
           onClick={onConfirm}
         >
-          {data.confirmLabel ?? 'Confirmer'}
+          {data.confirmLabel ?? t('common.confirm')}
         </Button>
       </DialogActions>
     </Dialog>

@@ -14,9 +14,10 @@ import Collapse from '@mui/material/Collapse';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import SearchIcon from '@mui/icons-material/Search';
+import { useTranslation } from 'react-i18next';
 import { getPlanHistory } from '../../api/planApi';
 import type { TaggingHistoryEntry } from '../../types/types';
-import { extractFilename } from '../../utils/helpers';
+import { extractFilename, formatDate } from '../../utils/helpers';
 
 /**
  * Page d'historique des modifications de tags (route /history).
@@ -27,6 +28,7 @@ import { extractFilename } from '../../utils/helpers';
  */
 export default function HistoryPage() {
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
   // Pré-remplissage du champ de recherche depuis le query param (ex: navigation depuis la page plan)
   const [planId, setPlanId] = useState(searchParams.get('planId') ?? '');
   const [entries, setEntries] = useState<TaggingHistoryEntry[]>([]);
@@ -51,20 +53,20 @@ export default function HistoryPage() {
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto' }}>
       <Typography variant="h6" gutterBottom>
-        Historique des modifications
+        {t('history.title')}
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
           size="small"
-          label="Plan ID"
+          label={t('history.planId')}
           value={planId}
           onChange={(e) => setPlanId(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && search()}
           sx={{ flex: 1 }}
         />
         <Button variant="contained" startIcon={<SearchIcon />} onClick={search} disabled={loading}>
-          Rechercher
+          {t('history.search')}
         </Button>
       </Box>
 
@@ -76,7 +78,7 @@ export default function HistoryPage() {
 
       {searched && !loading && entries.length === 0 && (
         <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-          Aucun resultat
+          {t('history.noResults')}
         </Typography>
       )}
 
@@ -84,10 +86,10 @@ export default function HistoryPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Statut</TableCell>
-              <TableCell>Fichier</TableCell>
-              <TableCell>Modifications</TableCell>
-              <TableCell>Date</TableCell>
+              <TableCell>{t('history.status')}</TableCell>
+              <TableCell>{t('history.file')}</TableCell>
+              <TableCell>{t('history.changes')}</TableCell>
+              <TableCell>{t('history.date')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -108,7 +110,7 @@ export default function HistoryPage() {
                   </TableCell>
                   <TableCell>{extractFilename(entry.filepath)}</TableCell>
                   <TableCell>{entry.changes.length}</TableCell>
-                  <TableCell>{new Date(entry.appliedAt).toLocaleString('fr-FR')}</TableCell>
+                  <TableCell>{formatDate(entry.appliedAt)}</TableCell>
                 </TableRow>
                 <TableRow key={`${idx}-detail`}>
                   <TableCell colSpan={4} sx={{ p: 0 }}>
@@ -116,7 +118,7 @@ export default function HistoryPage() {
                       <Box sx={{ p: 2 }}>
                         {entry.changes.map((c, ci) => (
                           <Typography key={ci} variant="body2">
-                            <strong>{c.tagName}</strong>: {c.oldValue ?? '(vide)'} → {c.newValue}
+                            <strong>{c.tagName}</strong>: {c.oldValue ?? t('history.empty')} → {c.newValue}
                           </Typography>
                         ))}
                       </Box>

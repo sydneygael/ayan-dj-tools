@@ -11,9 +11,10 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import { useTranslation } from 'react-i18next';
 import { getStats } from '../../api/statsApi';
 import type { StatsReport } from '../../types/types';
-import { extractFilename } from '../../utils/helpers';
+import { extractFilename, formatDate } from '../../utils/helpers';
 
 /**
  * Page de statistiques (route /stats).
@@ -25,9 +26,8 @@ import { extractFilename } from '../../utils/helpers';
 export default function StatsPage() {
   const [stats, setStats] = useState<StatsReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
-  // Récupération des statistiques au montage du composant.
-  // Appel unique (deps vide []) — en cas d'erreur, stats reste null et l'UI affiche un message d'erreur.
   useEffect(() => {
     getStats()
       .then(setStats)
@@ -53,22 +53,22 @@ export default function StatsPage() {
   if (!stats) {
     return (
       <Typography color="text.secondary" sx={{ textAlign: 'center', mt: 8 }}>
-        Impossible de charger les statistiques
+        {t('stats.loadError')}
       </Typography>
     );
   }
 
   const kpis = [
-    { label: 'Plans crees', value: stats.totalPlansCreated },
-    { label: 'Tags appliques', value: stats.totalTagsApplied },
-    { label: 'Fichiers enrichis', value: stats.totalFilesEnriched },
-    { label: 'Types de tags', value: Object.keys(stats.tagsAppliedByType).length },
+    { label: t('stats.plansCreated'), value: stats.totalPlansCreated },
+    { label: t('stats.tagsApplied'), value: stats.totalTagsApplied },
+    { label: t('stats.filesEnriched'), value: stats.totalFilesEnriched },
+    { label: t('stats.tagTypes'), value: Object.keys(stats.tagsAppliedByType).length },
   ];
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto' }}>
       <Typography variant="h6" gutterBottom>
-        Statistiques
+        {t('stats.title')}
       </Typography>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 2, mb: 3 }}>
@@ -90,7 +90,7 @@ export default function StatsPage() {
         <Card variant="outlined" sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="subtitle2" gutterBottom>
-              Tags par type
+              {t('stats.tagsByType')}
             </Typography>
             {sortedTags.map(([tag, count]) => (
               <Box key={tag} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -115,7 +115,7 @@ export default function StatsPage() {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle2" gutterBottom>
-              Activite recente
+              {t('stats.recentActivity')}
             </Typography>
             <List dense>
               {stats.recentActivity.map((entry, i) => (
@@ -129,7 +129,7 @@ export default function StatsPage() {
                   </ListItemIcon>
                   <ListItemText
                     primary={extractFilename(entry.filepath)}
-                    secondary={`${entry.changes.length} modifications — ${new Date(entry.appliedAt).toLocaleString('fr-FR')}`}
+                    secondary={`${t('history.changesCount', { count: entry.changes.length })} — ${formatDate(entry.appliedAt)}`}
                   />
                 </ListItem>
               ))}

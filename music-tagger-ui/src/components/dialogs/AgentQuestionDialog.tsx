@@ -9,6 +9,7 @@ import Checkbox from '@mui/material/Checkbox';
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
 import Typography from '@mui/material/Typography';
+import { useTranslation } from 'react-i18next';
 import type { AgentQuestion, AgentQuestionResponse } from '../../types/types';
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
 export default function AgentQuestionDialog({ open, onClose, question, onSubmit }: Props) {
   const [selected, setSelected] = useState('');
   const [applyToSimilar, setApplyToSimilar] = useState(false);
+  const { t } = useTranslation();
 
   /** Soumet la réponse et ferme la dialog. Ne fait rien si aucune option n'est sélectionnée. */
   const handleSubmit = () => {
@@ -59,13 +61,13 @@ export default function AgentQuestionDialog({ open, onClose, question, onSubmit 
           control={
             <Checkbox checked={applyToSimilar} onChange={(e) => setApplyToSimilar(e.target.checked)} />
           }
-          label="Appliquer aux fichiers similaires"
+          label={t('dialogs.applyToSimilar')}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={!selected}>
-          Repondre
+          {t('dialogs.respond')}
         </Button>
       </DialogActions>
     </Dialog>

@@ -6,10 +6,12 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chatStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { chat as chatRest } from '../../api/agentApi';
 import MessageBubble from './MessageBubble';
+import WsStatusChip from '../common/WsStatusChip';
 
 /**
  * Page de chat principal avec l'agent Ayan.
@@ -23,17 +25,16 @@ export default function ChatPage() {
   const { messages, conversationId, loading, addMessage, setConversationId, setLoading } =
     useChatStore();
   const ws = useWebSocket();
+  const { t } = useTranslation();
 
   // Connexion WebSocket au montage du composant.
-  // Le cleanup déconnecte proprement lors du démontage pour éviter les fuites de connexion.
   useEffect(() => {
     ws.connect();
     return () => ws.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Réception des messages WebSocket : chaque fois que lastMessage change,
-  // on ajoute la réponse de l'agent au store et on met à jour l'ID de conversation.
+  // Réception des messages WebSocket
   useEffect(() => {
     if (!ws.lastMessage) return;
     const msg = ws.lastMessage;
@@ -42,8 +43,7 @@ export default function ChatPage() {
     setLoading(false);
   }, [ws.lastMessage, addMessage, setConversationId, setLoading]);
 
-  // Défilement automatique vers le bas à chaque nouveau message,
-  // pour que l'utilisateur voie toujours le dernier message affiché.
+  // Défilement automatique vers le bas à chaque nouveau message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -66,14 +66,14 @@ export default function ChatPage() {
       } catch {
         addMessage({
           role: 'agent',
-          content: 'Erreur de connexion au serveur.',
+          content: t('chat.connectionError'),
           timestamp: new Date().toISOString(),
         });
       } finally {
         setLoading(false);
       }
     }
-  }, [input, loading, ws, conversationId, addMessage, setConversationId, setLoading]);
+  }, [input, loading, ws, conversationId, addMessage, setConversationId, setLoading, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -89,10 +89,10 @@ export default function ChatPage() {
           <Box sx={{ textAlign: 'center', mt: 8, opacity: 0.6 }}>
             <SmartToyIcon sx={{ fontSize: 64, color: 'primary.main' }} />
             <Typography variant="h6" sx={{ mt: 2 }}>
-              Salut ! Je suis Ayan
+              {t('chat.greeting')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Ton assistant DJ. Envoie-moi un message pour commencer.
+              {t('chat.subtitle')}
             </Typography>
           </Box>
         )}
@@ -107,18 +107,19 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1, p: 1, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{ display: 'flex', gap: 1, p: 1, borderTop: 1, borderColor: 'divider', alignItems: 'center' }}>
+        <WsStatusChip connected={ws.connected} />
         <TextField
           fullWidth
           size="small"
-          placeholder="Ecrire un message..."
+          placeholder={t('chat.placeholder')}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           multiline
           maxRows={3}
         />
-        <IconButton color="primary" onClick={send} disabled={!input.trim() || loading}>
+        <IconButton color="primary" onClick={send} disabled={!input.trim() || loading} aria-label={t('chat.sendLabel')}>
           <SendIcon />
         </IconButton>
       </Box>

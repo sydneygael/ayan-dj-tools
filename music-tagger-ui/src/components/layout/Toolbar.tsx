@@ -11,6 +11,7 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../stores/themeStore';
 import ModeSelector from '../mode/ModeSelector';
 
@@ -24,12 +25,13 @@ export default function Toolbar() {
   const navigate = useNavigate();
   const isDark = useThemeStore((s) => s.isDark);
   const toggle = useThemeStore((s) => s.toggle);
+  const { t } = useTranslation();
 
   return (
     <AppBar position="static" color="default" elevation={1} sx={{ borderBottom: 1, borderColor: 'divider' }}>
       <MuiToolbar variant="dense">
         {/* Logo + nom de l'app — cliquable pour revenir à l'accueil (chat) */}
-        <IconButton edge="start" color="primary" onClick={() => navigate('/')} sx={{ mr: 1 }}>
+        <IconButton edge="start" color="primary" onClick={() => navigate('/')} sx={{ mr: 1 }} aria-label={t('toolbar.home')}>
           <LibraryMusicIcon />
         </IconButton>
         <Typography
@@ -38,7 +40,7 @@ export default function Toolbar() {
           sx={{ cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          Ayan DJ Tools
+          {t('toolbar.brand')}
         </Typography>
 
         {/* Spacer flexible pour pousser le reste à droite */}
@@ -49,23 +51,23 @@ export default function Toolbar() {
 
         {/* Icônes de navigation rapide + toggle thème */}
         <Box sx={{ ml: 2, display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Statistiques (Ctrl+S)">
-            <IconButton onClick={() => navigate('/stats')}>
+          <Tooltip title={t('toolbar.stats')}>
+            <IconButton onClick={() => navigate('/stats')} aria-label={t('toolbar.statsLabel')}>
               <BarChartIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Historique (Ctrl+H)">
-            <IconButton onClick={() => navigate('/history')}>
+          <Tooltip title={t('toolbar.history')}>
+            <IconButton onClick={() => navigate('/history')} aria-label={t('toolbar.historyLabel')}>
               <HistoryIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Parametres (Ctrl+,)">
-            <IconButton onClick={() => navigate('/settings')}>
+          <Tooltip title={t('toolbar.settings')}>
+            <IconButton onClick={() => navigate('/settings')} aria-label={t('toolbar.settingsLabel')}>
               <SettingsIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title={isDark ? 'Theme clair' : 'Theme sombre'}>
-            <IconButton onClick={toggle}>
+          <Tooltip title={isDark ? t('toolbar.lightTheme') : t('toolbar.darkTheme')}>
+            <IconButton onClick={toggle} aria-label={t('toolbar.toggleTheme')}>
               {isDark ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
             </IconButton>
           </Tooltip>

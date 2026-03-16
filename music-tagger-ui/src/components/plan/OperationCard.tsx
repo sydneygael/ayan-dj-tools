@@ -4,13 +4,16 @@ import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import Grow from '@mui/material/Grow';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { useTranslation } from 'react-i18next';
 import type { TagOperation } from '../../types/types';
 import { OperationStatus } from '../../types/types';
 import { extractFilename } from '../../utils/helpers';
@@ -29,6 +32,8 @@ interface Props {
  * Les boutons Approuver/Rejeter ne sont visibles que pour les opérations en attente (PENDING).
  */
 export default function OperationCard({ operation, onApprove, onReject }: Props) {
+  const { t } = useTranslation();
+
   // Fusionne les clés de tags actuels et suggérés pour afficher toutes les lignes du diff
   const allTags = useMemo(() => {
     const keys = new Set([
@@ -46,23 +51,24 @@ export default function OperationCard({ operation, onApprove, onReject }: Props)
     APPROVED: 'primary',
     REJECTED: 'error',
     APPLIED: 'success',
-    FAILED: 'warning',
+    ERROR: 'warning',
   };
 
   return (
-    <Card variant="outlined" sx={{ mb: 1 }}>
+    <Card variant="outlined" sx={{ mb: 1, transition: 'box-shadow 0.2s, transform 0.15s', '&:hover': { boxShadow: 4, transform: 'translateY(-1px)' } }}>
       <CardContent sx={{ pb: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography variant="subtitle2">{extractFilename(operation.filepath)}</Typography>
-          <Chip label={operation.status} color={statusColor[operation.status] ?? 'default'} size="small" />
+          <Grow in key={operation.status}><Chip label={operation.status} color={statusColor[operation.status] ?? 'default'} size="small" /></Grow>
         </Box>
 
+        <TableContainer>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Tag</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Actuel</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Suggere</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t('plan.tag')}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t('plan.current')}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t('plan.suggested')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -86,6 +92,7 @@ export default function OperationCard({ operation, onApprove, onReject }: Props)
             })}
           </TableBody>
         </Table>
+        </TableContainer>
 
         {operation.message && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
@@ -97,10 +104,10 @@ export default function OperationCard({ operation, onApprove, onReject }: Props)
       {isPending && (
         <CardActions sx={{ justifyContent: 'flex-end' }}>
           <Button size="small" color="error" onClick={() => onReject(operation.filepath)}>
-            Rejeter
+            {t('plan.reject')}
           </Button>
           <Button size="small" variant="contained" onClick={() => onApprove(operation.filepath)}>
-            Approuver
+            {t('plan.approve')}
           </Button>
         </CardActions>
       )}

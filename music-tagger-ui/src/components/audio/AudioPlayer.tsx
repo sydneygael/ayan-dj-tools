@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { useTranslation } from 'react-i18next';
 import { useFileStore } from '../../stores/fileStore';
 import { extractFilename, formatTime } from '../../utils/helpers';
 
@@ -23,9 +24,9 @@ export default function AudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(80);
+  const { t } = useTranslation();
 
   // Réinitialisation du lecteur quand le fichier sélectionné change.
-  // On remet la lecture en pause et les compteurs à zéro avant le chargement du nouveau fichier audio.
   useEffect(() => {
     setPlaying(false);
     setCurrentTime(0);
@@ -74,7 +75,7 @@ export default function AudioPlayer() {
         {extractFilename(selectedFile)}
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <IconButton size="small" onClick={togglePlay}>
+        <IconButton size="small" onClick={togglePlay} aria-label={playing ? t('audio.pause') : t('audio.play')}>
           {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
         </IconButton>
         <Typography variant="caption" sx={{ minWidth: 36 }}>
@@ -85,6 +86,7 @@ export default function AudioPlayer() {
           value={currentTime}
           max={duration || 1}
           onChange={handleSeek}
+          aria-label={t('audio.seekLabel')}
           sx={{ mx: 0.5 }}
         />
         <Typography variant="caption" sx={{ minWidth: 36 }}>
@@ -93,7 +95,7 @@ export default function AudioPlayer() {
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
         <VolumeUpIcon fontSize="small" color="action" />
-        <Slider size="small" value={volume} onChange={handleVolume} sx={{ width: 80 }} />
+        <Slider size="small" value={volume} onChange={handleVolume} aria-label={t('audio.volumeLabel')} sx={{ width: 80 }} />
       </Box>
     </Box>
   );

@@ -6,7 +6,9 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useFileStore } from '../../stores/fileStore';
+import { useModeStore } from '../../stores/modeStore';
 import { useNotification } from '../../utils/notifications';
 import { createPlan } from '../../api/planApi';
 import DragDropZone from '../files/DragDropZone';
@@ -25,6 +27,8 @@ import AudioPlayer from '../audio/AudioPlayer';
 export default function Sidebar() {
   const navigate = useNavigate();
   const notify = useNotification();
+  const { t } = useTranslation();
+  const mode = useModeStore((s) => s.mode);
   const files = useFileStore((s) => s.selectedFiles);
   const selectFiles = useFileStore((s) => s.selectFiles);
   const removeFile = useFileStore((s) => s.removeFile);
@@ -34,11 +38,11 @@ export default function Sidebar() {
   /** Crée un plan de tagging via l'API puis redirige vers la page de revue du plan. */
   const handleCreatePlan = async () => {
     try {
-      const plan = await createPlan(files);
-      notify.success(`Plan ${plan.planId} cree avec succes`);
+      const plan = await createPlan(files, mode);
+      notify.success(t('sidebar.planCreated', { planId: plan.planId }));
       navigate(`/plan/${plan.planId}`);
     } catch {
-      notify.error('Erreur lors de la creation du plan');
+      notify.error(t('sidebar.planCreateError'));
     }
   };
 
@@ -46,10 +50,10 @@ export default function Sidebar() {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 1, gap: 1 }}>
       {/* En-tête : titre + bouton "Vider" pour supprimer tous les fichiers */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2">Fichiers</Typography>
+        <Typography variant="subtitle2">{t('sidebar.files')}</Typography>
         {files.length > 0 && (
           <Button size="small" startIcon={<DeleteSweepIcon />} onClick={clearFiles} color="error">
-            Vider
+            {t('sidebar.clear')}
           </Button>
         )}
       </Box>
@@ -62,7 +66,7 @@ export default function Sidebar() {
         onClick={selectFiles}
         fullWidth
       >
-        Selectionner (Ctrl+O)
+        {t('sidebar.selectFiles')}
       </Button>
 
       {/* Zone de drag & drop pour ajouter des fichiers audio */}
@@ -77,7 +81,7 @@ export default function Sidebar() {
           onClick={handleCreatePlan}
           fullWidth
         >
-          Creer un plan
+          {t('sidebar.createPlan')}
         </Button>
       )}
 

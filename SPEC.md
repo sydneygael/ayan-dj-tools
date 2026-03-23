@@ -43,12 +43,13 @@ Ce projet utilise un système de **skills spécialisés** pour organiser les bon
   - Filtres métadonnées
 
 #### 🎨 Frontend
-- **`frontend-angular.skill.md`** - Angular 21 + Electron + Material
-  - Standalone components
-  - Signals, inject(), input()/output()
-  - Control flow (@if, @for, @switch)
-  - File picker sécurisé
-  - WebSocket temps réel
+- **`frontend-react.skill.md`** - React 19 + Vite + MUI v6 + Electron
+  - Composants fonctionnels + hooks
+  - Zustand (state global)
+  - React Router v7
+  - MUI v6 Material Design
+  - File picker sécurisé (Electron IPC)
+  - WebSocket STOMP temps réel
 
 ### Comment Utiliser les Skills
 
@@ -64,8 +65,8 @@ Ce projet utilise un système de **skills spécialisés** pour organiser les bon
 "Configure Qdrant selon rag-vectordb.skill.md"
 
 # Frontend
-"Crée le composant file-picker selon frontend-angular.skill.md"
-"Utilise les patterns Angular 21 de frontend-angular.skill.md"
+"Crée le composant file-picker selon frontend-react.skill.md"
+"Utilise les patterns React 19 de frontend-react.skill.md"
 ```
 
 ---
@@ -110,11 +111,13 @@ Application desktop pour DJ permettant de gérer et enrichir automatiquement les
   - 📖 Skill: `rag-vectordb.skill.md`
 
 ### Frontend
-- **Electron** (application desktop multiplateforme)
-- **Angular 21** (framework frontend)
-- **Angular Material 21** (composants UI Material Design 3)
+- **Electron 40** (application desktop multiplateforme)
+- **React 19** (framework frontend)
+- **MUI v6** (composants UI Material Design)
+- **Vite** (build tool)
+- **Zustand** (state management)
 - **TypeScript 5.x**
-  - 📖 Skill: `frontend-angular.skill.md`
+  - 📖 Skill: `frontend-react.skill.md`
 
 ### Infrastructure Docker
 - **Ollama** avec modèle Mistral (agent IA)
@@ -127,7 +130,7 @@ Application desktop pour DJ permettant de gérer et enrichir automatiquement les
 
 ```
 ┌─────────────────────────────────────────────┐
-│   Frontend (Electron + Angular 21)          │
+│   Frontend (Electron + React 19)            │
 │   - Interface chat avec agent               │
 │   - Gestion des 3 modes (Plan/Manual/Apply) │
 │   - Visualisation des modifications         │
@@ -205,7 +208,7 @@ Tâche: "Créer le service d'enrichissement Spotify"
 
 ### 1. Scan et Analyse
 
-> **📖 Skill**: `audio-processing.skill.md` + `frontend-angular.skill.md` (file picker)
+> **📖 Skill**: `audio-processing.skill.md` + `frontend-react.skill.md` (file picker)
 
 **Sécurité**: Seuls les fichiers **explicitement sélectionnés via l'interface** sont scannés.
 
@@ -1428,85 +1431,57 @@ Infrastructure → Domain (use cases + services + model)
 ## Structure du Projet Frontend
 
 ```
-music-tagger-frontend/
+music-tagger-ui/
 ├── package.json
-├── angular.json
+├── vite.config.ts
 ├── tsconfig.json
-├── electron.config.js
+├── electron/
+│   ├── main.ts          (Electron main process)
+│   ├── preload.ts       (contextBridge IPC)
+│   └── tsconfig.json
 │
 ├── src/
-│   ├── main.ts
-│   ├── index.html
-│   ├── styles.scss
-│   │
-│   ├── app/
-│   │   ├── app.component.ts
-│   │   ├── app.component.html
-│   │   ├── app.component.scss
-│   │   ├── app.config.ts
-│   │   ├── app.routes.ts
-│   │   │
-│   │   ├── core/
-│   │   │   ├── services/
-│   │   │   │   ├── agent.service.ts
-│   │   │   │   ├── music-file.service.ts
-│   │   │   │   ├── plan.service.ts
-│   │   │   │   ├── spotify.service.ts
-│   │   │   │   └── websocket.service.ts
-│   │   │   ├── models/
-│   │   │   │   ├── music-file.model.ts
-│   │   │   │   ├── tag-operation.model.ts
-│   │   │   │   ├── tagging-plan.model.ts
-│   │   │   │   └── agent-mode.model.ts
-│   │   │   └── guards/
-│   │   │
-│   │   ├── features/
-│   │   │   ├── chat/
-│   │   │   │   ├── chat.component.ts
-│   │   │   │   ├── chat.component.html
-│   │   │   │   ├── chat.component.scss
-│   │   │   │   └── message-bubble/
-│   │   │   │
-│   │   │   ├── file-list/
-│   │   │   │   ├── file-list.component.ts
-│   │   │   │   ├── file-list.component.html
-│   │   │   │   ├── file-list.component.scss
-│   │   │   │   └── file-item/
-│   │   │   │
-│   │   │   ├── plan-review/
-│   │   │   │   ├── plan-review.component.ts
-│   │   │   │   ├── plan-review.component.html
-│   │   │   │   ├── plan-review.component.scss
-│   │   │   │   └── operation-card/
-│   │   │   │
-│   │   │   ├── mode-selector/
-│   │   │   │   ├── mode-selector.component.ts
-│   │   │   │   ├── mode-selector.component.html
-│   │   │   │   └── mode-selector.component.scss
-│   │   │   │
-│   │   │   └── settings/
-│   │   │       ├── settings.component.ts
-│   │   │       ├── settings.component.html
-│   │   │       └── settings.component.scss
-│   │   │
-│   │   ├── shared/
-│   │   │   ├── components/
-│   │   │   │   ├── tag-chip/
-│   │   │   │   ├── progress-bar/
-│   │   │   │   └── confirmation-dialog/
-│   │   │   └── pipes/
-│   │   │       ├── file-size.pipe.ts
-│   │   │       └── duration.pipe.ts
-│   │   │
-│   │   └── layout/
-│   │       ├── main-layout/
-│   │       ├── sidebar/
-│   │       └── toolbar/
-│   │
-│   └── electron/
-│       ├── main.ts (Electron main process)
-│       ├── preload.ts
-│       └── menu.ts
+│   ├── main.tsx
+│   ├── App.tsx          (routing React Router v7)
+│   ├── config/
+│   │   └── environment.ts
+│   ├── types/
+│   │   └── types.ts     (interfaces TS mirroring Java records)
+│   ├── i18n/
+│   │   ├── i18n.ts
+│   │   └── locales/     (en.json, fr.json)
+│   ├── store/
+│   │   └── useAppStore.ts  (Zustand global state)
+│   ├── api/
+│   │   ├── agentApi.ts
+│   │   ├── planApi.ts
+│   │   ├── statsApi.ts
+│   │   └── tagsApi.ts
+│   ├── hooks/
+│   │   └── usePlanProgress.ts  (STOMP /topic/plan/{id}/progress)
+│   ├── utils/
+│   │   └── helpers.ts
+│   └── components/
+│       ├── layout/
+│       │   ├── Toolbar.tsx
+│       │   └── Sidebar.tsx
+│       ├── chat/
+│       │   └── ChatComponent.tsx
+│       ├── file-list/
+│       │   └── FileList.tsx
+│       ├── plan/
+│       │   ├── PlanReviewPage.tsx
+│       │   ├── ManualModeView.tsx
+│       │   └── ApplyModeView.tsx
+│       ├── stats/
+│       │   ├── StatsPage.tsx
+│       │   ├── CollectionTab.tsx
+│       │   ├── EnrichmentTab.tsx
+│       │   ├── ActivityTab.tsx
+│       │   ├── KpiCard.tsx
+│       │   └── CamelotWheel.tsx
+│       └── settings/
+│           └── SettingsPage.tsx
 │
 └── dist/ (build output)
 ```
@@ -1574,16 +1549,19 @@ docker exec -it dj-tagger-ollama ollama pull nomic-embed-text
 
 ```bash
 # Installer les dépendances
-npm install
+cd music-tagger-ui && npm install
 
-# Mode développement (Angular)
-npm run start
+# Mode développement (Vite dev server — localhost:5173)
+npm run dev
 
-# Build Electron
+# Tests
+npm test
+
+# Build Electron prod
 npm run electron:build
 
-# Lancer en mode Electron
-npm run electron:serve
+# Lancer en mode Electron dev
+npm run electron:dev
 ```
 
 ## Variables d'Environnement
@@ -1748,12 +1726,12 @@ LOG_LEVEL=DEBUG
 
 ---
 
-### 🎨 Phase 7 : Frontend Angular - Structure (Semaine 7)
+### 🎨 Phase 7 : Frontend React - Structure (Semaine 7)
 
-**Objectif** : Application Electron + Angular avec UI de base
+**Objectif** : Application Electron + React avec UI de base
 
 **Livrables** :
-1. Setup Electron + Angular 21 + Material
+1. Setup Electron + React 19 + MUI v6
 2. Structure projet (modules, routing)
 3. Services frontend (AgentService, MusicFileService)
 4. Layout principal (toolbar, sidebar)
@@ -1917,7 +1895,7 @@ Nouveaux endpoints sur `StatsController` :
 
 `StatsService` enrichi pour calculer les trois depuis l'historique Redis + données des plans.
 
-#### 13b — Frontend : Page Dashboard (React + Angular)
+#### 13b — Frontend : Page Dashboard (React)
 
 Remplacer la page Stats basique par un dashboard à onglets :
 
@@ -1939,7 +1917,7 @@ Remplacer la page Stats basique par un dashboard à onglets :
 - KPI cards : plans créés, temps d'exécution moyen
 - Table : activité récente (existante, avec pagination)
 
-**Librairie de charts** : Recharts (React) — léger, composable, compatible MUI. Angular : ngx-charts ou Chart.js via ng2-charts.
+**Librairie de charts** : Recharts — léger, composable, compatible MUI v6.
 
 **Tests** :
 - Tests unitaires pour toutes les nouvelles méthodes de StatsService
@@ -2068,7 +2046,7 @@ Remplacer la page Stats basique par un dashboard à onglets :
 - **Spotify API** : https://developer.spotify.com/documentation/web-api
 - **Spring AI** : https://docs.spring.io/spring-ai/reference/
 - **Qdrant** : https://qdrant.tech/documentation/
-- **Angular Material** : https://material.angular.io/
+- **MUI v6** : https://mui.com/material-ui/
 
 ---
 

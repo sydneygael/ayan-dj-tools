@@ -47,7 +47,7 @@ docker exec -it dj-tagger-ollama ollama pull mistral
 docker exec -it dj-tagger-ollama ollama pull nomic-embed-text
 
 # Frontend
-cd music-tagger-frontend && npm install && npm run start
+cd music-tagger-ui && npm install && npm run dev
 ```
 
 ## Architecture (Hexagonal + DDD, 2 Gradle modules)
@@ -121,11 +121,11 @@ Detailed implementation patterns live in `.claude/skills/` (auto-loaded when rel
 | `spotify-integration/` | @HttpExchange client, OAuth2, cache, rate limiting |
 | `audio-processing/` | JAudiotagger read/write, validation, backup |
 | `rag-vectordb/` | Qdrant vectorization, similarity search |
-| `frontend-angular/` | Angular 21 standalone components, signals, Electron |
+| `frontend-react/`   | React 19 + Vite + MUI v6 + Zustand + Electron patterns |
 
 ## Implementation Phases
 
-Project follows 12 phases (details in `SPEC.md`):
+Project follows 13 phases (details in `SPEC.md`):
 1. Foundation Backend (scan files)
 2. Spotify Integration
 3. Spring AI + Agent
@@ -139,7 +139,7 @@ Project follows 12 phases (details in `SPEC.md`):
 11. Tests & Quality
 12. Packaging & Distribution
 
-**Current state**: Phases 1–4 complete. Phase 5 next: Tag Application (write tags to files).
+**Current state**: Phases 1–13 complete. Phase 11 next: Tests & Quality.
 
 ## Code Style
 

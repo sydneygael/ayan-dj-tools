@@ -66,7 +66,7 @@ public class CreatePlanUseCase {
         }
 
         // Étape 2 : enrichir via Spotify si artiste et titre connus
-        String message = enrichFromSpotify(artist, title, info, suggestedTags);
+        var message = enrichFromSpotify(artist, title, info, suggestedTags);
 
         return new TagOperation(path.value(), currentTags, suggestedTags, OperationStatus.PENDING, message);
     }

@@ -49,6 +49,9 @@ export default function PlanReviewPage() {
     }
   }, [id, t]);
 
+  // Chargement du plan au montage et quand l'ID change (navigation entre plans).
+  // loadPlan est stabilisé par useCallback, donc ce useEffect ne se re-déclenche
+  // que si l'ID du plan dans l'URL change.
   useEffect(() => {
     loadPlan();
   }, [loadPlan]);

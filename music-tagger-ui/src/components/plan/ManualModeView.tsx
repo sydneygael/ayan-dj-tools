@@ -57,6 +57,9 @@ export default function ManualModeView({ plan }: Props) {
     }
   }, [plan.planId, t]);
 
+  // Charge l'opération courante à chaque avancée de l'index (après approve/reject).
+  // Quand currentIndex atteint total, on passe en état "complete" au lieu de fetcher.
+  // Se re-déclenche après chaque handleConfirm qui incrémente currentIndex.
   useEffect(() => {
     if (currentIndex >= total) {
       setComplete(true);

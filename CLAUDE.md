@@ -15,7 +15,7 @@ Full specification: `SPEC.md`
 - **Audio**: JAudiotagger 3.0.1
 - **API**: Spotify via `@HttpExchange` declarative client
 - **DB**: PostgreSQL + pgvector
-- **Frontend**: Angular 21, Electron, Angular Material 21
+- **Frontend**: React 19, Vite, MUI v6, Zustand, Electron 40
 - **Language**: French project (comments, agent name, docs) but English code identifiers
 
 ## Build & Run Commands

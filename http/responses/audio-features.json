@@ -1,0 +1,6 @@
+{
+  "timestamp": "2026-02-26T10:14:59.194+00:00",
+  "error": "Track not found with id : '7KXjTSCq5nL1LoYtL7XAwS' not found",
+  "path": "uri=/v1/track/7KXjTSCq5nL1LoYtL7XAwS/audio-features",
+  "status": 4041
+}

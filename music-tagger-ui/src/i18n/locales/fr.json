@@ -148,7 +148,39 @@
     "filesEnriched": "Fichiers enrichis",
     "tagTypes": "Types de tags",
     "tagsByType": "Tags par type",
-    "recentActivity": "Activite recente"
+    "recentActivity": "Activite recente",
+    "tabs": {
+      "collection": "Collection",
+      "enrichment": "Enrichissement",
+      "activity": "Activite"
+    },
+    "collection": {
+      "empty": "Aucune piste scannee pour le moment",
+      "tracksScanned": "Pistes scannees",
+      "tracksEnriched": "Pistes enrichies",
+      "completeTags": "Tags complets",
+      "genreDistribution": "Repartition des genres",
+      "bpmHistogram": "Histogramme BPM",
+      "keyDistribution": "Repartition des tonalites",
+      "audioFeatures": "Caracteristiques audio moyennes",
+      "others": "Autres"
+    },
+    "enrichment": {
+      "matchRate": "Taux Spotify",
+      "errorRate": "Taux d'erreur",
+      "totalEnriched": "Total enrichis",
+      "tagTypes": "Tags enrichis par type",
+      "bySource": "Enrichissement par source"
+    },
+    "activity": {
+      "week": "Semaine",
+      "month": "Mois",
+      "all": "Tout",
+      "tagsApplied": "Tags appliques par periode",
+      "modeUsage": "Utilisation des modes",
+      "plansCount": "Plans crees",
+      "avgDuration": "Duree moyenne"
+    }
   },
   "dialogs": {
     "shortcutsTitle": "Raccourcis clavier",

@@ -20,6 +20,11 @@ export function usePlanProgress(planId: string | null) {
     setConnected(false);
   }, []);
 
+  // Connexion STOMP au topic de progression du plan.
+  // Se déclenche quand planId change : réinitialise les événements, crée un nouveau client STOMP,
+  // s'abonne à /topic/plan/{planId}/progress et accumule les TagProgressEvent reçus.
+  // Le cleanup désactive le client STOMP quand le composant est démonté ou quand planId change,
+  // ce qui évite les souscriptions orphelines.
   useEffect(() => {
     if (!planId) return;
 
@@ -42,6 +47,7 @@ export function usePlanProgress(planId: string | null) {
     client.activate();
     clientRef.current = client;
 
+    // Cleanup : désactive le client STOMP pour libérer la connexion WebSocket
     return () => {
       client.deactivate();
       clientRef.current = null;

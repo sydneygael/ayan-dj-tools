@@ -148,7 +148,39 @@
     "filesEnriched": "Files enriched",
     "tagTypes": "Tag types",
     "tagsByType": "Tags by type",
-    "recentActivity": "Recent activity"
+    "recentActivity": "Recent activity",
+    "tabs": {
+      "collection": "Collection",
+      "enrichment": "Enrichment",
+      "activity": "Activity"
+    },
+    "collection": {
+      "empty": "No tracks scanned yet",
+      "tracksScanned": "Tracks scanned",
+      "tracksEnriched": "Tracks enriched",
+      "completeTags": "Complete tags",
+      "genreDistribution": "Genre distribution",
+      "bpmHistogram": "BPM histogram",
+      "keyDistribution": "Key distribution",
+      "audioFeatures": "Average audio features",
+      "others": "Others"
+    },
+    "enrichment": {
+      "matchRate": "Spotify match rate",
+      "errorRate": "Error rate",
+      "totalEnriched": "Total enriched",
+      "tagTypes": "Enriched tag types",
+      "bySource": "Enrichment by source"
+    },
+    "activity": {
+      "week": "Week",
+      "month": "Month",
+      "all": "All",
+      "tagsApplied": "Tags applied per period",
+      "modeUsage": "Mode usage",
+      "plansCount": "Plans created",
+      "avgDuration": "Average duration"
+    }
   },
   "dialogs": {
     "shortcutsTitle": "Keyboard shortcuts",

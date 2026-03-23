@@ -182,3 +182,30 @@ export interface StatsReport {
   tagsAppliedByType: Record<string, number>;
   recentActivity: TaggingHistoryEntry[];
 }
+
+/** Profil de la collection musicale — retourne par GET /api/stats/collection. */
+export interface CollectionProfile {
+  genreDistribution: Record<string, number>;
+  bpmHistogram: Record<string, number>;
+  keyDistribution: Record<string, number>;
+  averageAudioFeatures: Record<string, number>;
+  totalTracksScanned: number;
+  totalTracksEnriched: number;
+  totalWithCompleteTags: number;
+}
+
+/** Statistiques d'enrichissement — retourne par GET /api/stats/enrichment. */
+export interface EnrichmentStats {
+  spotifyMatchRate: number;
+  mostEnrichedTagTypes: Record<string, number>;
+  errorRate: number;
+  enrichmentBySource: Record<string, number>;
+}
+
+/** Chronologie d'activite — retourne par GET /api/stats/activity. */
+export interface ActivityTimeline {
+  plansPerPeriod: Record<string, number>;
+  tagsAppliedPerPeriod: Record<string, number>;
+  modeUsage: Record<string, number>;
+  averageDurationByMode: Record<string, number>;
+}

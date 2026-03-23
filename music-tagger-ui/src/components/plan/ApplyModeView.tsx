@@ -48,7 +48,10 @@ export default function ApplyModeView({ plan }: Props) {
   const successCount = events.filter((e) => e.status === OperationStatus.APPLIED).length;
   const errorCount = events.filter((e) => e.status === OperationStatus.ERROR).length;
 
-  // Start auto-execute once WebSocket is connected
+  // Lance l'exécution automatique dès que la connexion WebSocket STOMP est établie.
+  // Attend que connected=true (souscription active) avant d'appeler autoExecute,
+  // pour garantir que les événements de progression seront bien reçus.
+  // Le flag `started` empêche les appels multiples (strict mode, reconnexions).
   useEffect(() => {
     if (!connected || started) return;
     setStarted(true);
@@ -58,12 +61,14 @@ export default function ApplyModeView({ plan }: Props) {
     });
   }, [connected, started, plan.planId, notify, t]);
 
-  // Auto-scroll to latest event
+  // Défilement automatique vers le dernier événement reçu dans le log live.
+  // Se déclenche à chaque nouvel événement WebSocket ajouté au tableau events.
   useEffect(() => {
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [events.length]);
 
-  // Notify on completion
+  // Notification de fin d'exécution quand tous les événements sont reçus.
+  // complete passe à true quand events.length >= total (toutes les opérations traitées).
   useEffect(() => {
     if (complete) {
       notify.success(t('plan.executionDone', { success: successCount, total }));

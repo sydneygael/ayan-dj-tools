@@ -14,7 +14,7 @@ const AUDIO_EXTENSIONS = [
 ];
 
 const isDev = process.argv.includes('--dev');
-const BACKEND_PORT = 8080;
+const BACKEND_PORT = 8000;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 
 // --- Backend JAR ---

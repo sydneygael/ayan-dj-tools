@@ -5,6 +5,6 @@
  * - wsUrl : URL du endpoint WebSocket STOMP (SockJS)
  */
 export const environment = {
-  apiUrl: 'http://localhost:8080',
-  wsUrl: 'ws://localhost:8080/ws',
+  apiUrl: 'http://localhost:8000',
+  wsUrl: 'ws://localhost:8000/ws',
 };

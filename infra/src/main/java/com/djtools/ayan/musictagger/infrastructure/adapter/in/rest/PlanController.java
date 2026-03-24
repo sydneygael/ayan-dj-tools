@@ -4,6 +4,7 @@ import com.djtools.ayan.musictagger.domain.model.*;
 import com.djtools.ayan.musictagger.infrastructure.service.ApplyModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/plan")
+@Tag(name = "Plan", description = "Gestion des plans de tagging (PLAN / MANUEL / AUTO)")
 public class PlanController {
 
     private final PlanManagementService planManagementService;

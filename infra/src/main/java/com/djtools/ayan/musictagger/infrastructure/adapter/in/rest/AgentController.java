@@ -3,6 +3,7 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
 import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
 import com.djtools.ayan.musictagger.infrastructure.service.ConversationHistoryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/agent")
+@Tag(name = "Agent", description = "Chat IA Ayan — enrichissement conversationnel")
 public class AgentController {
 
     private final AyanAgentService agentService;

@@ -3,12 +3,14 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 import com.djtools.ayan.musictagger.domain.model.TagPreview;
 import com.djtools.ayan.musictagger.domain.model.TagWriteResult;
 import com.djtools.ayan.musictagger.domain.port.out.AudioFileWriter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tags")
+@Tag(name = "Tags", description = "Application directe de tags sur fichiers audio")
 public class TagController {
 
     private final AudioFileWriter audioFileWriter;

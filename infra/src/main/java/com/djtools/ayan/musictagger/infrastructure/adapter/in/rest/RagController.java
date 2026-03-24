@@ -2,12 +2,14 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
 import com.djtools.ayan.musictagger.domain.model.SimilarTrackResult;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/rag")
+@Tag(name = "RAG", description = "Recherche sémantique par similarité (Vector Store Qdrant)")
 public class RagController {
 
     private final TrackVectorizationService vectorizationService;

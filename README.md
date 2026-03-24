@@ -49,7 +49,8 @@ Les credentials Spotify sont optionnels mais activent l'enrichissement automatiq
 
 | Service | Port | Protocole |
 |---------|------|-----------|
-| Backend Spring Boot | 8080 | HTTP / WebSocket STOMP |
+| Backend Spring Boot | 8000 | HTTP / WebSocket STOMP |
+| SwaggerUI / OpenAPI | 8000 | HTTP (`/docs`, `/api-docs`) |
 | Redis | 6379 | TCP |
 | Qdrant (REST) | 6333 | HTTP |
 | Qdrant (gRPC) | 6334 | gRPC |
@@ -68,6 +69,62 @@ ayan-dj-tools/
 ```
 
 L'architecture est hexagonale (ports & adapters) avec DDD. Le module `domain` n'a aucune dépendance Spring.
+
+---
+
+## Écrans de l'application
+
+### Chat — écran d'accueil (`/`)
+
+Interface de conversation avec l'agent IA Ayan. Envoyez des messages en langage naturel pour déclencher
+des scans, des enrichissements ou des suggestions de tags.
+
+- Bulles de dialogue avec distinction Vous / Ayan
+- Connexion WebSocket STOMP (fallback REST si WebSocket indisponible)
+- Indicateur de connexion WS dans la toolbar
+
+### Révision de plan (`/plan/:id`)
+
+Affiché après la création d'un plan. La vue s'adapte au mode sélectionné :
+
+| Mode | Vue | Comportement |
+|------|-----|-------------|
+| **Plan** | `PlanReviewPage` | Liste de toutes les opérations avec diff tag actuel / suggéré. Approuver/rejeter par opération, puis exécuter le plan en lot. |
+| **Manuel** | `ManualModeView` | Présente les fichiers un par un. Approuvez ou rejetez chaque modification avant de passer au suivant. |
+| **Auto** | `ApplyModeView` | Exécution automatique avec journal des opérations en temps réel via WebSocket. |
+
+### Historique (`/history`) — `Ctrl+H`
+
+Tableau de toutes les modifications de tags appliquées. Recherche par `planId`, vue détaillée des changements
+par fichier (tag, valeur avant, valeur après, date).
+
+### Statistiques (`/stats`) — `Ctrl+S`
+
+Dashboard en 3 onglets :
+
+| Onglet | Contenu |
+|--------|---------|
+| **Collection** | Nombre de pistes scannées/enrichies, distribution des genres, histogramme BPM, Camelot Wheel des tonalités, caractéristiques audio moyennes. |
+| **Enrichissement** | Taux de correspondance Spotify, taux d'erreur, tags enrichis par type, enrichissement par source. |
+| **Activité** | Tags appliqués par période (semaine / mois / tout), utilisation des modes, nombre de plans créés, durée moyenne. |
+
+### Paramètres (`/settings`) — `Ctrl+,`
+
+- URL API backend
+- Activation / désactivation WebSocket
+- Mode par défaut (Plan / Manuel / Auto)
+- Basculement thème sombre/clair
+- Langue (Français / English)
+- Export / import de la configuration en JSON
+
+### Sidebar (persistante)
+
+Présente sur tous les écrans :
+
+- **Liste des fichiers** — fichiers audio sélectionnés avec indicateur de tags manquants
+- **Drag & drop** — glisser des fichiers audio directement dans la sidebar
+- **Lecteur audio** — pré-écoute du fichier sélectionné (format `file://`, HTML5)
+- **Bouton « Créer un plan »** — visible dès qu'au moins un fichier est sélectionné
 
 ---
 

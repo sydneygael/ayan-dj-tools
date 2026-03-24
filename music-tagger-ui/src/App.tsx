@@ -8,6 +8,7 @@ import { SnackbarProvider } from 'notistack';
 import { useThemeStore } from './stores/themeStore';
 import { darkTheme, lightTheme } from './theme/theme';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useElectronBridge } from './hooks/useElectronBridge';
 import AppLayout from './components/layout/AppLayout';
 import ChatPage from './components/chat/ChatPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -36,6 +37,8 @@ function AppContent() {
   const [helpOpen, setHelpOpen] = useState(false);
   // Active les raccourcis clavier globaux ; le callback ouvre la dialog d'aide (touche ?)
   useKeyboardShortcuts(() => setHelpOpen(true));
+  // Connecte les événements IPC Electron (menu "Ouvrir") au store fichiers
+  useElectronBridge();
 
   return (
     <>

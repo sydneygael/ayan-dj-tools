@@ -202,5 +202,14 @@
   "errors": {
     "unexpected": "An unexpected error occurred.",
     "reload": "Reload"
+  },
+  "backend": {
+    "ready": "Backend ready",
+    "notReady": "Backend unavailable"
+  },
+  "update": {
+    "available": "Update {{version}} available",
+    "install": "Install",
+    "downloading": "Downloading..."
   }
 }

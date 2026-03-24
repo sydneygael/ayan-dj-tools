@@ -49,3 +49,12 @@ dj-tagger:
 logging:
   level:
     com.djtools.ayan: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

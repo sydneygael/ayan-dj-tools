@@ -12,9 +12,61 @@
     "test:watch": "vitest",
     "electron:compile": "tsc -p electron/tsconfig.json",
     "electron:dev": "npm run electron:compile && electron dist-electron/main.js --dev",
-    "electron:build": "npm run build && npm run electron:compile && electron-builder"
+    "electron:start": "npm run electron:compile && electron dist-electron/main.js",
+    "electron:build": "npm run build && npm run electron:compile && electron-builder",
+    "electron:dist": "npm run build && npm run electron:compile && electron-builder",
+    "electron:dist:win": "npm run build && npm run electron:compile && electron-builder --win",
+    "electron:dist:mac": "npm run build && npm run electron:compile && electron-builder --mac",
+    "electron:dist:linux": "npm run build && npm run electron:compile && electron-builder --linux"
   },
   "main": "dist-electron/main.js",
+  "build": {
+    "appId": "com.djtools.ayan.musictagger",
+    "productName": "Ayan DJ Tools",
+    "copyright": "Copyright © 2026 Ayan DJ Tools",
+    "directories": {
+      "output": "release",
+      "buildResources": "electron/resources"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../infra/build/libs/",
+        "to": "backend/",
+        "filter": ["ayan-dj-tools.jar"]
+      }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "electron/resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ayan DJ Tools"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "electron/resources/icon.icns",
+      "category": "public.app-category.music"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "electron/resources/icon.png",
+      "category": "Audio"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "your-org",
+      "repo": "ayan-dj-tools"
+    }
+  },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -30,7 +82,8 @@
     "react-router": "^7.13.1",
     "recharts": "^3.8.0",
     "sockjs-client": "^1.6.1",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.11",
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

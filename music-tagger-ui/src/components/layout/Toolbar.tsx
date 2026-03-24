@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../stores/themeStore';
 import ModeSelector from '../mode/ModeSelector';
+import BackendStatusChip from '../common/BackendStatusChip';
 
 /**
  * Barre de navigation supérieure.
@@ -50,7 +51,8 @@ export default function Toolbar() {
         <ModeSelector />
 
         {/* Icônes de navigation rapide + toggle thème */}
-        <Box sx={{ ml: 2, display: 'flex', gap: 0.5 }}>
+        <Box sx={{ ml: 2, display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          <BackendStatusChip />
           <Tooltip title={t('toolbar.stats')}>
             <IconButton onClick={() => navigate('/stats')} aria-label={t('toolbar.statsLabel')}>
               <BarChartIcon fontSize="small" />

@@ -11,6 +11,7 @@ import { useChatStore } from '../../stores/chatStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { chat as chatRest } from '../../api/agentApi';
 import MessageBubble from './MessageBubble';
+import SuggestedQuestions from './SuggestedQuestions';
 import WsStatusChip from '../common/WsStatusChip';
 
 /**
@@ -22,6 +23,7 @@ import WsStatusChip from '../common/WsStatusChip';
 export default function ChatPage() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { messages, conversationId, loading, addMessage, setConversationId, setLoading } =
     useChatStore();
   const ws = useWebSocket();
@@ -86,14 +88,22 @@ export default function ChatPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {messages.length === 0 && (
-          <Box sx={{ textAlign: 'center', mt: 8, opacity: 0.6 }}>
-            <SmartToyIcon sx={{ fontSize: 64, color: 'primary.main' }} />
-            <Typography variant="h6" sx={{ mt: 2 }}>
-              {t('chat.greeting')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t('chat.subtitle')}
-            </Typography>
+          <Box sx={{ textAlign: 'center', mt: 8 }}>
+            <Box sx={{ opacity: 0.6 }}>
+              <SmartToyIcon sx={{ fontSize: 64, color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                {t('chat.greeting')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('chat.subtitle')}
+              </Typography>
+            </Box>
+            <SuggestedQuestions
+              onSelect={(q) => {
+                setInput(q);
+                inputRef.current?.focus();
+              }}
+            />
           </Box>
         )}
         {messages.map((msg, i) => (
@@ -118,6 +128,7 @@ export default function ChatPage() {
           onKeyDown={handleKeyDown}
           multiline
           maxRows={3}
+          inputRef={inputRef}
         />
         <IconButton color="primary" onClick={send} disabled={!input.trim() || loading} aria-label={t('chat.sendLabel')}>
           <SendIcon />

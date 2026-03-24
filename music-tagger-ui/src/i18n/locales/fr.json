@@ -39,7 +39,15 @@
     "connectionError": "Erreur de connexion au serveur.",
     "sendLabel": "Envoyer le message",
     "you": "Vous",
-    "ayan": "Ayan"
+    "ayan": "Ayan",
+    "suggestions": [
+      "Quels tags manquent dans ce fichier ?",
+      "Enrichis mes fichiers avec Spotify",
+      "Cree un plan de tags pour tous mes fichiers",
+      "Trouve des pistes similaires a ce morceau",
+      "Montre-moi l'historique des modifications",
+      "Suggere des tags intelligents pour ce fichier"
+    ]
   },
   "mode": {
     "plan": "Plan",

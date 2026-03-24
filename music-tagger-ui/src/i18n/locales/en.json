@@ -39,7 +39,15 @@
     "connectionError": "Server connection error.",
     "sendLabel": "Send message",
     "you": "You",
-    "ayan": "Ayan"
+    "ayan": "Ayan",
+    "suggestions": [
+      "Which tags are missing from this file?",
+      "Enrich my files with Spotify",
+      "Create a tagging plan for all my files",
+      "Find tracks similar to this one",
+      "Show me the modification history",
+      "Suggest smart tags for this file"
+    ]
   },
   "mode": {
     "plan": "Plan",

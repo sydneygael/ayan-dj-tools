@@ -4,6 +4,7 @@ import com.djtools.ayan.musictagger.domain.model.MissingTagsReport;
 import com.djtools.ayan.musictagger.domain.model.MusicFileInfo;
 import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
 import com.djtools.ayan.musictagger.domain.port.in.AudioFileReader;
+import com.djtools.ayan.musictagger.domain.port.out.ScannedTrackRepository;
 
 import java.util.List;
 
@@ -16,16 +17,19 @@ public class ScanMusicUseCase {
     private static final List<String> ALL_TAGS = List.of("artist", "title", "album", "genre", "bpm", "key");
 
     private final AudioFileReader audioFileReader;
+    private final ScannedTrackRepository scannedTrackRepository;
 
-    public ScanMusicUseCase(AudioFileReader audioFileReader) {
+    public ScanMusicUseCase(AudioFileReader audioFileReader, ScannedTrackRepository scannedTrackRepository) {
         this.audioFileReader = audioFileReader;
+        this.scannedTrackRepository = scannedTrackRepository;
     }
 
-    /** Lit les tags de chaque fichier. Les fichiers illisibles sont ignorés. */
+    /** Lit les tags de chaque fichier et persiste l'état scanné. Les fichiers illisibles sont ignorés. */
     public List<MusicFileInfo> execute(List<Filepath> paths) {
         return paths.stream()
                 .map(audioFileReader::readTags)
                 .flatMap(java.util.Optional::stream)
+                .peek(scannedTrackRepository::save)
                 .toList();
     }
 

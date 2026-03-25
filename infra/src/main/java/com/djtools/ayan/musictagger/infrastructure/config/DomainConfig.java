@@ -3,6 +3,7 @@ package com.djtools.ayan.musictagger.infrastructure.config;
 import com.djtools.ayan.musictagger.domain.port.in.AudioFileReader;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.port.out.AudioFileWriter;
+import com.djtools.ayan.musictagger.domain.port.out.ScannedTrackRepository;
 import com.djtools.ayan.musictagger.domain.port.out.TaggingHistoryRepository;
 import com.djtools.ayan.musictagger.domain.usecase.CreatePlanUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.ExecutePlanUseCase;
@@ -14,8 +15,8 @@ import org.springframework.context.annotation.Configuration;
 public class DomainConfig {
 
     @Bean
-    public ScanMusicUseCase scanMusicUseCase(AudioFileReader audioFileReader) {
-        return new ScanMusicUseCase(audioFileReader);
+    public ScanMusicUseCase scanMusicUseCase(AudioFileReader audioFileReader, ScannedTrackRepository scannedTrackRepository) {
+        return new ScanMusicUseCase(audioFileReader, scannedTrackRepository);
     }
 
     @Bean

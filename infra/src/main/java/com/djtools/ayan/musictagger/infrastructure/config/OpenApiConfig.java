@@ -22,11 +22,49 @@ public class OpenApiConfig {
                                 ## Agent IA d'enrichissement de tags audio pour DJs
 
                                 Ayan scanne vos fichiers audio, détecte les tags manquants,
-                                et les enrichit automatiquement via Spotify et l'IA (Ollama/Mistral).
+                                et les enrichit automatiquement via Spotify et l'IA locale (Ollama/Mistral).
 
                                 **3 modes d'opération :** Plan (batch) · Manuel (fichier par fichier) · Auto (direct)
 
                                 **WebSocket STOMP :** `ws://localhost:8000/ws` — canal `/topic/responses`
+
+                                ---
+
+                                ## Modèle IA — Mistral via Ollama (SLM local, pas un LLM cloud)
+
+                                L'agent Ayan utilise **Mistral 7B** exécuté localement via **Ollama**, \
+                                et non un LLM cloud (GPT-4, Claude, Gemini, etc.). \
+                                C'est un **SLM (Small Language Model)** qui tourne entièrement sur votre machine.
+
+                                ### Pourquoi ce choix ?
+
+                                | Critère | LLM cloud (GPT-4, Claude…) | Mistral local (Ollama) |
+                                |---------|---------------------------|------------------------|
+                                | **Confidentialité** | Données envoyées à des serveurs tiers | Aucune donnée ne quitte la machine |
+                                | **Offline** | Nécessite Internet | Fonctionne sans connexion |
+                                | **Coût** | Facturation à l'usage (tokens) | Zéro coût d'inférence |
+                                | **Latence** | Dépend du réseau | Locale, prédictible |
+                                | **Données sensibles** | Risque d'exposition de chemins/tags perso | Traitement 100 % local |
+
+                                > Pour un outil desktop de gestion de bibliothèque musicale personnelle, \
+                                > la confidentialité et le fonctionnement hors-ligne priment sur la puissance brute du modèle. \
+                                > Les tâches de l'agent (lire des tags, appeler des outils, formater des réponses) \
+                                > ne requièrent pas un modèle frontier.
+
+                                ### Stack IA complète
+
+                                | Composant | Modèle | Rôle |
+                                |-----------|--------|------|
+                                | **Agent conversationnel** | `mistral` (Ollama) | Dialogue, orchestration des @Tool, suggestions |
+                                | **Embeddings RAG** | `nomic-embed-text` (Ollama) | Vectorisation des tracks pour Qdrant |
+                                | **Vector Store** | Qdrant | Recherche sémantique, playlist, suggestions similaires |
+                                | **Enrichissement** | Spotify API | Métadonnées officielles (BPM, tonalité, genres, popularité) |
+
+                                Configuration : `spring.ai.ollama.chat.options.model=mistral` \
+                                / `spring.ai.ollama.embedding.options.model=nomic-embed-text`
+
+                                Pour utiliser un autre modèle Ollama (ex: `llama3.2`, `phi4`, `gemma3`), \
+                                modifier `application.yml` et lancer `docker exec -it dj-tagger-ollama ollama pull <model>`.
 
                                 ---
 

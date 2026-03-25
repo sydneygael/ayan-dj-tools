@@ -6,6 +6,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import HistoryIcon from '@mui/icons-material/History';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -61,6 +62,11 @@ export default function Toolbar() {
           <Tooltip title={t('toolbar.history')}>
             <IconButton onClick={() => navigate('/history')} aria-label={t('toolbar.historyLabel')}>
               <HistoryIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Playlist 3/4 Loop Mixing">
+            <IconButton onClick={() => navigate('/playlist')} aria-label="playlist">
+              <QueueMusicIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title={t('toolbar.settings')}>

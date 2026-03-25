@@ -174,6 +174,45 @@ export interface ConfirmDialogData {
   warn?: boolean;
 }
 
+/** Features audio d'un track enrichi (Spotify). */
+export interface AudioFeatures {
+  bpm?: number;
+  musicalKey?: string;
+  mode?: string;
+  danceability?: number;
+  energy?: number;
+  valence?: number;
+}
+
+/** Metadonnees enrichies d'un track (source Spotify + RAG). */
+export interface EnrichedTrackMetadata {
+  sourceId: string;
+  artist: string;
+  title: string;
+  album: string;
+  genres: string[];
+  releaseYear: number;
+  popularity: number;
+  durationMs: number;
+  audioFeatures?: AudioFeatures;
+}
+
+/** Requete de generation de playlist 3/4 loop mixing. */
+export interface PlaylistGenerationRequest {
+  bpmMin: number;
+  bpmMax: number;
+  genre: string;
+}
+
+/** Playlist generee pour une technique de mix (ex: 3/4 loop). */
+export interface Playlist {
+  playlistId: string;
+  name: string;
+  technique: string;
+  tracks: EnrichedTrackMetadata[];
+  createdAt: string;
+}
+
 /** Statistiques agregees de la collection — retournees par GET /api/stats. */
 export interface StatsReport {
   totalPlansCreated: number;

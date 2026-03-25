@@ -20,6 +20,7 @@ const PlanReviewPage = lazy(() => import('./components/plan/PlanReviewPage'));
 const HistoryPage = lazy(() => import('./components/history/HistoryPage'));
 const SettingsPage = lazy(() => import('./components/settings/SettingsPage'));
 const StatsPage = lazy(() => import('./components/stats/StatsPage'));
+const PlaylistPage = lazy(() => import('./components/playlist/PlaylistPage'));
 
 /** Spinner de chargement affiché pendant le lazy-loading des pages. */
 const Loading = () => (
@@ -84,6 +85,16 @@ function AppContent() {
               <ErrorBoundary>
                 <Suspense fallback={<Loading />}>
                   <StatsPage />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="playlist"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <PlaylistPage />
                 </Suspense>
               </ErrorBoundary>
             }

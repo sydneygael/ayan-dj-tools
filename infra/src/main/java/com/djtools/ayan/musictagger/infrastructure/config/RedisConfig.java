@@ -6,9 +6,17 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 public class RedisConfig {
+
+    /** JsonMapper singleton partagé par tous les repositories Redis pour convertir les valeurs désérialisées. */
+    @Bean
+    ObjectMapper jsonMapper() {
+        return JsonMapper.builder().findAndAddModules().build();
+    }
 
     @Bean
     RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {

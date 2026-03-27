@@ -5,7 +5,6 @@ import com.djtools.ayan.musictagger.domain.port.out.TaggingHistoryRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.List;
@@ -19,9 +18,9 @@ public class RedisTaggingHistoryRepository implements TaggingHistoryRepository {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public RedisTaggingHistoryRepository(RedisTemplate<String, Object> redisTemplate) {
+    public RedisTaggingHistoryRepository(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
-        this.objectMapper = JsonMapper.builder().findAndAddModules().build();
+        this.objectMapper = objectMapper;
     }
 
     @Override

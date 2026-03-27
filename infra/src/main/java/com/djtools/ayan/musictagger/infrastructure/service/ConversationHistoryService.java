@@ -3,7 +3,6 @@ package com.djtools.ayan.musictagger.infrastructure.service;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.List;
@@ -17,9 +16,9 @@ public class ConversationHistoryService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public ConversationHistoryService(RedisTemplate<String, Object> redisTemplate) {
+    public ConversationHistoryService(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
-        this.objectMapper = JsonMapper.builder().findAndAddModules().build();
+        this.objectMapper = objectMapper;
     }
 
     public void saveMessage(String conversationId, ChatMessage message) {

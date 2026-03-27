@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -14,22 +15,25 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ConversationHistoryServiceTest {
 
-    @Mock RedisTemplate<String, Object> redisTemplate;
-    @Mock ListOperations<String, Object> listOperations;
+    @Mock
+    RedisTemplate<String, Object> redisTemplate;
+    @Mock
+    ListOperations<String, Object> listOperations;
 
     ConversationHistoryService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplate.opsForList()).thenReturn(listOperations);
-        service = new ConversationHistoryService(redisTemplate);
+        service = new ConversationHistoryService(
+                redisTemplate,
+                JsonMapper.builder().findAndAddModules().build()
+        );
     }
 
     @Test

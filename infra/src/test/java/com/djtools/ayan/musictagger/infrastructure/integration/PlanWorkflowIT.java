@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.infrastructure.integration;
 
 import com.djtools.ayan.musictagger.domain.model.*;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
+import com.djtools.ayan.musictagger.domain.port.out.ScannedTrackRepository;
 import com.djtools.ayan.musictagger.infrastructure.adapter.in.rest.PlanController;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.JAudioTaggerAdapter;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisPlanRepository;
@@ -88,6 +89,11 @@ class PlanWorkflowIT {
                     ))
             );
             return mock;
+        }
+
+        @Bean
+        ScannedTrackRepository scannedTrackRepository() {
+            return mock(ScannedTrackRepository.class);
         }
 
         @Bean

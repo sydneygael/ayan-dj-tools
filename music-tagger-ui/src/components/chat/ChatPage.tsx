@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import SendIcon from '@mui/icons-material/Send';
+import StopCircleIcon from '@mui/icons-material/StopCircle';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chatStore';
@@ -52,6 +53,8 @@ export default function ChatPage() {
     } else if (event.type === 'done') {
       finalizeStream(event.reply ?? '', event.timestamp ?? new Date().toISOString());
       setConversationId(event.conversationId);
+    } else if (event.type === 'interrupted') {
+      finalizeStream(event.reply ?? '', new Date().toISOString());
     } else if (event.type === 'error') {
       addMessage({ role: 'agent', content: `Erreur : ${event.token ?? 'inconnue'}`, timestamp: new Date().toISOString() });
       setLoading(false);
@@ -148,9 +151,15 @@ export default function ChatPage() {
           maxRows={3}
           inputRef={inputRef}
         />
-        <IconButton color="primary" onClick={send} disabled={!input.trim() || loading} aria-label={t('chat.sendLabel')}>
-          <SendIcon />
-        </IconButton>
+        {loading || streamingContent !== null ? (
+          <IconButton color="error" onClick={() => ws.stopStream(conversationId)} aria-label="Arrêter la génération">
+            <StopCircleIcon />
+          </IconButton>
+        ) : (
+          <IconButton color="primary" onClick={send} disabled={!input.trim()} aria-label={t('chat.sendLabel')}>
+            <SendIcon />
+          </IconButton>
+        )}
       </Box>
     </Box>
   );

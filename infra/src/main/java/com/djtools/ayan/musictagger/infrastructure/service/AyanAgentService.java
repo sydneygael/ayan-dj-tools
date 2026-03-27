@@ -50,17 +50,17 @@ public class AyanAgentService {
         return chatStream(conversationId, userMessage, OperatingMode.PLAN);
     }
 
-    /** Chat en streaming avec mode. Sauvegarde l'historique à la fin du flux. */
+    /**
+     * Chat en streaming avec mode.
+     * La sauvegarde de l'historique (réponse complète ou partielle) est gérée par l'appelant
+     * via {@code doOnComplete} / {@code doOnCancel} pour supporter l'annulation.
+     */
     public Flux<String> chatStream(String conversationId, String userMessage, OperatingMode mode) {
         final var messages = prepareMessages(conversationId, userMessage, mode);
-        final var accumulator = new StringBuilder();
         return chatClient.prompt()
                 .messages(messages)
                 .stream()
-                .content()
-                .doOnNext(accumulator::append)
-                .doOnComplete(() -> historyService.saveMessage(conversationId,
-                        new ChatMessage("assistant", accumulator.toString(), LocalDateTime.now())));
+                .content();
     }
 
     public String getConversationId(String conversationId) {

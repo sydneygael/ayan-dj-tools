@@ -60,6 +60,14 @@ export function useWebSocket(conversationId: string) {
     });
   }, []);
 
+  const stopStream = useCallback((convId: string) => {
+    if (!clientRef.current?.active) return;
+    clientRef.current.publish({
+      destination: '/app/chat/stop',
+      body: JSON.stringify({ conversationId: convId }),
+    });
+  }, []);
+
   // Réabonnement si le conversationId change alors que le client est déjà connecté
   useEffect(() => {
     if (clientRef.current?.active && connected) {
@@ -73,5 +81,5 @@ export function useWebSocket(conversationId: string) {
     };
   }, []);
 
-  return { connected, lastEvent, connect, disconnect, sendMessage };
+  return { connected, lastEvent, connect, disconnect, sendMessage, stopStream };
 }

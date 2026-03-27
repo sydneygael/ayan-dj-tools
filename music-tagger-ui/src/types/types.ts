@@ -122,7 +122,7 @@ export interface ChatResponse {
 
 /** Evenement de streaming WebSocket — chunk en cours de generation ou fin de reponse. */
 export interface ChatStreamEvent {
-  type: 'chunk' | 'done' | 'error';
+  type: 'chunk' | 'done' | 'error' | 'interrupted';
   token?: string;
   reply?: string;
   conversationId: string;

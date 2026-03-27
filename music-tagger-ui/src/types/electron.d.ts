@@ -4,6 +4,7 @@ declare global {
   interface Window {
     electron?: {
       selectAudioFiles: () => Promise<string[]>;
+      selectAudioFolder: () => Promise<string[]>;
       getAppVersion: () => Promise<string>;
       getBackendStatus: () => Promise<{ ready: boolean }>;
       installUpdate: () => Promise<void>;

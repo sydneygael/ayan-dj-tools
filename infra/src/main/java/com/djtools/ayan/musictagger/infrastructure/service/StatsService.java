@@ -27,31 +27,31 @@ public class StatsService {
     }
 
     public StatsReport computeStats() {
-        List<TaggingHistoryEntry> all = historyRepository.findAll();
+        final var all = historyRepository.findAll();
 
-        Set<String> planIds = all.stream()
+        final var planIds = all.stream()
                 .map(TaggingHistoryEntry::planId)
                 .collect(Collectors.toSet());
-        long totalPlansCreated = planIds.size();
+        final var totalPlansCreated = planIds.size();
 
-        List<TaggingHistoryEntry> applied = all.stream()
+        final var applied = all.stream()
                 .filter(e -> e.status() == OperationStatus.APPLIED)
                 .toList();
 
-        long totalFilesEnriched = applied.stream()
+        final var totalFilesEnriched = applied.stream()
                 .map(TaggingHistoryEntry::filepath)
                 .distinct()
                 .count();
 
-        long totalTagsApplied = applied.stream()
+        final var totalTagsApplied = applied.stream()
                 .mapToLong(e -> e.newTags().size())
                 .sum();
 
-        Map<String, Long> tagsAppliedByType = applied.stream()
+        final var tagsAppliedByType = applied.stream()
                 .flatMap(e -> e.newTags().keySet().stream())
                 .collect(Collectors.groupingBy(k -> k, Collectors.counting()));
 
-        List<TaggingHistoryEntry> recentActivity = all.stream()
+        final var recentActivity = all.stream()
                 .filter(e -> e.appliedAt() != null)
                 .sorted(Comparator.comparing(TaggingHistoryEntry::appliedAt).reversed())
                 .limit(10)
@@ -62,42 +62,42 @@ public class StatsService {
     }
 
     public CollectionProfile computeCollectionProfile() {
-        List<TaggingHistoryEntry> all = historyRepository.findAll();
-        List<TaggingHistoryEntry> applied = all.stream()
+        final var all = historyRepository.findAll();
+        final var applied = all.stream()
                 .filter(e -> e.status() == OperationStatus.APPLIED)
                 .toList();
 
-        Map<String, Long> genreDistribution = applied.stream()
+        final var genreDistribution = applied.stream()
                 .map(e -> e.newTags().get("genre"))
                 .filter(g -> g != null && !g.isBlank())
                 .collect(Collectors.groupingBy(g -> g, Collectors.counting()));
 
-        Map<String, Long> bpmHistogram = applied.stream()
+        final var bpmHistogram = applied.stream()
                 .map(e -> e.newTags().get("bpm"))
                 .filter(b -> b != null && !b.isBlank())
                 .map(StatsService::toBpmBucket)
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(b -> b, TreeMap::new, Collectors.counting()));
 
-        Map<String, Long> keyDistribution = applied.stream()
+        final var keyDistribution = applied.stream()
                 .map(e -> e.newTags().get("key"))
                 .filter(k -> k != null && !k.isBlank())
                 .collect(Collectors.groupingBy(k -> k, Collectors.counting()));
 
-        Map<String, Double> averageAudioFeatures = computeAverageAudioFeatures();
+        final var averageAudioFeatures = computeAverageAudioFeatures();
 
-        long totalTracksScanned = all.stream()
+        final var totalTracksScanned = all.stream()
                 .map(TaggingHistoryEntry::filepath)
                 .distinct()
                 .count();
 
-        long totalTracksEnriched = applied.stream()
+        final var totalTracksEnriched = applied.stream()
                 .map(TaggingHistoryEntry::filepath)
                 .distinct()
                 .count();
 
-        Set<String> requiredTags = Set.of("artist", "title", "album", "genre", "bpm", "key");
-        long totalWithCompleteTags = applied.stream()
+        final var requiredTags = Set.of("artist", "title", "album", "genre", "bpm", "key");
+        final var totalWithCompleteTags = applied.stream()
                 .filter(e -> e.newTags().keySet().containsAll(requiredTags))
                 .map(TaggingHistoryEntry::filepath)
                 .distinct()
@@ -108,23 +108,23 @@ public class StatsService {
     }
 
     public EnrichmentStats computeEnrichmentStats() {
-        List<TaggingHistoryEntry> all = historyRepository.findAll();
+        final var all = historyRepository.findAll();
         if (all.isEmpty()) {
             return new EnrichmentStats(0, Map.of(), 0, Map.of());
         }
 
-        List<TaggingHistoryEntry> applied = all.stream()
+        final var applied = all.stream()
                 .filter(e -> e.status() == OperationStatus.APPLIED)
                 .toList();
 
-        List<TaggingHistoryEntry> errors = all.stream()
+        final var errors = all.stream()
                 .filter(e -> e.status() == OperationStatus.ERROR)
                 .toList();
 
-        double spotifyMatchRate = (double) applied.size() / all.size() * 100;
-        double errorRate = (double) errors.size() / all.size() * 100;
+        final var spotifyMatchRate = (double) applied.size() / all.size() * 100;
+        final var errorRate = (double) errors.size() / all.size() * 100;
 
-        Map<String, Long> mostEnrichedTagTypes = applied.stream()
+        final var mostEnrichedTagTypes = applied.stream()
                 .flatMap(e -> e.newTags().keySet().stream())
                 .collect(Collectors.groupingBy(k -> k, Collectors.counting()))
                 .entrySet().stream()
@@ -132,7 +132,7 @@ public class StatsService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                         (a, b) -> a, LinkedHashMap::new));
 
-        Map<String, Long> enrichmentBySource = new LinkedHashMap<>();
+        final var enrichmentBySource = new LinkedHashMap<String, Long>();
         enrichmentBySource.put("spotify", (long) applied.size());
 
         return new EnrichmentStats(spotifyMatchRate, mostEnrichedTagTypes, errorRate, enrichmentBySource);
@@ -145,30 +145,30 @@ public class StatsService {
             default -> LocalDate.MIN;
         };
 
-        List<TaggingHistoryEntry> all = historyRepository.findAll();
-        List<TaggingHistoryEntry> filtered = all.stream()
+        final var all = historyRepository.findAll();
+        final var filtered = all.stream()
                 .filter(e -> e.appliedAt() != null && !e.appliedAt().toLocalDate().isBefore(cutoff))
                 .toList();
 
-        Map<String, Long> tagsAppliedPerPeriod = filtered.stream()
+        final var tagsAppliedPerPeriod = filtered.stream()
                 .filter(e -> e.status() == OperationStatus.APPLIED)
                 .collect(Collectors.groupingBy(
                         e -> e.appliedAt().toLocalDate().toString(),
                         TreeMap::new,
                         Collectors.counting()));
 
-        List<TaggingPlan> plans = planRepository.findAll();
-        List<TaggingPlan> filteredPlans = plans.stream()
+        final var plans = planRepository.findAll();
+        final var filteredPlans = plans.stream()
                 .filter(p -> p.createdAt() != null && !p.createdAt().toLocalDate().isBefore(cutoff))
                 .toList();
 
-        Map<String, Long> plansPerPeriod = filteredPlans.stream()
+        final var plansPerPeriod = filteredPlans.stream()
                 .collect(Collectors.groupingBy(
                         p -> p.createdAt().toLocalDate().toString(),
                         TreeMap::new,
                         Collectors.counting()));
 
-        Map<String, Long> modeUsage = plans.stream()
+        final var modeUsage = plans.stream()
                 .collect(Collectors.groupingBy(
                         p -> p.mode().name(),
                         Collectors.counting()));
@@ -177,12 +177,12 @@ public class StatsService {
     }
 
     private Map<String, Double> computeAverageAudioFeatures() {
-        List<AudioFeatures> allFeatures = audioFeaturesCache.findAll();
+        final var allFeatures = audioFeaturesCache.findAll();
         if (allFeatures.isEmpty()) {
             return Map.of();
         }
 
-        Map<String, List<Double>> values = new LinkedHashMap<>();
+        final var values = new LinkedHashMap<String, List<Double>>();
         for (AudioFeatures f : allFeatures) {
             addIfNonNull(values, "energy", f.energy());
             addIfNonNull(values, "danceability", f.danceability());
@@ -191,7 +191,7 @@ public class StatsService {
             addIfNonNull(values, "instrumentalness", f.instrumentalness());
         }
 
-        Map<String, Double> averages = new LinkedHashMap<>();
+        final var averages = new LinkedHashMap<String, Double>();
         values.forEach((key, vals) -> {
             if (!vals.isEmpty()) {
                 double avg = vals.stream().mapToDouble(Double::doubleValue).average().orElse(0);

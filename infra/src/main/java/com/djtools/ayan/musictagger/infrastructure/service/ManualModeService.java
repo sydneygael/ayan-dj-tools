@@ -28,10 +28,10 @@ public class ManualModeService {
     }
 
     public TagOperation prepareNextFile(String planId) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
-        int index = plan.currentIndex();
+        final var index = plan.currentIndex();
         if (index >= plan.operations().size()) {
             throw new IllegalStateException("Toutes les operations du plan ont ete traitees");
         }
@@ -40,19 +40,19 @@ public class ManualModeService {
     }
 
     public TagOperation confirmFile(String planId, int index, boolean approved) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
         if (index < 0 || index >= plan.operations().size()) {
             throw new IllegalArgumentException("Index d'operation invalide : " + index);
         }
 
-        TagOperation op = plan.operations().get(index);
+        final var op = plan.operations().get(index);
         OperationStatus newStatus;
         String message = null;
 
         if (approved) {
-            TagWriteResult result = audioFileWriter.writeTags(op.filepath(), op.suggestedTags());
+            final var result = audioFileWriter.writeTags(op.filepath(), op.suggestedTags());
             newStatus = result.status();
             message = result.message();
 
@@ -64,15 +64,15 @@ public class ManualModeService {
             newStatus = OperationStatus.REJECTED;
         }
 
-        TagOperation updated = op.withStatusAndMessage(newStatus, message);
+        final var updated = op.withStatusAndMessage(newStatus, message);
 
         var updatedOps = new java.util.ArrayList<>(plan.operations());
         updatedOps.set(index, updated);
 
-        int nextIndex = index + 1;
-        PlanStatus planStatus = nextIndex >= plan.operations().size() ? PlanStatus.COMPLETED : plan.status();
+        final var nextIndex = index + 1;
+        final var planStatus = nextIndex >= plan.operations().size() ? PlanStatus.COMPLETED : plan.status();
 
-        TaggingPlan updatedPlan = new TaggingPlan(
+        final var updatedPlan = new TaggingPlan(
                 plan.planId(), updatedOps, plan.createdAt(), planStatus,
                 plan.totalFiles(), plan.filesWithMissingTags(), plan.mode(), nextIndex);
         planRepository.save(updatedPlan);
@@ -85,7 +85,7 @@ public class ManualModeService {
     }
 
     public boolean isComplete(String planId) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
         return plan.currentIndex() >= plan.operations().size();

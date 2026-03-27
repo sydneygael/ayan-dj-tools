@@ -39,9 +39,9 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
         }
 
         try {
-            Double bpm = detectBpm(file);
-            KeyResult keyResult = detectKey(file);
-            Double energy = detectEnergy(file);
+            final var bpm = detectBpm(file);
+            final var keyResult = detectKey(file);
+            final var energy = detectEnergy(file);
 
             return Optional.of(new AudioFeatures(
                     null,
@@ -62,10 +62,10 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
     }
 
     private Double detectBpm(File file) throws Exception {
-        AudioDispatcher dispatcher = createDispatcher(file);
-        List<Double> onsetTimestamps = new ArrayList<>();
+        final var dispatcher = createDispatcher(file);
+        final var onsetTimestamps = new ArrayList<Double>();
 
-        ComplexOnsetDetector onsetDetector = new ComplexOnsetDetector(BUFFER_SIZE);
+        final var onsetDetector = new ComplexOnsetDetector(BUFFER_SIZE);
         onsetDetector.setHandler((time, salience) -> onsetTimestamps.add(time));
         dispatcher.addAudioProcessor(onsetDetector);
         dispatcher.run();
@@ -74,9 +74,9 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
             return null;
         }
 
-        List<Double> intervals = new ArrayList<>();
+        final var intervals = new ArrayList<Double>();
         for (int i = 1; i < onsetTimestamps.size(); i++) {
-            double interval = onsetTimestamps.get(i) - onsetTimestamps.get(i - 1);
+            final var interval = onsetTimestamps.get(i) - onsetTimestamps.get(i - 1);
             if (interval > 0.2 && interval < 2.0) {
                 intervals.add(interval);
             }
@@ -87,7 +87,7 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
         }
 
         Collections.sort(intervals);
-        double medianInterval = intervals.get(intervals.size() / 2);
+        final var medianInterval = intervals.get(intervals.size() / 2);
         double bpm = 60.0 / medianInterval;
 
         if (bpm < 60) bpm *= 2;
@@ -97,8 +97,8 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
     }
 
     private KeyResult detectKey(File file) throws Exception {
-        AudioDispatcher dispatcher = createDispatcher(file);
-        int[] pitchClassHistogram = new int[12];
+        final var dispatcher = createDispatcher(file);
+        final var pitchClassHistogram = new int[12];
 
         PitchDetectionHandler handler = (PitchDetectionResult result, AudioEvent event) -> {
             float pitch = result.getPitch();
@@ -113,7 +113,7 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
                 PitchProcessor.PitchEstimationAlgorithm.YIN, SAMPLE_RATE, BUFFER_SIZE, handler));
         dispatcher.run();
 
-        int totalDetections = Arrays.stream(pitchClassHistogram).sum();
+        final var totalDetections = Arrays.stream(pitchClassHistogram).sum();
         if (totalDetections == 0) {
             return null;
         }
@@ -125,16 +125,16 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
             }
         }
 
-        int majorThird = (dominantPitch + 4) % 12;
-        int minorThird = (dominantPitch + 3) % 12;
-        String mode = pitchClassHistogram[majorThird] >= pitchClassHistogram[minorThird] ? "Major" : "Minor";
+        final var majorThird = (dominantPitch + 4) % 12;
+        final var minorThird = (dominantPitch + 3) % 12;
+        final var mode = pitchClassHistogram[majorThird] >= pitchClassHistogram[minorThird] ? "Major" : "Minor";
 
         return new KeyResult(PITCH_CLASSES[dominantPitch], mode);
     }
 
     private Double detectEnergy(File file) throws Exception {
-        AudioDispatcher dispatcher = createDispatcher(file);
-        List<Double> rmsValues = new ArrayList<>();
+        final var dispatcher = createDispatcher(file);
+        final var rmsValues = new ArrayList<Double>();
 
         dispatcher.addAudioProcessor(new AudioProcessor() {
             @Override
@@ -152,12 +152,12 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
             return null;
         }
 
-        double avgRms = rmsValues.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+        final var avgRms = rmsValues.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
         return Math.min(1.0, avgRms * 3.0);
     }
 
     private AudioDispatcher createDispatcher(File file) throws Exception {
-        String name = file.getName().toLowerCase();
+        final var name = file.getName().toLowerCase();
         if (name.endsWith(".wav")) {
             return AudioDispatcherFactory.fromPipe(file.getAbsolutePath(), SAMPLE_RATE, BUFFER_SIZE, OVERLAP);
         }

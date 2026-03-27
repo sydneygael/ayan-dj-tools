@@ -34,17 +34,17 @@ public class ExecutePlanUseCase {
 
     /** Exécute le plan avec notification de progression à chaque fichier traité. */
     public BatchApplyResult execute(TaggingPlan plan, Consumer<TagProgressEvent> onProgress) {
-        Instant start = Instant.now();
-        List<TagOperation> approvedOps = filterApprovedOperations(plan);
-        List<TagWriteResult> results = new ArrayList<>();
+        final var start = Instant.now();
+        final var approvedOps = filterApprovedOperations(plan);
+        final var results = new ArrayList<TagWriteResult>();
         int successCount = 0;
         int errorCount = 0;
 
         for (int index = 0; index < approvedOps.size(); index++) {
-            TagOperation op = approvedOps.get(index);
+            final var op = approvedOps.get(index);
 
             // Étape 1 : écrire les tags dans le fichier
-            TagWriteResult result = audioFileWriter.writeTags(op.filepath(), op.suggestedTags());
+            final var result = audioFileWriter.writeTags(op.filepath(), op.suggestedTags());
             results.add(result);
 
             // Étape 2 : sauvegarder dans l'historique (avant/après)

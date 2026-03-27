@@ -26,7 +26,8 @@
   "sidebar": {
     "files": "Fichiers",
     "clear": "Vider",
-    "selectFiles": "Selectionner (Ctrl+O)",
+    "selectFiles": "Fichiers (Ctrl+O)",
+    "selectFolder": "Dossier",
     "createPlan": "Creer un plan",
     "planCreated": "Plan {{planId}} cree avec succes",
     "planCreateError": "Erreur lors de la creation du plan",

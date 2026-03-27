@@ -40,8 +40,8 @@ public class PlanManagementService {
     }
 
     public TaggingPlan createPlan(List<String> filePaths, OperatingMode mode) {
-        String planId = UUID.randomUUID().toString();
-        List<Filepath> paths = filePaths.stream().map(Filepath::new).toList();
+        final var planId = UUID.randomUUID().toString();
+        final var paths = filePaths.stream().map(Filepath::new).toList();
 
         TaggingPlan plan = createPlanUseCase.execute(planId, paths).withMode(mode);
 
@@ -61,7 +61,7 @@ public class PlanManagementService {
     }
 
     public TaggingPlan approvePlan(String planId) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
         if (plan.status() != PlanStatus.READY_FOR_REVIEW) {
@@ -69,7 +69,7 @@ public class PlanManagementService {
                     "Le plan ne peut être approuvé que depuis le statut READY_FOR_REVIEW (actuel : %s)".formatted(plan.status()));
         }
 
-        TaggingPlan approved = new TaggingPlan(
+        final var approved = new TaggingPlan(
                 plan.planId(),
                 plan.operations().stream()
                         .map(op -> op.status() == OperationStatus.PENDING ? op.withStatus(OperationStatus.APPROVED) : op)
@@ -87,7 +87,7 @@ public class PlanManagementService {
     }
 
     public BatchApplyResult executePlan(String planId) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
         if (plan.status() != PlanStatus.APPROVED) {
@@ -97,9 +97,9 @@ public class PlanManagementService {
 
         planRepository.save(plan.withStatus(PlanStatus.APPLYING));
 
-        BatchApplyResult result = executePlanUseCase.execute(plan);
+        final var result = executePlanUseCase.execute(plan);
 
-        TaggingPlan completed = new TaggingPlan(
+        final var completed = new TaggingPlan(
                 plan.planId(),
                 plan.operations().stream()
                         .map(op -> {
@@ -126,7 +126,7 @@ public class PlanManagementService {
     }
 
     public List<TagPreview> previewPlan(String planId) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
         return plan.operations().stream()

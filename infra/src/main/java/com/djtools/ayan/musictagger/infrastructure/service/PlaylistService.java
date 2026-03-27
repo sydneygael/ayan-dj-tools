@@ -18,13 +18,13 @@ public class PlaylistService {
     }
 
     public Playlist generateLoopMixingPlaylist(int bpmMin, int bpmMax, String genre) {
-        int bpmMid = (bpmMin + bpmMax) / 2;
-        String genrePart = (genre != null && !genre.isBlank()) ? genre + " " : "";
-        String query = "high danceability energetic groove " + genrePart + bpmMid + " BPM loop mixing rhythmic";
+        final var bpmMid = (bpmMin + bpmMax) / 2;
+        final var genrePart = (genre != null && !genre.isBlank()) ? genre + " " : "";
+        final var query = "high danceability energetic groove " + genrePart + bpmMid + " BPM loop mixing rhythmic";
 
-        List<SimilarTrackResult> candidates = trackVectorizationService.findSimilarTracks(query, 20);
+        final var candidates = trackVectorizationService.findSimilarTracks(query, 20);
 
-        List<EnrichedTrackMetadata> tracks = candidates.stream()
+        final var tracks = candidates.stream()
                 .filter(r -> matchesCriteria(r.track(), bpmMin, bpmMax))
                 .sorted(Comparator.comparingDouble(SimilarTrackResult::similarityScore).reversed())
                 .limit(10)
@@ -41,7 +41,7 @@ public class PlaylistService {
     }
 
     private boolean matchesCriteria(EnrichedTrackMetadata track, int bpmMin, int bpmMax) {
-        AudioFeatures af = track.audioFeatures();
+        final var af = track.audioFeatures();
         if (af == null) return true;
 
         boolean bpmOk = af.bpm() == null || (af.bpm() >= bpmMin && af.bpm() <= bpmMax);

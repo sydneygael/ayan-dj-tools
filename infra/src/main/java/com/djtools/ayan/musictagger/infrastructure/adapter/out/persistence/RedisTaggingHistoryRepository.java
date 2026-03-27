@@ -26,14 +26,14 @@ public class RedisTaggingHistoryRepository implements TaggingHistoryRepository {
 
     @Override
     public void save(TaggingHistoryEntry entry) {
-        String key = KEY_PREFIX + entry.planId();
+        final var key = KEY_PREFIX + entry.planId();
         redisTemplate.opsForList().rightPush(key, entry);
         redisTemplate.expire(key, TTL);
     }
 
     @Override
     public List<TaggingHistoryEntry> findByPlanId(String planId) {
-        List<Object> raw = redisTemplate.opsForList().range(KEY_PREFIX + planId, 0, -1);
+        final var raw = redisTemplate.opsForList().range(KEY_PREFIX + planId, 0, -1);
         if (raw == null) {
             return List.of();
         }

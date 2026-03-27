@@ -26,7 +26,7 @@ public class ApplyModeService {
 
     @Async
     public CompletableFuture<BatchApplyResult> executeAutomatic(String planId) {
-        TaggingPlan plan = planRepository.findById(planId)
+        final var plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan introuvable : " + planId));
 
         if (plan.status() != PlanStatus.APPROVED) {
@@ -36,10 +36,10 @@ public class ApplyModeService {
 
         planRepository.save(plan.withStatus(PlanStatus.APPLYING));
 
-        BatchApplyResult result = executePlanUseCase.execute(plan, event ->
+        final var result = executePlanUseCase.execute(plan, event ->
                 messagingTemplate.convertAndSend("/topic/plan/" + planId + "/progress", event));
 
-        TaggingPlan completed = plan.withStatus(PlanStatus.COMPLETED)
+        final var completed = plan.withStatus(PlanStatus.COMPLETED)
                 .withOperations(plan.operations().stream()
                         .map(op -> {
                             if (op.status() != OperationStatus.APPROVED) return op;

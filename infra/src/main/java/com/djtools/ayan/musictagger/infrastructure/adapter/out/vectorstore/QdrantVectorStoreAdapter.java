@@ -33,10 +33,10 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
 
     @Override
     public void store(EnrichedTrackMetadata track) {
-        String embeddingText = buildEmbeddingText(track);
-        Map<String, Object> metadata = buildMetadata(track);
+        final var embeddingText = buildEmbeddingText(track);
+        final var metadata = buildMetadata(track);
 
-        String documentId = UUID.nameUUIDFromBytes(track.sourceId().getBytes()).toString();
+        final var documentId = UUID.nameUUIDFromBytes(track.sourceId().getBytes()).toString();
         var document = new Document(documentId, embeddingText, metadata);
         vectorStore.add(List.of(document));
 
@@ -75,7 +75,7 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
             sb.append(" Year: ").append(track.releaseYear()).append(".");
         }
 
-        AudioFeatures af = track.audioFeatures();
+        final var af = track.audioFeatures();
         if (af != null) {
             if (af.energy() != null) sb.append(" Energy ").append(af.energy()).append(",");
             if (af.danceability() != null) sb.append(" Danceability ").append(af.danceability()).append(".");
@@ -100,7 +100,7 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
         metadata.put("releaseYear", track.releaseYear());
         metadata.put("popularity", track.popularity());
 
-        AudioFeatures af = track.audioFeatures();
+        final var af = track.audioFeatures();
         if (af != null) {
             if (af.bpm() != null) metadata.put("bpm", af.bpm());
             if (af.energy() != null) metadata.put("energy", af.energy());
@@ -114,17 +114,17 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
     }
 
     EnrichedTrackMetadata reconstructTrack(Map<String, Object> metadata) {
-        String genresStr = metadata.getOrDefault("genres", "").toString();
-        List<String> genres = genresStr.isBlank() ? List.of() : List.of(genresStr.split(","));
+        final var genresStr = metadata.getOrDefault("genres", "").toString();
+        final List<String> genres = genresStr.isBlank() ? List.of() : List.of(genresStr.split(","));
 
-        Double bpm = toDouble(metadata.get("bpm"));
-        Double energy = toDouble(metadata.get("energy"));
-        Double danceability = toDouble(metadata.get("danceability"));
-        Double valence = toDouble(metadata.get("valence"));
-        String musicalKey = toStr(metadata.get("musicalKey"));
-        String mode = toStr(metadata.get("mode"));
+        final var bpm = toDouble(metadata.get("bpm"));
+        final var energy = toDouble(metadata.get("energy"));
+        final var danceability = toDouble(metadata.get("danceability"));
+        final var valence = toDouble(metadata.get("valence"));
+        final var musicalKey = toStr(metadata.get("musicalKey"));
+        final var mode = toStr(metadata.get("mode"));
 
-        AudioFeatures audioFeatures = new AudioFeatures(
+        final var audioFeatures = new AudioFeatures(
                 danceability, energy, valence,
                 null, null, null,
                 bpm, musicalKey, mode, null

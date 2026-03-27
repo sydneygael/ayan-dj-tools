@@ -33,10 +33,10 @@ public class AyanAgentService {
 
         historyService.saveMessage(conversationId, new ChatMessage("user", userMessage, LocalDateTime.now()));
 
-        List<ChatMessage> history = historyService.getHistory(conversationId);
-        String contextualPrompt = buildPromptWithHistory(history, userMessage, mode);
+        final var history = historyService.getHistory(conversationId);
+        final var contextualPrompt = buildPromptWithHistory(history, userMessage, mode);
 
-        String reply = chatClient.prompt()
+        final var reply = chatClient.prompt()
                 .user(contextualPrompt)
                 .call()
                 .content();
@@ -53,17 +53,17 @@ public class AyanAgentService {
     }
 
     private String buildPromptWithHistory(List<ChatMessage> history, String currentMessage, OperatingMode mode) {
-        String modePrefix = "[Mode actif : %s]\n\n".formatted(mode.name());
+        final var modePrefix = "[Mode actif : %s]\n\n".formatted(mode.name());
 
         if (history.size() <= 1) {
             return modePrefix + currentMessage;
         }
 
-        List<ChatMessage> recentHistory = history.size() > MAX_HISTORY_MESSAGES
+        final var recentHistory = history.size() > MAX_HISTORY_MESSAGES
                 ? history.subList(history.size() - MAX_HISTORY_MESSAGES, history.size() - 1)
                 : history.subList(0, history.size() - 1);
 
-        String context = recentHistory.stream()
+        final var context = recentHistory.stream()
                 .map(msg -> "[%s]: %s".formatted(msg.role(), msg.content()))
                 .collect(Collectors.joining("\n"));
 

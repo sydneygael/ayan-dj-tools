@@ -29,16 +29,16 @@ public class CreatePlanUseCase {
 
     /** Point d'entrée : génère un TaggingPlan pour les fichiers donnés. */
     public TaggingPlan execute(String planId, List<Filepath> paths) {
-        List<TagOperation> operations = new ArrayList<>();
+        final var operations = new ArrayList<TagOperation>();
         int filesWithMissing = 0;
 
         for (Filepath path : paths) {
-            Optional<MusicFileInfo> infoOpt = audioFileReader.readTags(path);
+            final var infoOpt = audioFileReader.readTags(path);
             if (infoOpt.isEmpty()) {
                 continue;
             }
 
-            MusicFileInfo info = infoOpt.get();
+            final var info = infoOpt.get();
             if (hasAnyMissingTag(info)) {
                 filesWithMissing++;
             }
@@ -53,8 +53,8 @@ public class CreatePlanUseCase {
 
     /** Construit une TagOperation : tags actuels, suggestions, enrichissement. */
     private TagOperation buildOperation(Filepath path, MusicFileInfo info) {
-        Map<String, String> currentTags = extractCurrentTags(info);
-        Map<String, String> suggestedTags = new LinkedHashMap<>();
+        final var currentTags = extractCurrentTags(info);
+        final var suggestedTags = new LinkedHashMap<String, String>();
 
         // Étape 1 : tenter de deviner artiste/titre depuis le nom de fichier
         String artist = info.artist();
@@ -86,7 +86,7 @@ public class CreatePlanUseCase {
             return null;
         }
 
-        EnrichmentResult result = metadataProvider.enrich(artist, title);
+        final var result = metadataProvider.enrich(artist, title);
         if (result.isSuccess()) {
             fillMissingTagsFromMetadata(info, result.data(), suggestedTags);
             return null;
@@ -104,7 +104,7 @@ public class CreatePlanUseCase {
 
     /** Extrait les tags déjà présents dans le fichier audio. */
     private Map<String, String> extractCurrentTags(MusicFileInfo info) {
-        Map<String, String> tags = new LinkedHashMap<>();
+        final var tags = new LinkedHashMap<String, String>();
         if (isPresent(info.artist())) tags.put("artist", info.artist());
         if (isPresent(info.title())) tags.put("title", info.title());
         if (isPresent(info.album())) tags.put("album", info.album());
@@ -145,7 +145,7 @@ public class CreatePlanUseCase {
         if (matcher.matches()) {
             return new TagSuggestion(matcher.group(1).trim(), matcher.group(2).trim());
         }
-        String nameWithoutExt = filename.contains(".")
+        final var nameWithoutExt = filename.contains(".")
                 ? filename.substring(0, filename.lastIndexOf('.'))
                 : filename;
         return new TagSuggestion(null, nameWithoutExt.trim());

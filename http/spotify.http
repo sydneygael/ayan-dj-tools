@@ -1,7 +1,7 @@
 # Spotify API — Tests manuels
 # Flow: 1) Obtenir un token OAuth2 (Client Credentials), 2) Appeler l'API
 #
-# Prérequis: renseigner spotify_client_id et spotify_client_secret dans http-client.env.json
+# Prérequis: renseigner spotify_client_id et spotify_client_secret dans http-client.private.env.json
 
 ### 1. Obtenir un access token (Client Credentials)
 # @name spotifyAuth

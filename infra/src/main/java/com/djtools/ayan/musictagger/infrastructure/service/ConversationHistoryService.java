@@ -23,14 +23,14 @@ public class ConversationHistoryService {
     }
 
     public void saveMessage(String conversationId, ChatMessage message) {
-        String key = KEY_PREFIX + conversationId;
+        final var key = KEY_PREFIX + conversationId;
         redisTemplate.opsForList().rightPush(key, message);
         redisTemplate.expire(key, TTL);
     }
 
     public List<ChatMessage> getHistory(String conversationId) {
-        String key = KEY_PREFIX + conversationId;
-        List<Object> raw = redisTemplate.opsForList().range(key, 0, -1);
+        final var key = KEY_PREFIX + conversationId;
+        final var raw = redisTemplate.opsForList().range(key, 0, -1);
         if (raw == null) {
             return List.of();
         }
@@ -44,7 +44,7 @@ public class ConversationHistoryService {
     }
 
     public long getMessageCount(String conversationId) {
-        Long size = redisTemplate.opsForList().size(KEY_PREFIX + conversationId);
+        final var size = redisTemplate.opsForList().size(KEY_PREFIX + conversationId);
         return size != null ? size : 0;
     }
 }

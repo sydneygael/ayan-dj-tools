@@ -30,7 +30,7 @@ public class PlanController {
 
     @PostMapping("/create")
     public TaggingPlan createPlan(@RequestBody CreatePlanRequest request) {
-        OperatingMode mode = request.mode() != null ? request.mode() : OperatingMode.PLAN;
+        final var mode = request.mode() != null ? request.mode() : OperatingMode.PLAN;
         return planManagementService.createPlan(request.filePaths(), mode);
     }
 

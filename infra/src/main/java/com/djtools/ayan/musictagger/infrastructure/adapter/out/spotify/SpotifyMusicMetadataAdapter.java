@@ -37,7 +37,7 @@ public class SpotifyMusicMetadataAdapter implements MusicMetadataProvider {
 
     @Override
     public EnrichmentResult enrich(String artist, String title) {
-        Optional<EnrichmentResult> cached = cacheService.get(artist, title);
+        final var cached = cacheService.get(artist, title);
         if (cached.isPresent()) {
             log.debug("Cache hit for {}:{}", artist, title);
             return cached.get();
@@ -46,8 +46,8 @@ public class SpotifyMusicMetadataAdapter implements MusicMetadataProvider {
         try {
             rateLimiter.acquire();
 
-            String query = "artist:" + artist + " track:" + title;
-            SpotifySearchResponse searchResponse = apiClient.searchTracks(query, "track", 5);
+            final var query = "artist:" + artist + " track:" + title;
+            final var searchResponse = apiClient.searchTracks(query, "track", 5);
 
             if (searchResponse.tracks() == null || searchResponse.tracks().items().isEmpty()) {
                 var result = EnrichmentResult.notFound();
@@ -55,13 +55,13 @@ public class SpotifyMusicMetadataAdapter implements MusicMetadataProvider {
                 return result;
             }
 
-            SpotifyTrackItem bestMatch = searchResponse.tracks().items().stream()
+            final var bestMatch = searchResponse.tracks().items().stream()
                     .max(Comparator.comparingInt(SpotifyTrackItem::popularity))
                     .orElseThrow();
 
-            SpotifyAudioFeatures audioFeatures = fetchAudioFeaturesSafely(bestMatch.id());
+            final var audioFeatures = fetchAudioFeaturesSafely(bestMatch.id());
 
-            List<String> genres = fetchGenresSafely(bestMatch);
+            final var genres = fetchGenresSafely(bestMatch);
 
             var metadata = mapper.toEnrichedMetadata(bestMatch, audioFeatures, genres);
             var result = EnrichmentResult.success(metadata);
@@ -91,7 +91,7 @@ public class SpotifyMusicMetadataAdapter implements MusicMetadataProvider {
     }
 
     private List<String> fetchGenresSafely(SpotifyTrackItem track) {
-        String artistId = track.primaryArtistId();
+        final var artistId = track.primaryArtistId();
         if (artistId == null) {
             return List.of();
         }

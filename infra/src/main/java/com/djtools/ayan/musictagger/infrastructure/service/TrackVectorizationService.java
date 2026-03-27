@@ -45,15 +45,15 @@ public class TrackVectorizationService {
         MusicFileInfo fileInfo = audioFileReader.readTags(new Filepath(filepath))
                 .orElseThrow(() -> new IllegalArgumentException("Cannot read file: " + filepath));
 
-        String artist = fileInfo.artist();
-        String title = fileInfo.title();
+        final var artist = fileInfo.artist();
+        final var title = fileInfo.title();
 
         if ((artist == null || artist.isBlank()) && (title == null || title.isBlank())) {
             return new SmartTagSuggestion(filepath, Map.of(), List.of(), 0.0, "none");
         }
 
-        String searchQuery = (artist != null ? artist : "") + " " + (title != null ? title : "");
-        EnrichmentResult enrichment = musicMetadataProvider.enrich(
+        final var searchQuery = (artist != null ? artist : "") + " " + (title != null ? title : "");
+        final var enrichment = musicMetadataProvider.enrich(
                 artist != null ? artist : "",
                 title != null ? title : ""
         );
@@ -100,7 +100,7 @@ public class TrackVectorizationService {
         if (!metadata.genres().isEmpty()) tags.put("genre", metadata.genres().getFirst());
         if (metadata.releaseYear() > 0) tags.put("year", String.valueOf(metadata.releaseYear()));
 
-        AudioFeatures af = metadata.audioFeatures();
+        final var af = metadata.audioFeatures();
         if (af != null) {
             if (af.bpm() != null) tags.put("bpm", String.valueOf(af.bpm().intValue()));
             if (af.musicalKey() != null) tags.put("key", af.fullKey());

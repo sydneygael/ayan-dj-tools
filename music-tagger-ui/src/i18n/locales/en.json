@@ -26,7 +26,8 @@
   "sidebar": {
     "files": "Files",
     "clear": "Clear",
-    "selectFiles": "Select (Ctrl+O)",
+    "selectFiles": "Files (Ctrl+O)",
+    "selectFolder": "Folder",
     "createPlan": "Create plan",
     "planCreated": "Plan {{planId}} created successfully",
     "planCreateError": "Error creating plan",

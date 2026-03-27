@@ -28,8 +28,8 @@ public class AgentWebSocketController {
                 ? request.conversationId()
                 : UUID.randomUUID().toString();
 
-        String reply = agentService.chat(conversationId, request.message());
-        long messageCount = historyService.getMessageCount(conversationId);
+        final var reply = agentService.chat(conversationId, request.message());
+        final var messageCount = historyService.getMessageCount(conversationId);
 
         return new ChatResponse(reply, conversationId, messageCount, LocalDateTime.now());
     }

@@ -27,22 +27,22 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
 
     @Override
     public Optional<MusicFileInfo> readTags(Filepath path) {
-        File file = new File(path.value());
+        final var file = new File(path.value());
         if (!file.exists() || !file.isFile()) {
             log.warn("File not found or not a regular file: {}", path.value());
             return Optional.empty();
         }
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file);
-            Tag tag = audioFile.getTag();
+            final var audioFile = AudioFileIO.read(file);
+            final var tag = audioFile.getTag();
 
-            String artist = tag != null ? getField(tag, FieldKey.ARTIST) : null;
-            String title = tag != null ? getField(tag, FieldKey.TITLE) : null;
-            String album = tag != null ? getField(tag, FieldKey.ALBUM) : null;
-            String genre = tag != null ? getField(tag, FieldKey.GENRE) : null;
-            String bpm = tag != null ? getField(tag, FieldKey.BPM) : null;
-            String key = tag != null ? getField(tag, FieldKey.KEY) : null;
+            final var artist = tag != null ? getField(tag, FieldKey.ARTIST) : null;
+            final var title = tag != null ? getField(tag, FieldKey.TITLE) : null;
+            final var album = tag != null ? getField(tag, FieldKey.ALBUM) : null;
+            final var genre = tag != null ? getField(tag, FieldKey.GENRE) : null;
+            final var bpm = tag != null ? getField(tag, FieldKey.BPM) : null;
+            final var key = tag != null ? getField(tag, FieldKey.KEY) : null;
 
             return Optional.of(new MusicFileInfo(
                     path,
@@ -63,17 +63,17 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
 
     @Override
     public TagWriteResult writeTags(String filepath, Map<String, String> tags) {
-        Path filePath = Path.of(filepath);
+        final var filePath = Path.of(filepath);
         Path backupPath = null;
 
         try {
             backupPath = createBackup(filePath);
 
-            AudioFile audioFile = AudioFileIO.read(filePath.toFile());
-            Tag tag = audioFile.getTagOrCreateAndSetDefault();
+            final var audioFile = AudioFileIO.read(filePath.toFile());
+            final var tag = audioFile.getTagOrCreateAndSetDefault();
 
             for (Map.Entry<String, String> entry : tags.entrySet()) {
-                FieldKey fieldKey = FieldKey.valueOf(entry.getKey().toUpperCase());
+                final var fieldKey = FieldKey.valueOf(entry.getKey().toUpperCase());
                 tag.setField(fieldKey, entry.getValue());
             }
 
@@ -93,13 +93,13 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
 
     @Override
     public TagPreview previewChanges(String filepath, Map<String, String> newTags) {
-        Map<String, String> currentTags = readCurrentTags(filepath);
-        List<TagChange> changes = new ArrayList<>();
+        final var currentTags = readCurrentTags(filepath);
+        final var changes = new ArrayList<TagChange>();
 
         for (Map.Entry<String, String> entry : newTags.entrySet()) {
-            String field = entry.getKey();
-            String newValue = entry.getValue();
-            String oldValue = currentTags.get(field);
+            final var field = entry.getKey();
+            final var newValue = entry.getValue();
+            final var oldValue = currentTags.get(field);
 
             if (!Objects.equals(oldValue, newValue)) {
                 changes.add(new TagChange(field, oldValue, newValue));
@@ -110,12 +110,12 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
     }
 
     private Map<String, String> readCurrentTags(String filepath) {
-        Optional<MusicFileInfo> info = readTags(new Filepath(filepath));
+        final var info = readTags(new Filepath(filepath));
         if (info.isEmpty()) {
             return Map.of();
         }
-        MusicFileInfo i = info.get();
-        Map<String, String> tags = new LinkedHashMap<>();
+        final var i = info.get();
+        final var tags = new LinkedHashMap<String, String>();
         if (i.artist() != null) tags.put("artist", i.artist());
         if (i.title() != null) tags.put("title", i.title());
         if (i.album() != null) tags.put("album", i.album());
@@ -126,7 +126,7 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
     }
 
     private Path createBackup(Path filePath) throws IOException {
-        Path backup = filePath.resolveSibling(filePath.getFileName() + ".bak");
+        final var backup = filePath.resolveSibling(filePath.getFileName() + ".bak");
         Files.copy(filePath, backup, StandardCopyOption.REPLACE_EXISTING);
         return backup;
     }
@@ -143,7 +143,7 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
 
     private String getField(Tag tag, FieldKey fieldKey) {
         try {
-            String value = tag.getFirst(fieldKey);
+            final var value = tag.getFirst(fieldKey);
             return (value != null && !value.isBlank()) ? value : null;
         } catch (Exception e) {
             return null;

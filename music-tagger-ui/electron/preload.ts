@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld('electron', {
   selectAudioFiles: (): Promise<string[]> =>
     ipcRenderer.invoke('select-audio-files'),
 
+  selectAudioFolder: (): Promise<string[]> =>
+    ipcRenderer.invoke('select-audio-folder'),
+
   getAppVersion: (): Promise<string> =>
     ipcRenderer.invoke('get-app-version'),
 

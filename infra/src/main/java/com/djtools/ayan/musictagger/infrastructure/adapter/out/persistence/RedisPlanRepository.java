@@ -27,13 +27,13 @@ public class RedisPlanRepository implements PlanRepository {
 
     @Override
     public void save(TaggingPlan plan) {
-        String key = KEY_PREFIX + plan.planId();
+        final var key = KEY_PREFIX + plan.planId();
         redisTemplate.opsForValue().set(key, plan, TTL);
     }
 
     @Override
     public Optional<TaggingPlan> findById(String planId) {
-        Object raw = redisTemplate.opsForValue().get(KEY_PREFIX + planId);
+        final var raw = redisTemplate.opsForValue().get(KEY_PREFIX + planId);
         if (raw == null) {
             return Optional.empty();
         }

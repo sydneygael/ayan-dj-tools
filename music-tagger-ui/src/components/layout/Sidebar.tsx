@@ -3,6 +3,7 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import FolderIcon from '@mui/icons-material/Folder';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import { useNavigate } from 'react-router';
@@ -31,6 +32,7 @@ export default function Sidebar() {
   const mode = useModeStore((s) => s.mode);
   const files = useFileStore((s) => s.selectedFiles);
   const selectFiles = useFileStore((s) => s.selectFiles);
+  const selectFolder = useFileStore((s) => s.selectFolder);
   const removeFile = useFileStore((s) => s.removeFile);
   const clearFiles = useFileStore((s) => s.clearFiles);
   const selectSingleFile = useFileStore((s) => s.selectSingleFile);
@@ -58,16 +60,27 @@ export default function Sidebar() {
         )}
       </Box>
 
-      {/* Bouton d'ouverture du file picker natif Electron */}
-      <Button
-        variant="outlined"
-        size="small"
-        startIcon={<FolderOpenIcon />}
-        onClick={selectFiles}
-        fullWidth
-      >
-        {t('sidebar.selectFiles')}
-      </Button>
+      {/* Boutons de sélection : fichiers individuels ou dossier entier */}
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FolderOpenIcon />}
+          onClick={selectFiles}
+          sx={{ flex: 1 }}
+        >
+          {t('sidebar.selectFiles')}
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FolderIcon />}
+          onClick={selectFolder}
+          sx={{ flex: 1 }}
+        >
+          {t('sidebar.selectFolder')}
+        </Button>
+      </Box>
 
       {/* Zone de drag & drop pour ajouter des fichiers audio */}
       <DragDropZone />

@@ -32,7 +32,7 @@ public class RedisAudioFeaturesCacheRepository implements AudioFeaturesCacheRepo
 
     @Override
     public Optional<AudioFeatures> findByFilepath(String filepath) {
-        Object raw = redisTemplate.opsForValue().get(KEY_PREFIX + filepath);
+        final var raw = redisTemplate.opsForValue().get(KEY_PREFIX + filepath);
         if (raw == null) {
             return Optional.empty();
         }

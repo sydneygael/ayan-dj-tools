@@ -6,6 +6,7 @@ import com.djtools.ayan.musictagger.domain.port.in.AudioFeatureExtractor;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService;
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
@@ -13,8 +14,9 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
@@ -24,6 +26,8 @@ public class AyanMusicTools {
             "^(.+?)\\s*[-–—]\\s*(.+?)\\.[a-zA-Z0-9]+$"
     );
 
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final ScanMusicUseCase scanMusicUseCase;
     private final MusicMetadataProvider musicMetadataProvider;
     private final AudioFeatureExtractor audioFeatureExtractor;
@@ -31,6 +35,7 @@ public class AyanMusicTools {
     private final ManualModeService manualModeService;
     private final TrackVectorizationService vectorizationService;
     private final AudioFeaturesCacheRepository audioFeaturesCache;
+    private final AudioScannerService audioScannerService;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
@@ -38,7 +43,8 @@ public class AyanMusicTools {
                           PlanManagementService planManagementService,
                           ManualModeService manualModeService,
                           TrackVectorizationService vectorizationService,
-                          AudioFeaturesCacheRepository audioFeaturesCache) {
+                          AudioFeaturesCacheRepository audioFeaturesCache,
+                          AudioScannerService audioScannerService) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
@@ -46,13 +52,14 @@ public class AyanMusicTools {
         this.manualModeService = manualModeService;
         this.vectorizationService = vectorizationService;
         this.audioFeaturesCache = audioFeaturesCache;
+        this.audioScannerService = audioScannerService;
     }
 
     @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
     public MusicFileInfo scanMusicFile(
             @ToolParam(description = "Chemin absolu du fichier audio") String filepath) {
         var path = new Filepath(filepath);
-        List<MusicFileInfo> results = scanMusicUseCase.execute(List.of(path));
+        final var results = scanMusicUseCase.execute(List.of(path));
         if (results.isEmpty()) {
             throw new IllegalArgumentException("Impossible de lire le fichier : " + filepath);
         }
@@ -68,11 +75,11 @@ public class AyanMusicTools {
     @Tool(description = "Suggère artiste et titre à partir du nom de fichier (format 'Artiste - Titre.ext')")
     public TagSuggestion suggestTagsFromFilename(
             @ToolParam(description = "Nom du fichier audio") String filename) {
-        Matcher matcher = ARTIST_TITLE_PATTERN.matcher(filename.trim());
+        final var matcher = ARTIST_TITLE_PATTERN.matcher(filename.trim());
         if (matcher.matches()) {
             return new TagSuggestion(matcher.group(1).trim(), matcher.group(2).trim());
         }
-        String nameWithoutExt = filename.contains(".")
+        final var nameWithoutExt = filename.contains(".")
                 ? filename.substring(0, filename.lastIndexOf('.'))
                 : filename;
         return new TagSuggestion(null, nameWithoutExt.trim());
@@ -82,7 +89,7 @@ public class AyanMusicTools {
     public EnrichmentResult enrichWithSpotify(
             @ToolParam(description = "Nom de l'artiste") String artist,
             @ToolParam(description = "Titre du morceau") String title) {
-        EnrichmentResult result = musicMetadataProvider.enrich(artist, title);
+        final var result = musicMetadataProvider.enrich(artist, title);
         if (result.isSuccess()) {
             vectorizationService.store(result.data());
             if (result.data().audioFeatures() != null) {
@@ -138,5 +145,21 @@ public class AyanMusicTools {
     public List<TaggingHistoryEntry> getTaggingHistory(
             @ToolParam(description = "Identifiant du plan") String planId) {
         return planManagementService.getPlanHistory(planId);
+    }
+
+    @Tool(description = """
+            Parcourt un dossier et retourne ses fichiers audio et sous-dossiers, paginés.
+            Les dossiers apparaissent en premier, triés alphabétiquement, puis les fichiers audio.
+            Pour chaque fichier audio, retourne ses tags actuels (artiste, titre, album, genre).
+            Commencer avec page=0. Si totalPages > 1, appeler à nouveau avec page suivante pour voir la suite.
+            Utiliser pour explorer la bibliothèque musicale de l'utilisateur avant de créer un plan.
+            """)
+    public FileBrowserPage browseFiles(
+            @ToolParam(description = "Chemin absolu du dossier à parcourir") String directoryPath,
+            @ToolParam(description = "Numéro de page, commence à 0") int page,
+            @ToolParam(description = "Nombre d'entrées par page (1–50, recommandé : 20)") int pageSize) throws IOException {
+        final var clampedSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
+        final var clampedPage = Math.max(page, 0);
+        return audioScannerService.browse(Path.of(directoryPath), clampedPage, clampedSize);
     }
 }

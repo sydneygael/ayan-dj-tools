@@ -40,11 +40,11 @@ public class SpotifyTokenService {
 
     private String refreshToken() {
         log.debug("Refreshing Spotify access token");
-        String credentials = clientId + ":" + clientSecret;
-        String encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        final var credentials = clientId + ":" + clientSecret;
+        final var encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 
         try {
-            SpotifyTokenResponse response = tokenClient.post()
+            final var response = tokenClient.post()
                     .header("Authorization", "Basic " + encoded)
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body("grant_type=client_credentials")

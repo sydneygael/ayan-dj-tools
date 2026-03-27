@@ -13,6 +13,22 @@ const AUDIO_EXTENSIONS = [
   { name: 'Audio Files', extensions: ['mp3', 'flac', 'wav', 'aiff', 'm4a', 'ogg'] },
 ];
 
+const AUDIO_EXT_SET = new Set(['.mp3', '.flac', '.wav', '.aiff', '.m4a', '.ogg']);
+
+/** Scanne récursivement un dossier et retourne les chemins absolus de tous les fichiers audio. */
+function scanAudioFiles(dir: string): string[] {
+  const results: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...scanAudioFiles(fullPath));
+    } else if (AUDIO_EXT_SET.has(path.extname(entry.name).toLowerCase())) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
 const isDev = process.argv.includes('--dev');
 const BACKEND_PORT = 8000;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
@@ -192,6 +208,15 @@ function registerIpcHandlers(): void {
       filters: AUDIO_EXTENSIONS,
     });
     return result.canceled ? [] : result.filePaths;
+  });
+
+  ipcMain.handle('select-audio-folder', async () => {
+    if (!mainWindow) return [];
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return [];
+    return scanAudioFiles(result.filePaths[0]);
   });
 
   ipcMain.handle('get-app-version', () => app.getVersion());

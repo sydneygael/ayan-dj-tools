@@ -16,39 +16,51 @@ import WsStatusChip from '../common/WsStatusChip';
 
 /**
  * Page de chat principal avec l'agent Ayan.
- * Communique via WebSocket STOMP (prioritaire) avec fallback REST.
- * Gère l'historique des messages (store Zustand), l'envoi (Enter ou bouton),
- * le défilement automatique et l'affichage du spinner pendant le chargement.
+ * Communique via WebSocket STOMP avec streaming token par token.
+ * Fallback REST bloquant si le WebSocket n'est pas disponible.
  */
 export default function ChatPage() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { messages, conversationId, loading, addMessage, setConversationId, setLoading } =
-    useChatStore();
-  const ws = useWebSocket();
+  const {
+    messages,
+    conversationId,
+    loading,
+    streamingContent,
+    addMessage,
+    appendStreamChunk,
+    finalizeStream,
+    setConversationId,
+    setLoading,
+  } = useChatStore();
+  const ws = useWebSocket(conversationId);
   const { t } = useTranslation();
 
-  // Connexion WebSocket au montage du composant.
   useEffect(() => {
     ws.connect();
     return () => ws.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Réception des messages WebSocket
+  // Traitement des événements WebSocket streaming
   useEffect(() => {
-    if (!ws.lastMessage) return;
-    const msg = ws.lastMessage;
-    addMessage({ role: 'agent', content: msg.reply, timestamp: msg.timestamp });
-    setConversationId(msg.conversationId);
-    setLoading(false);
-  }, [ws.lastMessage, addMessage, setConversationId, setLoading]);
+    if (!ws.lastEvent) return;
+    const event = ws.lastEvent;
+    if (event.type === 'chunk') {
+      appendStreamChunk(event.token ?? '');
+    } else if (event.type === 'done') {
+      finalizeStream(event.reply ?? '', event.timestamp ?? new Date().toISOString());
+      setConversationId(event.conversationId);
+    } else if (event.type === 'error') {
+      addMessage({ role: 'agent', content: `Erreur : ${event.token ?? 'inconnue'}`, timestamp: new Date().toISOString() });
+      setLoading(false);
+    }
+  }, [ws.lastEvent, appendStreamChunk, finalizeStream, addMessage, setConversationId, setLoading]);
 
-  // Défilement automatique vers le bas à chaque nouveau message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -59,10 +71,10 @@ export default function ChatPage() {
     setLoading(true);
 
     if (ws.connected) {
-      ws.sendMessage(text, conversationId ?? undefined);
+      ws.sendMessage(text, conversationId);
     } else {
       try {
-        const res = await chatRest(text, conversationId ?? undefined);
+        const res = await chatRest(text, conversationId);
         addMessage({ role: 'agent', content: res.reply, timestamp: res.timestamp });
         setConversationId(res.conversationId);
       } catch {
@@ -87,7 +99,7 @@ export default function ChatPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {messages.length === 0 && (
+        {messages.length === 0 && streamingContent === null && (
           <Box sx={{ textAlign: 'center', mt: 8 }}>
             <Box sx={{ opacity: 0.6 }}>
               <SmartToyIcon sx={{ fontSize: 64, color: 'primary.main' }} />
@@ -109,7 +121,13 @@ export default function ChatPage() {
         {messages.map((msg, i) => (
           <MessageBubble key={i} message={msg} />
         ))}
-        {loading && (
+        {/* Bulle de streaming — affiche les tokens au fil de la génération */}
+        {streamingContent !== null && (
+          <MessageBubble
+            message={{ role: 'agent', content: streamingContent + '▍', timestamp: new Date().toISOString() }}
+          />
+        )}
+        {loading && streamingContent === null && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
             <CircularProgress size={24} />
           </Box>

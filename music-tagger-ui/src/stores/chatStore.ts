@@ -3,34 +3,41 @@ import type { ChatMessage } from '../types/types';
 
 /** État de la conversation de chat avec l'agent Ayan. */
 interface ChatState {
-  /** Historique des messages de la conversation courante (user + agent). */
   messages: ChatMessage[];
-  /** ID de la conversation côté backend (Redis), null si pas encore initialisée. */
-  conversationId: string | null;
-  /** Indicateur de chargement : true quand on attend la réponse de l'agent. */
+  /** ID de conversation, généré côté frontend (UUID) et stable pour toute la session. */
+  conversationId: string;
   loading: boolean;
-  /** Ajoute un message (user ou agent) à l'historique local. */
+  /** Contenu en cours de streaming (null si aucune génération en cours). */
+  streamingContent: string | null;
   addMessage: (msg: ChatMessage) => void;
-  /** Met à jour l'ID de conversation reçu du backend. */
+  appendStreamChunk: (chunk: string) => void;
+  finalizeStream: (reply: string, timestamp: string) => void;
   setConversationId: (id: string) => void;
-  /** Active/désactive le spinner de chargement. */
   setLoading: (loading: boolean) => void;
-  /** Réinitialise la conversation (messages, ID, loading). */
   clear: () => void;
 }
 
-/**
- * Store Zustand de la conversation de chat.
- * Non persisté : la conversation repart à zéro à chaque session.
- * L'historique côté serveur est conservé dans Redis (TTL 24h).
- */
 export const useChatStore = create<ChatState>()((set) => ({
   messages: [],
-  conversationId: null,
+  conversationId: crypto.randomUUID(),
   loading: false,
+  streamingContent: null,
 
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+
+  /** Appelé à chaque token reçu — arrête le spinner et alimente la bulle de streaming. */
+  appendStreamChunk: (chunk) =>
+    set((s) => ({ streamingContent: (s.streamingContent ?? '') + chunk, loading: false })),
+
+  /** Appelé quand le stream est terminé — transforme le contenu streamé en message définitif. */
+  finalizeStream: (reply, timestamp) =>
+    set((s) => ({
+      messages: [...s.messages, { role: 'agent', content: reply, timestamp }],
+      streamingContent: null,
+      loading: false,
+    })),
+
   setConversationId: (id) => set({ conversationId: id }),
   setLoading: (loading) => set({ loading }),
-  clear: () => set({ messages: [], conversationId: null, loading: false }),
+  clear: () => set({ messages: [], conversationId: crypto.randomUUID(), streamingContent: null, loading: false }),
 }));

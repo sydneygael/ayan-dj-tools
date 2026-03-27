@@ -120,6 +120,16 @@ export interface ChatResponse {
   timestamp: string;
 }
 
+/** Evenement de streaming WebSocket — chunk en cours de generation ou fin de reponse. */
+export interface ChatStreamEvent {
+  type: 'chunk' | 'done' | 'error';
+  token?: string;
+  reply?: string;
+  conversationId: string;
+  messageCount?: number;
+  timestamp?: string;
+}
+
 /** Resultat de recherche de pistes similaires via le RAG (Qdrant). */
 export interface SimilarTrackResult {
   track: MusicFileInfo;

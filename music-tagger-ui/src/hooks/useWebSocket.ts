@@ -2,19 +2,31 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { environment } from '../config/environment';
-import type { ChatResponse } from '../types/types';
+import type { ChatStreamEvent } from '../types/types';
 
 /**
  * Hook de connexion WebSocket STOMP vers le backend.
- * Utilise SockJS comme transport et @stomp/stompjs comme client STOMP.
- * Fournit : connect(), disconnect(), sendMessage(), connected (état), lastMessage (dernière réponse).
- * La reconnexion automatique est configurée à 5 secondes.
- * Le client s'abonne au topic /topic/responses pour recevoir les réponses de l'agent.
+ * S'abonne au topic /topic/responses/{conversationId} pour recevoir
+ * les événements de streaming (chunk, done, error) propres à la conversation.
  */
-export function useWebSocket() {
+export function useWebSocket(conversationId: string) {
   const clientRef = useRef<Client | null>(null);
+  const subRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const convIdRef = useRef(conversationId);
   const [connected, setConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<ChatResponse | null>(null);
+  const [lastEvent, setLastEvent] = useState<ChatStreamEvent | null>(null);
+
+  // Maintient la ref à jour pour les callbacks STOMP (évite les closures périmées)
+  useEffect(() => {
+    convIdRef.current = conversationId;
+  }, [conversationId]);
+
+  const subscribeToConversation = useCallback((client: Client, convId: string) => {
+    subRef.current?.unsubscribe();
+    subRef.current = client.subscribe(`/topic/responses/${convId}`, (frame) => {
+      setLastEvent(JSON.parse(frame.body) as ChatStreamEvent);
+    });
+  }, []);
 
   const connect = useCallback(() => {
     if (clientRef.current?.active) return;
@@ -24,10 +36,7 @@ export function useWebSocket() {
       reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
-        client.subscribe('/topic/responses', (frame) => {
-          const response: ChatResponse = JSON.parse(frame.body);
-          setLastMessage(response);
-        });
+        subscribeToConversation(client, convIdRef.current);
       },
       onDisconnect: () => setConnected(false),
       onStompError: () => setConnected(false),
@@ -35,7 +44,7 @@ export function useWebSocket() {
 
     client.activate();
     clientRef.current = client;
-  }, []);
+  }, [subscribeToConversation]);
 
   const disconnect = useCallback(() => {
     clientRef.current?.deactivate();
@@ -43,21 +52,26 @@ export function useWebSocket() {
     setConnected(false);
   }, []);
 
-  const sendMessage = useCallback((message: string, conversationId?: string) => {
+  const sendMessage = useCallback((message: string, convId: string) => {
     if (!clientRef.current?.active) return;
     clientRef.current.publish({
       destination: '/app/chat',
-      body: JSON.stringify({ message, conversationId }),
+      body: JSON.stringify({ message, conversationId: convId }),
     });
   }, []);
 
-  // Cleanup de sécurité : désactive le client STOMP au démontage du hook,
-  // même si disconnect() n'a pas été appelé explicitement par le composant parent.
+  // Réabonnement si le conversationId change alors que le client est déjà connecté
+  useEffect(() => {
+    if (clientRef.current?.active && connected) {
+      subscribeToConversation(clientRef.current, conversationId);
+    }
+  }, [conversationId, connected, subscribeToConversation]);
+
   useEffect(() => {
     return () => {
       clientRef.current?.deactivate();
     };
   }, []);
 
-  return { connected, lastMessage, connect, disconnect, sendMessage };
+  return { connected, lastEvent, connect, disconnect, sendMessage };
 }

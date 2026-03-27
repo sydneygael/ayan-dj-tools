@@ -19,6 +19,8 @@ import java.util.function.Consumer;
  */
 public class ExecutePlanUseCase {
 
+    private static final System.Logger log = System.getLogger(ExecutePlanUseCase.class.getName());
+
     private final AudioFileWriter audioFileWriter;
     private final TaggingHistoryRepository historyRepository;
 
@@ -36,6 +38,8 @@ public class ExecutePlanUseCase {
     public BatchApplyResult execute(TaggingPlan plan, Consumer<TagProgressEvent> onProgress) {
         final var start = Instant.now();
         final var approvedOps = filterApprovedOperations(plan);
+        log.log(System.Logger.Level.INFO, "Exécution du plan {0} : {1} opération(s) approuvée(s)",
+                plan.planId(), approvedOps.size());
         final var results = new ArrayList<TagWriteResult>();
         int successCount = 0;
         int errorCount = 0;
@@ -53,8 +57,12 @@ public class ExecutePlanUseCase {
             // Étape 3 : comptabiliser succès/erreur
             if (result.status() == OperationStatus.APPLIED) {
                 successCount++;
+                log.log(System.Logger.Level.DEBUG, "[{0}/{1}] Tags appliqués : {2}",
+                        index + 1, approvedOps.size(), op.filepath());
             } else {
                 errorCount++;
+                log.log(System.Logger.Level.WARNING, "[{0}/{1}] Échec application tags : {2} — {3}",
+                        index + 1, approvedOps.size(), op.filepath(), result.message());
             }
 
             // Étape 4 : notifier la progression
@@ -62,9 +70,12 @@ public class ExecutePlanUseCase {
                     plan.planId(), index, approvedOps.size(), op.filepath(), result.status(), result.message()));
         }
 
-        return new BatchApplyResult(
+        final var batchResult = new BatchApplyResult(
                 plan.planId(), results.size(), successCount, errorCount,
                 results, Duration.between(start, Instant.now()));
+        log.log(System.Logger.Level.INFO, "Plan {0} terminé : {1} succès, {2} erreur(s) en {3}ms",
+                plan.planId(), successCount, errorCount, batchResult.duration().toMillis());
+        return batchResult;
     }
 
     /** Filtre les opérations approuvées du plan. */

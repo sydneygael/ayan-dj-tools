@@ -16,6 +16,7 @@ import java.util.*;
  */
 public class CreatePlanUseCase {
 
+    private static final System.Logger log = System.getLogger(CreatePlanUseCase.class.getName());
     private static final java.util.regex.Pattern FILENAME_PATTERN =
             java.util.regex.Pattern.compile("^(.+?)\\s*[-–—]\\s*(.+?)\\.[a-zA-Z0-9]+$");
 
@@ -29,12 +30,14 @@ public class CreatePlanUseCase {
 
     /** Point d'entrée : génère un TaggingPlan pour les fichiers donnés. */
     public TaggingPlan execute(String planId, List<Filepath> paths) {
+        log.log(System.Logger.Level.INFO, "Création du plan {0} pour {1} fichier(s)", planId, paths.size());
         final var operations = new ArrayList<TagOperation>();
         int filesWithMissing = 0;
 
         for (Filepath path : paths) {
             final var infoOpt = audioFileReader.readTags(path);
             if (infoOpt.isEmpty()) {
+                log.log(System.Logger.Level.WARNING, "Fichier illisible, ignoré : {0}", path.value());
                 continue;
             }
 
@@ -46,7 +49,10 @@ public class CreatePlanUseCase {
             operations.add(buildOperation(path, info));
         }
 
-        return buildPlan(planId, operations, paths.size(), filesWithMissing);
+        final var plan = buildPlan(planId, operations, paths.size(), filesWithMissing);
+        log.log(System.Logger.Level.INFO, "Plan {0} créé : {1} opération(s), {2} fichier(s) avec tags manquants",
+                planId, operations.size(), filesWithMissing);
+        return plan;
     }
 
     // --- Construction d'une opération par fichier ---
@@ -89,12 +95,15 @@ public class CreatePlanUseCase {
         final var result = metadataProvider.enrich(artist, title);
         if (result.isSuccess()) {
             fillMissingTagsFromMetadata(info, result.data(), suggestedTags);
+            log.log(System.Logger.Level.DEBUG, "Enrichissement Spotify OK : {0} - {1}", artist, title);
             return null;
         }
         if (result instanceof EnrichmentResult.NotFound) {
+            log.log(System.Logger.Level.DEBUG, "Aucun résultat Spotify : {0} - {1}", artist, title);
             return "Aucun résultat Spotify trouvé pour %s - %s".formatted(artist, title);
         }
         if (result instanceof EnrichmentResult.Error(String errorMsg)) {
+            log.log(System.Logger.Level.WARNING, "Erreur enrichissement Spotify pour {0} - {1} : {2}", artist, title, errorMsg);
             return "Erreur enrichissement : " + errorMsg;
         }
         return null;

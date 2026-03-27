@@ -74,10 +74,16 @@ export const useFileStore = create<FileState>()
                 input.multiple = true;
                 input.accept = '.mp3,.flac,.wav,.aiff,.m4a,.ogg';
                 input.onchange = () => {
+                    // file.path = chemin absolu en Electron renderer (même sans preload)
+                    // En navigateur pur, file.path est vide → on rejette (pas de chemin absolu disponible)
                     const paths = Array.from(input.files ?? [])
                         .map((f) => (f as File & { path: string }).path)
-                        .filter(Boolean);
-                    if (paths.length > 0) get().addFiles(paths);
+                        .filter((p) => p && (p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p)));
+                    if (paths.length > 0) {
+                        get().addFiles(paths);
+                    } else {
+                        alert('La sélection de fichiers nécessite l\'application Electron.\nLancez "npm run electron:dev" pour accéder aux chemins complets.');
+                    }
                     resolve();
                 };
                 input.oncancel = () => resolve();

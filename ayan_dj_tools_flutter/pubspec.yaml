@@ -1,0 +1,63 @@
+name: ayan_dj_tools
+description: "Ayan DJ Tools — Desktop app for DJs to manage and auto-enrich audio file tags using AI."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.0.0
+
+  # HTTP
+  dio: ^5.7.0
+
+  # WebSocket STOMP
+  stomp_dart_client: ^2.0.0
+  web_socket_channel: ^3.0.0
+
+  # File picker & drag-drop
+  file_picker: ^8.1.0
+  desktop_drop: ^0.5.0
+  path: ^1.9.0
+  path_provider: ^2.1.0
+
+  # Audio player
+  audioplayers: ^6.1.0
+
+  # Charts
+  fl_chart: ^0.70.0
+
+  # Persistence
+  shared_preferences: ^2.3.0
+
+  # Markdown
+  flutter_markdown: ^0.7.0
+
+  # i18n
+  easy_localization: ^3.0.7
+
+  # Backend process management
+  process_run: ^0.14.0
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/i18n/

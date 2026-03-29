@@ -7,7 +7,7 @@ Application desktop pour DJs — enrichissement automatique des tags audio via I
 | Outil | Version minimale |
 |-------|-----------------|
 | Java (JDK) | 21+ |
-| Node.js | 20+ |
+| Flutter SDK | 3.22+ |
 | Docker Desktop | 27+ |
 | Git | 2.x |
 
@@ -62,13 +62,13 @@ Les credentials Spotify sont optionnels mais activent l'enrichissement automatiq
 
 ```
 ayan-dj-tools/
-├── domain/          # Java pur — use cases, ports, value objects (pas de Spring)
-├── infra/           # Spring Boot 4 — adapters REST/WS, Spotify, Qdrant, Redis
-├── music-tagger-ui/ # React 19 + Electron 40 + MUI v7 + Zustand
-└── scripts/         # Scripts de démarrage et build
+├── domain/                  # Java pur — use cases, ports, value objects (pas de Spring)
+├── infra/                   # Spring Boot 4 — adapters REST/WS, Spotify, Qdrant, Redis
+└── ayan_dj_tools_flutter/   # Flutter Desktop — Windows, macOS, Linux
 ```
 
 L'architecture est hexagonale (ports & adapters) avec DDD. Le module `domain` n'a aucune dépendance Spring.
+Le frontend Flutter Desktop communique avec le backend via HTTP (Dio) et WebSocket STOMP (`stomp_dart_client`).
 
 ---
 
@@ -79,24 +79,23 @@ L'architecture est hexagonale (ports & adapters) avec DDD. Le module `domain` n'
 Interface de conversation avec l'agent IA Ayan. Envoyez des messages en langage naturel pour déclencher
 des scans, des enrichissements ou des suggestions de tags.
 
-- Bulles de dialogue avec distinction Vous / Ayan
-- Connexion WebSocket STOMP (fallback REST si WebSocket indisponible)
-- Indicateur de connexion WS dans la toolbar
+### Plan (`/plan/:id`)
 
-### Révision de plan (`/plan/:id`)
+Révision du plan de tagging proposé par l'agent. Trois modes d'affichage selon le mode d'opération :
 
-Affiché après la création d'un plan. La vue s'adapte au mode sélectionné :
-
-| Mode | Vue | Comportement |
-|------|-----|-------------|
-| **Plan** | `PlanReviewPage` | Liste de toutes les opérations avec diff tag actuel / suggéré. Approuver/rejeter par opération, puis exécuter le plan en lot. |
-| **Manuel** | `ManualModeView` | Présente les fichiers un par un. Approuvez ou rejetez chaque modification avant de passer au suivant. |
-| **Auto** | `ApplyModeView` | Exécution automatique avec journal des opérations en temps réel via WebSocket. |
+- **Plan** — liste complète des opérations à approuver/rejeter, puis exécution en lot
+- **Manuel** — fichier par fichier, avec progression STOMP en temps réel
+- **Auto** — exécution automatique avec log de progression animé
 
 ### Historique (`/history`) — `Ctrl+H`
 
-Tableau de toutes les modifications de tags appliquées. Recherche par `planId`, vue détaillée des changements
-par fichier (tag, valeur avant, valeur après, date).
+Recherche par ID de plan. Affiche la liste des fichiers modifiés avec le diff complet des tags
+(valeur avant / valeur après, avec indicateur succès/erreur par fichier).
+
+### Playlist (`/playlist`) — `Ctrl+L`
+
+Génération de playlist à partir de la bibliothèque enrichie. Filtres : BPM min/max, genre.
+Chaque piste affiche artiste, titre, album, genres, BPM, tonalité et durée.
 
 ### Statistiques (`/stats`) — `Ctrl+S`
 
@@ -104,9 +103,9 @@ Dashboard en 3 onglets :
 
 | Onglet | Contenu |
 |--------|---------|
-| **Collection** | Nombre de pistes scannées/enrichies, distribution des genres, histogramme BPM, Camelot Wheel des tonalités, caractéristiques audio moyennes. |
-| **Enrichissement** | Taux de correspondance Spotify, taux d'erreur, tags enrichis par type, enrichissement par source. |
-| **Activité** | Tags appliqués par période (semaine / mois / tout), utilisation des modes, nombre de plans créés, durée moyenne. |
+| **Collection** | Nombre de pistes scannées/enrichies, distribution des genres (donut), histogramme BPM, Camelot Wheel des tonalités. |
+| **Enrichissement** | Taux de correspondance Spotify, taux d'erreur, tags enrichis par type. |
+| **Activité** | Tags appliqués par période (semaine / mois / tout), utilisation des modes, nombre de plans créés. |
 
 ### Paramètres (`/settings`) — `Ctrl+,`
 
@@ -121,9 +120,9 @@ Dashboard en 3 onglets :
 
 Présente sur tous les écrans :
 
-- **Liste des fichiers** — fichiers audio sélectionnés avec indicateur de tags manquants
+- **Liste des fichiers** — fichiers audio sélectionnés (MP3, FLAC, WAV, AIFF, M4A, OGG)
 - **Drag & drop** — glisser des fichiers audio directement dans la sidebar
-- **Lecteur audio** — pré-écoute du fichier sélectionné (format `file://`, HTML5)
+- **Lecteur audio** — pré-écoute du fichier sélectionné (lecture native via `audioplayers`)
 - **Bouton « Créer un plan »** — visible dès qu'au moins un fichier est sélectionné
 
 ---
@@ -153,34 +152,51 @@ docker-compose up -d
 ./gradlew test
 ```
 
-### Frontend
+### Frontend Flutter
 
 ```bash
-cd music-tagger-ui
-npm install
+cd ayan_dj_tools_flutter
 
-# Mode navigateur (sans Electron)
-npm run dev
+# Installer les dépendances
+flutter pub get
 
-# Mode Electron (dev)
-npm run electron:dev
+# Lancer en mode dev (Windows)
+flutter run -d windows
+
+# Lancer en mode dev (macOS / Linux)
+flutter run -d macos
+flutter run -d linux
 ```
+
+> **Windows** : le mode développeur doit être activé (Paramètres → Développeurs → Mode développeur).
+> **Build Windows** : Visual Studio avec la charge de travail « Développement Desktop en C++ » est requis
+> (CMake + Windows 10 SDK).
 
 ---
 
 ## Build de distribution
 
+### Backend
+
 ```bash
-# Build complet (JAR + installeur détecte la plateforme)
-./scripts/build-all.sh
+./gradlew infra:bootJar
+# Génère : infra/build/libs/infra-*.jar
+```
 
-# Cibler une plateforme spécifique
-./scripts/build-all.sh --win    # Windows NSIS
-./scripts/build-all.sh --mac    # macOS DMG
-./scripts/build-all.sh --linux  # AppImage + deb
+### Frontend Flutter
 
-# L'installeur est généré dans :
-music-tagger-ui/release/
+```bash
+cd ayan_dj_tools_flutter
+
+# Windows
+flutter build windows --release
+# Sortie : build/windows/x64/runner/Release/ayan_dj_tools.exe
+
+# macOS
+flutter build macos --release
+
+# Linux
+flutter build linux --release
 ```
 
 ---
@@ -189,11 +205,9 @@ music-tagger-ui/release/
 
 | Raccourci | Action |
 |-----------|--------|
-| `Ctrl+O` | Ouvrir des fichiers audio |
-| `Ctrl+P` | Mode Plan |
-| `Ctrl+M` | Mode Manuel |
-| `Ctrl+A` | Mode Auto |
+| `Ctrl+P` | Chat (accueil) |
 | `Ctrl+H` | Historique |
 | `Ctrl+S` | Statistiques |
+| `Ctrl+L` | Playlist |
 | `Ctrl+,` | Paramètres |
-| `?` | Aide raccourcis |
+| Icône `⌨` | Aide raccourcis |

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Build complet : JAR Spring Boot + installeur Electron.
+# Build complet : JAR Spring Boot + application Flutter Desktop.
 # Usage : ./scripts/build-all.sh [--win|--mac|--linux]
-# Par défaut, détecte la plateforme courante.
+# Par défaut : --win (Windows).
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-PLATFORM="${1:-}"
+PLATFORM="${1:---win}"
 
 echo "[build] === Étape 1/3 : Build JAR Spring Boot ==="
 cd "$ROOT_DIR"
@@ -18,17 +18,24 @@ if [ ! -f "$JAR" ]; then
 fi
 echo "[build] JAR OK : $JAR"
 
-echo "[build] === Étape 2/3 : Install dépendances frontend ==="
-cd "$ROOT_DIR/music-tagger-ui"
-npm ci
+echo "[build] === Étape 2/3 : Install dépendances Flutter ==="
+cd "$ROOT_DIR/ayan_dj_tools_flutter"
+flutter pub get
 
-echo "[build] === Étape 3/3 : Build installeur Electron ==="
-if [ -n "$PLATFORM" ]; then
-  npm run "electron:dist$PLATFORM"
-else
-  npm run electron:dist
-fi
+echo "[build] === Étape 3/3 : Build Flutter Desktop ($PLATFORM) ==="
+case "$PLATFORM" in
+  --win)   flutter build windows --release ;;
+  --mac)   flutter build macos --release ;;
+  --linux) flutter build linux --release ;;
+  *)
+    echo "[build] ERREUR : plateforme inconnue '$PLATFORM' (utiliser --win, --mac ou --linux)"
+    exit 1
+    ;;
+esac
 
 echo "[build] === Build terminé ==="
-echo "[build] Installeur(s) disponible(s) dans : music-tagger-ui/release/"
-ls "$ROOT_DIR/music-tagger-ui/release/" 2>/dev/null || true
+case "$PLATFORM" in
+  --win)   echo "[build] Exécutable : ayan_dj_tools_flutter/build/windows/x64/runner/Release/" ;;
+  --mac)   echo "[build] App : ayan_dj_tools_flutter/build/macos/Build/Products/Release/" ;;
+  --linux) echo "[build] Exécutable : ayan_dj_tools_flutter/build/linux/x64/release/bundle/" ;;
+esac

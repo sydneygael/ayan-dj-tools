@@ -1,5 +1,5 @@
 @echo off
-REM Build complet : JAR Spring Boot + installeur Electron Windows.
+REM Build complet : JAR Spring Boot + application Flutter Desktop Windows.
 REM Usage : build-all.bat
 
 setlocal enabledelayedexpansion
@@ -18,15 +18,15 @@ if not exist "infra\build\libs\ayan-dj-tools.jar" (
 )
 echo [build] JAR OK
 
-echo [build] === Etape 2/3 : Install dependances frontend ===
-cd /d "%ROOT_DIR%\music-tagger-ui"
-call npm ci
+echo [build] === Etape 2/3 : Install dependances Flutter ===
+cd /d "%ROOT_DIR%\ayan_dj_tools_flutter"
+flutter pub get
 if errorlevel 1 exit /b 1
 
-echo [build] === Etape 3/3 : Build installeur Electron Windows ===
-call npm run electron:dist:win
+echo [build] === Etape 3/3 : Build Flutter Desktop Windows ===
+flutter build windows --release
 if errorlevel 1 exit /b 1
 
 echo [build] === Build termine ===
-echo [build] Installeur disponible dans : music-tagger-ui\release\
-dir "%ROOT_DIR%\music-tagger-ui\release\" 2>nul
+echo [build] Executable disponible dans : ayan_dj_tools_flutter\build\windows\x64\runner\Release\
+dir "%ROOT_DIR%\ayan_dj_tools_flutter\build\windows\x64\runner\Release\" 2>nul

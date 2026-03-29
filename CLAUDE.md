@@ -15,7 +15,7 @@ Full specification: `SPEC.md`
 - **Audio**: JAudiotagger 3.0.1
 - **API**: Spotify via `@HttpExchange` declarative client
 - **DB**: PostgreSQL + pgvector
-- **Frontend**: React 19, Vite, MUI v6, Zustand, Electron 40
+- **Frontend**: Flutter Desktop 3.22, Riverpod, GoRouter, stomp_dart_client
 - **Language**: French project (comments, agent name, docs) but English code identifiers
 
 ## Build & Run Commands
@@ -46,8 +46,8 @@ docker-compose up -d
 docker exec -it dj-tagger-ollama ollama pull mistral
 docker exec -it dj-tagger-ollama ollama pull nomic-embed-text
 
-# Frontend
-cd music-tagger-ui && npm install && npm run dev
+# Frontend Flutter
+cd ayan_dj_tools_flutter && flutter pub get && flutter run -d windows
 ```
 
 ## Architecture (Hexagonal + DDD, 2 Gradle modules)
@@ -105,7 +105,7 @@ ayan-dj-tools/
 
 ## Security Constraints
 
-- **File access**: ONLY files explicitly selected via Electron file picker are allowed. NO recursive scanning by backend.
+- **File access**: ONLY files explicitly selected via Flutter file_picker are allowed. NO recursive scanning by backend.
 - Backend receives pre-approved file paths only. Validate against path traversal.
 - Spotify credentials via environment variables only.
 
@@ -121,7 +121,7 @@ Detailed implementation patterns live in `.claude/skills/` (auto-loaded when rel
 | `spotify-integration/` | @HttpExchange client, OAuth2, cache, rate limiting |
 | `audio-processing/` | JAudiotagger read/write, validation, backup |
 | `rag-vectordb/` | Qdrant vectorization, similarity search |
-| `frontend-react/`   | React 19 + Vite + MUI v6 + Zustand + Electron patterns |
+| `frontend-flutter/` | Flutter Desktop — Riverpod, GoRouter, STOMP, CustomPainter |
 
 ## Implementation Phases
 

@@ -26,7 +26,7 @@ public class OpenApiConfig {
 
                                 **3 modes d'opération :** Plan (batch) · Manuel (fichier par fichier) · Auto (direct)
 
-                                **WebSocket STOMP :** `ws://localhost:8000/ws` — canal `/topic/responses`
+                                **Streaming HTTP (SSE) :** `POST /api/agent/chat/stream`
 
                                 ---
 
@@ -76,7 +76,7 @@ public class OpenApiConfig {
                                 | **CORS** | Origines autorisées : `http://localhost:5173` (Vite dev), `file://*` (Electron packagé). `allowCredentials: false`. |
                                 | **Spotify** | Credentials exclusivement via `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` (variables d'environnement). Jamais exposés dans les réponses API. |
                                 | **Auth HTTP** | Aucune — l'application tourne en local uniquement. Pas de token requis pour les endpoints REST. |
-                                | **WebSocket** | STOMP sur SockJS, toutes origines autorisées en dev. |
+                                | **Streaming** | SSE HTTP via `/api/agent/chat/stream` (aucun WebSocket requis). |
 
                                 ---
 

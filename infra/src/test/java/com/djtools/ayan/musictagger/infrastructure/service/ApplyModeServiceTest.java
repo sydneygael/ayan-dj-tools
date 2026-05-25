@@ -9,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -28,13 +27,12 @@ class ApplyModeServiceTest {
 
     @Mock PlanRepository planRepository;
     @Mock ExecutePlanUseCase executePlanUseCase;
-    @Mock SimpMessagingTemplate messagingTemplate;
 
     private ApplyModeService service;
 
     @BeforeEach
     void setUp() {
-        service = new ApplyModeService(planRepository, executePlanUseCase, messagingTemplate);
+        service = new ApplyModeService(planRepository, executePlanUseCase);
     }
 
     @Test
@@ -45,7 +43,7 @@ class ApplyModeServiceTest {
 
         var batchResult = new BatchApplyResult("plan-1", 1, 1, 0,
                 List.of(new TagWriteResult("/a.mp3", OperationStatus.APPLIED, null)), Duration.ofMillis(50));
-        when(executePlanUseCase.execute(any(TaggingPlan.class), any())).thenReturn(batchResult);
+        when(executePlanUseCase.execute(any(TaggingPlan.class))).thenReturn(batchResult);
 
         CompletableFuture<BatchApplyResult> future = service.executeAutomatic("plan-1");
         BatchApplyResult result = future.join();
@@ -66,7 +64,7 @@ class ApplyModeServiceTest {
         assertThatThrownBy(() -> service.executeAutomatic("plan-1"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("APPROVED");
-        verify(executePlanUseCase, never()).execute(any(TaggingPlan.class), any());
+        verify(executePlanUseCase, never()).execute(any(TaggingPlan.class));
     }
 
     @Test

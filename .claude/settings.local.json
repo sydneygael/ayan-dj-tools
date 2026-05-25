@@ -7,7 +7,10 @@
       "Bash(./gradlew domain:test:*)",
       "Bash(./gradlew infra:test:*)",
       "Bash(./gradlew build:*)",
-      "WebFetch(domain:reccobeats.com)"
+      "WebFetch(domain:reccobeats.com)",
+      "Bash(flutter --version)",
+      "Bash(flutter doctor:*)",
+      "Bash(flutter create:*)"
     ],
     "deny": [
       "Read(./.env)",

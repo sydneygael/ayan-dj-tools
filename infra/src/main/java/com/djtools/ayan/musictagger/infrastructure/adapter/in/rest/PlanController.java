@@ -40,6 +40,32 @@ public class PlanController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan introuvable : " + id));
     }
 
+    @GetMapping("/{id}/progress")
+    public PlanProgressResponse getProgress(@PathVariable String id) {
+        final var plan = planManagementService.getPlan(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan introuvable : " + id));
+
+        final var total = plan.operations().size();
+        final var pending = plan.operations().stream().filter(op -> op.status() == OperationStatus.PENDING).count();
+        final var approved = plan.operations().stream().filter(op -> op.status() == OperationStatus.APPROVED).count();
+        final var applied = plan.operations().stream().filter(op -> op.status() == OperationStatus.APPLIED).count();
+        final var rejected = plan.operations().stream().filter(op -> op.status() == OperationStatus.REJECTED).count();
+        final var error = plan.operations().stream().filter(op -> op.status() == OperationStatus.ERROR).count();
+
+        return new PlanProgressResponse(
+                plan.planId(),
+                plan.status(),
+                plan.mode(),
+                plan.currentIndex(),
+                total,
+                pending,
+                approved,
+                applied,
+                rejected,
+                error
+        );
+    }
+
     @PutMapping("/{id}/approve")
     public TaggingPlan approvePlan(@PathVariable String id) {
         return planManagementService.approvePlan(id);
@@ -85,4 +111,17 @@ public class PlanController {
     }
 
     public record CreatePlanRequest(List<String> filePaths, OperatingMode mode) {}
+
+    public record PlanProgressResponse(
+            String planId,
+            PlanStatus status,
+            OperatingMode mode,
+            int currentIndex,
+            int totalOperations,
+            long pendingCount,
+            long approvedCount,
+            long appliedCount,
+            long rejectedCount,
+            long errorCount
+    ) {}
 }

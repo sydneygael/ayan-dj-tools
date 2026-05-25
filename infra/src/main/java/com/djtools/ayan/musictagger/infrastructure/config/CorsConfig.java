@@ -15,9 +15,8 @@ import java.util.List;
  * afin de couvrir tous les endpoints, y compris ceux de Spring Boot Actuator
  * qui ne passent pas par le DispatcherServlet principal.</p>
  *
- * <p>Seule l'origine du frontend React ({@code localhost:5173}) est autorisée.
- * Les credentials sont activés pour permettre l'envoi de cookies et d'en-têtes
- * d'authentification.</p>
+ * <p>Configuration permissive : toutes les origines sont autorisées.
+ * Les credentials ne sont pas activés.</p>
  */
 @Configuration
 public class CorsConfig {
@@ -32,12 +31,11 @@ public class CorsConfig {
     @Bean
     public CorsFilter corsFilter() {
         final var config = new CorsConfiguration();
-        // Frontend React (Vite dev server)
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        // CORS ouvert : toutes les origines.
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.addAllowedHeader("*");
-        // Requis pour les appels authentifiés (ex : Authorization header, cookies)
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(false);
 
         final var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

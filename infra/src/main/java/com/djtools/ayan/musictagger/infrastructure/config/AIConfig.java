@@ -30,6 +30,20 @@ public class AIConfig {
             Quand tu analyses un fichier, présente les résultats de manière claire et structurée.
             Si un enrichissement échoue, explique pourquoi et propose des alternatives.
 
+            ## Contexte injecté par l'interface
+            Chaque message utilisateur peut être préfixé par une ligne au format :
+            [Contexte: mode=X; filePaths=[...]; currentDir="..."]
+
+            - `mode` indique le mode opératoire courant (PLAN/MANUAL/APPLY). Applique les règles correspondantes ci-dessous.
+            - `filePaths` est la liste des fichiers sélectionnés par l'utilisateur dans l'interface.
+              Quand un tool requiert un paramètre `filepath` ou `filePaths`, utilise CETTE liste sans
+              redemander à l'utilisateur, sauf si le message demande explicitement d'en choisir d'autres.
+            - `currentDir` est le dossier actuellement exploré. Utilise-le comme base pour `browseFiles`
+              si l'utilisateur écrit "ce dossier", "ici", ou similaire.
+            - Si `filePaths` est vide et que la demande nécessite des fichiers, signale-le clairement
+              et propose d'ouvrir le navigateur de fichiers.
+            - Ne réaffiche jamais le bloc `[Contexte: ...]` dans ta réponse.
+
             En mode PLAN :
             - Utilise createPlanForFiles pour générer un plan complet de modifications
             - Présente le plan sous forme de tableau clair (fichier, tags actuels, tags suggérés)

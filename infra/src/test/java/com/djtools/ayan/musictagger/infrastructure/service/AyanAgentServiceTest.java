@@ -1,5 +1,6 @@
 package com.djtools.ayan.musictagger.infrastructure.service;
 
+import com.djtools.ayan.musictagger.domain.model.OperatingMode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,47 +38,41 @@ class AyanAgentServiceTest {
     }
 
     @Test
-    void chat_savesUserAndAssistantMessages() {
-        when(callResponseSpec.content()).thenReturn("Bonjour !");
+    void chatWithToolCalls_savesUserAndAssistantMessages() {
         when(historyService.getHistory("conv-1")).thenReturn(List.of(
                 new ChatMessage("user", "Salut", LocalDateTime.now())
         ));
 
-        service.chat("conv-1", "Salut");
+        service.chatWithToolCalls("conv-1", "Salut", OperatingMode.PLAN, null, null);
 
         var captor = ArgumentCaptor.forClass(ChatMessage.class);
         verify(historyService, times(2)).saveMessage(eq("conv-1"), captor.capture());
 
         assertThat(captor.getAllValues().get(0).role()).isEqualTo("user");
         assertThat(captor.getAllValues().get(1).role()).isEqualTo("assistant");
-        assertThat(captor.getAllValues().get(1).content()).isEqualTo("Bonjour !");
     }
 
     @Test
-    void chat_generatesConversationIdWhenNull() {
-        when(callResponseSpec.content()).thenReturn("Réponse");
-        // Simule getHistory après saveMessage : au moins le message user est présent
+    void chatWithToolCalls_generatesConversationIdWhenNull() {
         when(historyService.getHistory(anyString())).thenReturn(List.of(
                 new ChatMessage("user", "Hello", LocalDateTime.now())
         ));
 
-        String reply = service.chat(null, "Hello");
+        service.chatWithToolCalls(null, "Hello", OperatingMode.PLAN, null, null);
 
-        assertThat(reply).isEqualTo("Réponse");
         verify(historyService, times(2)).saveMessage(argThat(id -> !id.isBlank()), any());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void chat_includesPreviousMessagesAsSpringAiTypes() {
-        when(callResponseSpec.content()).thenReturn("Je me souviens !");
+    void chatWithToolCalls_includesPreviousMessagesAsSpringAiTypes() {
         when(historyService.getHistory("conv-1")).thenReturn(List.of(
                 new ChatMessage("user", "Scanne test.mp3", LocalDateTime.now()),
                 new ChatMessage("assistant", "Fichier scanné", LocalDateTime.now()),
                 new ChatMessage("user", "Quels tags manquent ?", LocalDateTime.now())
         ));
 
-        service.chat("conv-1", "Quels tags manquent ?");
+        service.chatWithToolCalls("conv-1", "Quels tags manquent ?", OperatingMode.PLAN, null, null);
 
         var captor = ArgumentCaptor.forClass(List.class);
         verify(requestSpec).messages(captor.capture());
@@ -92,13 +87,12 @@ class AyanAgentServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void chat_sendsOnlyCurrentMessageWhenNoHistory() {
-        when(callResponseSpec.content()).thenReturn("Salut !");
+    void chatWithToolCalls_sendsOnlyCurrentMessageWhenNoHistory() {
         when(historyService.getHistory(anyString())).thenReturn(List.of(
                 new ChatMessage("user", "Bonjour", LocalDateTime.now())
         ));
 
-        service.chat("conv-1", "Bonjour");
+        service.chatWithToolCalls("conv-1", "Bonjour", OperatingMode.PLAN, null, null);
 
         var captor = ArgumentCaptor.forClass(List.class);
         verify(requestSpec).messages(captor.capture());

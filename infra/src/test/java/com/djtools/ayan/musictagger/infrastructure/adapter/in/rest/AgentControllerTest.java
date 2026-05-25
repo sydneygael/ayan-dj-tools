@@ -1,10 +1,12 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
+import com.djtools.ayan.musictagger.domain.model.OperatingMode;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
 import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
 import com.djtools.ayan.musictagger.infrastructure.service.ConversationHistoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -27,26 +30,49 @@ class AgentControllerTest {
 
     @Test
     void chat_returnsAgentReplyWithConversationId() {
-        when(agentService.chat(eq("conv-1"), eq("Analyse mon fichier"))).thenReturn("Voici l'analyse...");
+        when(agentService.chatWithToolCalls(eq("conv-1"), eq("Analyse mon fichier"),
+                eq(OperatingMode.PLAN), any(), any()))
+                .thenReturn(new AyanAgentService.ChatResult("Voici l'analyse...", List.of()));
         when(historyService.getMessageCount("conv-1")).thenReturn(2L);
 
-        var response = controller.chat(new AgentController.ChatRequest("Analyse mon fichier", "conv-1"));
+        var response = controller.chat(new AgentController.ChatRequest(
+                "Analyse mon fichier", "conv-1", OperatingMode.PLAN, List.of(), null));
 
         assertThat(response.reply()).isEqualTo("Voici l'analyse...");
         assertThat(response.conversationId()).isEqualTo("conv-1");
         assertThat(response.messageCount()).isEqualTo(2);
         assertThat(response.timestamp()).isNotNull();
+        assertThat(response.toolCalls()).isEmpty();
     }
 
     @Test
     void chat_generatesConversationIdWhenAbsent() {
-        when(agentService.chat(anyString(), eq("Salut"))).thenReturn("Bonjour !");
+        when(agentService.chatWithToolCalls(anyString(), eq("Salut"),
+                eq(OperatingMode.PLAN), any(), any()))
+                .thenReturn(new AyanAgentService.ChatResult("Bonjour !", List.of()));
         when(historyService.getMessageCount(anyString())).thenReturn(2L);
 
-        var response = controller.chat(new AgentController.ChatRequest("Salut", null));
+        var response = controller.chat(new AgentController.ChatRequest(
+                "Salut", null, null, null, null));
 
         assertThat(response.conversationId()).isNotNull().isNotBlank();
         assertThat(response.reply()).isEqualTo("Bonjour !");
+    }
+
+    @Test
+    void chat_forwardsContextToAgent() {
+        when(agentService.chatWithToolCalls(anyString(), anyString(), any(), any(), any()))
+                .thenReturn(new AyanAgentService.ChatResult("ok", List.of()));
+        when(historyService.getMessageCount(anyString())).thenReturn(1L);
+
+        controller.chat(new AgentController.ChatRequest(
+                "tag ça", "c1", OperatingMode.APPLY, List.of("C:/a.mp3", "C:/b.mp3"), "C:/music"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<String>> paths = ArgumentCaptor.forClass(List.class);
+        verify(agentService).chatWithToolCalls(eq("c1"), eq("tag ça"),
+                eq(OperatingMode.APPLY), paths.capture(), eq("C:/music"));
+        assertThat(paths.getValue()).containsExactly("C:/a.mp3", "C:/b.mp3");
     }
 
     @Test

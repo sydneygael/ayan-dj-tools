@@ -10,7 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,7 +29,6 @@ class ManualModeServiceTest {
     @Mock PlanRepository planRepository;
     @Mock AudioFileWriter audioFileWriter;
     @Mock TaggingHistoryRepository historyRepository;
-    @Mock SimpMessagingTemplate messagingTemplate;
 
     private ManualModeService service;
 
@@ -43,7 +41,7 @@ class ManualModeServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ManualModeService(planRepository, audioFileWriter, historyRepository, messagingTemplate);
+        service = new ManualModeService(planRepository, audioFileWriter, historyRepository);
     }
 
     @Test
@@ -83,8 +81,6 @@ class ManualModeServiceTest {
         var planCaptor = ArgumentCaptor.forClass(TaggingPlan.class);
         verify(planRepository).save(planCaptor.capture());
         assertThat(planCaptor.getValue().currentIndex()).isEqualTo(1);
-
-        verify(messagingTemplate).convertAndSend(eq("/topic/plan/plan-1/progress"), any(TagProgressEvent.class));
     }
 
     @Test

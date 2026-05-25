@@ -3,7 +3,6 @@ package com.djtools.ayan.musictagger.infrastructure.service;
 import com.djtools.ayan.musictagger.domain.model.*;
 import com.djtools.ayan.musictagger.domain.port.out.PlanRepository;
 import com.djtools.ayan.musictagger.domain.usecase.ExecutePlanUseCase;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -14,14 +13,11 @@ public class ApplyModeService {
 
     private final PlanRepository planRepository;
     private final ExecutePlanUseCase executePlanUseCase;
-    private final SimpMessagingTemplate messagingTemplate;
 
     public ApplyModeService(PlanRepository planRepository,
-                            ExecutePlanUseCase executePlanUseCase,
-                            SimpMessagingTemplate messagingTemplate) {
+                            ExecutePlanUseCase executePlanUseCase) {
         this.planRepository = planRepository;
         this.executePlanUseCase = executePlanUseCase;
-        this.messagingTemplate = messagingTemplate;
     }
 
     @Async
@@ -36,8 +32,7 @@ public class ApplyModeService {
 
         planRepository.save(plan.withStatus(PlanStatus.APPLYING));
 
-        final var result = executePlanUseCase.execute(plan, event ->
-                messagingTemplate.convertAndSend("/topic/plan/" + planId + "/progress", event));
+        final var result = executePlanUseCase.execute(plan);
 
         final var completed = plan.withStatus(PlanStatus.COMPLETED)
                 .withOperations(plan.operations().stream()

@@ -4,7 +4,6 @@ import com.djtools.ayan.musictagger.domain.model.*;
 import com.djtools.ayan.musictagger.domain.port.out.AudioFileWriter;
 import com.djtools.ayan.musictagger.domain.port.out.PlanRepository;
 import com.djtools.ayan.musictagger.domain.port.out.TaggingHistoryRepository;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,16 +14,13 @@ public class ManualModeService {
     private final PlanRepository planRepository;
     private final AudioFileWriter audioFileWriter;
     private final TaggingHistoryRepository historyRepository;
-    private final SimpMessagingTemplate messagingTemplate;
 
     public ManualModeService(PlanRepository planRepository,
                              AudioFileWriter audioFileWriter,
-                             TaggingHistoryRepository historyRepository,
-                             SimpMessagingTemplate messagingTemplate) {
+                             TaggingHistoryRepository historyRepository) {
         this.planRepository = planRepository;
         this.audioFileWriter = audioFileWriter;
         this.historyRepository = historyRepository;
-        this.messagingTemplate = messagingTemplate;
     }
 
     public TagOperation prepareNextFile(String planId) {
@@ -76,10 +72,6 @@ public class ManualModeService {
                 plan.planId(), updatedOps, plan.createdAt(), planStatus,
                 plan.totalFiles(), plan.filesWithMissingTags(), plan.mode(), nextIndex);
         planRepository.save(updatedPlan);
-
-        var progressEvent = new TagProgressEvent(
-                planId, index, plan.operations().size(), op.filepath(), newStatus, message);
-        messagingTemplate.convertAndSend("/topic/plan/" + planId + "/progress", progressEvent);
 
         return updated;
     }

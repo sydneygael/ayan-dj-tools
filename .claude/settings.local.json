@@ -10,7 +10,9 @@
       "WebFetch(domain:reccobeats.com)",
       "Bash(flutter --version)",
       "Bash(flutter doctor:*)",
-      "Bash(flutter create:*)"
+      "Bash(flutter create:*)",
+      "Read(//c/Users/sydne/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/**)",
+      "Bash(python -m scripts.aggregate_benchmark \"C:\\\\repositories\\\\ayan-dj-tools\\\\.claude\\\\skills\\\\frontend-angular-workspace\\\\iteration-1\" --skill-name frontend-angular)"
     ],
     "deny": [
       "Read(./.env)",

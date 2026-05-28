@@ -1,5 +1,5 @@
 import { CommonModule, KeyValuePipe } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, resource, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom, map } from 'rxjs';
@@ -12,19 +12,21 @@ import { PlanProgressResponse, TagOperation, TaggingPlan } from '../core/models'
   imports: [CommonModule, KeyValuePipe],
   template: `
     <h1>Plan</h1>
-    <p class="hint">Revision et execution du plan de tagging (HTTP only).</p>
+    <p class="hint">Revision et execution du plan de tagging.</p>
 
-    @if (loading()) {
+    @if (planResource.isLoading()) {
       <p>Chargement...</p>
     } @else if (error()) {
       <p class="error">{{ error() }}</p>
-    } @else if (plan()) {
+    } @else if (planResource.error()) {
+      <p class="error">Erreur lors du chargement du plan</p>
+    } @else if (planResource.value()) {
       <section class="panel">
         <div class="row">
-          <div><strong>ID:</strong> {{ plan()!.planId }}</div>
-          <div><strong>Status:</strong> {{ plan()!.status }}</div>
-          <div><strong>Mode:</strong> {{ plan()!.mode }}</div>
-          <div><strong>Ops:</strong> {{ plan()!.operations.length }}</div>
+          <div><strong>ID:</strong> {{ planResource.value()!.planId }}</div>
+          <div><strong>Status:</strong> {{ planResource.value()!.status }}</div>
+          <div><strong>Mode:</strong> {{ planResource.value()!.mode }}</div>
+          <div><strong>Ops:</strong> {{ planResource.value()!.operations.length }}</div>
         </div>
         <div class="row">
           <div><strong>Applied:</strong> {{ appliedCount() }}</div>
@@ -33,7 +35,7 @@ import { PlanProgressResponse, TagOperation, TaggingPlan } from '../core/models'
           <div><strong>HTTP Polling:</strong> {{ pollingActive() ? 'ON' : 'OFF' }}</div>
         </div>
         <div class="row">
-          <button (click)="reload()">Rafraichir</button>
+          <button (click)="planResource.reload()">Rafraichir</button>
           <button (click)="approve()" [disabled]="busy()">Approuver</button>
           <button class="primary" (click)="execute()" [disabled]="busy()">Executer</button>
           <button class="primary" (click)="autoExecute()" [disabled]="busy()">Auto Execute</button>
@@ -76,7 +78,7 @@ import { PlanProgressResponse, TagOperation, TaggingPlan } from '../core/models'
             </tr>
           </thead>
           <tbody>
-            @for (op of plan()!.operations; track op.filepath) {
+            @for (op of planResource.value()!.operations; track op.filepath) {
               <tr>
                 <td class="mono">{{ op.filepath }}</td>
                 <td>{{ op.status }}</td>
@@ -98,14 +100,20 @@ export class PlanPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly loading = signal(true);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  readonly plan = signal<TaggingPlan | null>(null);
   readonly progress = signal<PlanProgressResponse | null>(null);
   readonly currentOperation = signal<TagOperation | null>(null);
   readonly planId = signal('');
   readonly pollingActive = signal(false);
+
+  readonly planResource = resource({
+    params: () => this.planId(),
+    loader: ({ params: id }): Promise<TaggingPlan | null> => {
+      if (!id) return Promise.resolve(null);
+      return firstValueFrom(this.api.getPlan(id));
+    },
+  });
 
   readonly appliedCount = computed(() => this.progress()?.appliedCount ?? 0);
   readonly errorCount = computed(() => this.progress()?.errorCount ?? 0);
@@ -124,38 +132,35 @@ export class PlanPageComponent {
       .subscribe((id) => {
         if (!id) {
           this.error.set('Plan ID manquant');
-          this.loading.set(false);
           return;
         }
         this.planId.set(id);
-        void this.loadPlan(id);
+        void this.refreshProgress(id);
       });
 
     this.destroyRef.onDestroy(() => this.stopPolling());
   }
 
-  async reload(): Promise<void> {
-    await this.loadPlan(this.planId());
-  }
-
   async approve(): Promise<void> {
     await this.wrapBusy(async () => {
       await firstValueFrom(this.api.approvePlan(this.planId()));
-      await this.loadPlan(this.planId());
+      this.planResource.reload();
     });
   }
 
   async execute(): Promise<void> {
     await this.wrapBusy(async () => {
       await firstValueFrom(this.api.executePlan(this.planId()));
-      await this.loadPlan(this.planId());
+      this.planResource.reload();
+      await this.refreshProgress(this.planId());
     });
   }
 
   async autoExecute(): Promise<void> {
     await this.wrapBusy(async () => {
       await firstValueFrom(this.api.autoExecutePlan(this.planId()));
-      await this.loadPlan(this.planId());
+      this.planResource.reload();
+      await this.refreshProgress(this.planId());
       this.startPolling();
     });
   }
@@ -172,16 +177,13 @@ export class PlanPageComponent {
 
   async confirmCurrent(approved: boolean): Promise<void> {
     const operation = this.currentOperation();
-    if (!operation) {
-      return;
-    }
-    const index = this.plan()?.operations.findIndex((op) => op.filepath === operation.filepath) ?? -1;
-    if (index < 0) {
-      return;
-    }
+    if (!operation) return;
+    const plan = this.planResource.value();
+    const index = plan?.operations.findIndex((op) => op.filepath === operation.filepath) ?? -1;
+    if (index < 0) return;
     await this.wrapBusy(async () => {
       await firstValueFrom(this.api.confirmOperation(this.planId(), index, approved));
-      await this.loadPlan(this.planId());
+      this.planResource.reload();
       await this.loadCurrentOperation();
     });
   }
@@ -190,23 +192,17 @@ export class PlanPageComponent {
     return Object.keys(map ?? {}).length;
   }
 
-  private async loadPlan(planId: string): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
+  private async refreshProgress(planId: string): Promise<void> {
     try {
-      const plan = await firstValueFrom(this.api.getPlan(planId));
-      this.plan.set(plan);
-      this.progress.set(await firstValueFrom(this.api.getPlanProgress(planId)));
-      if (plan.status === 'APPLYING') {
+      const prog = await firstValueFrom(this.api.getPlanProgress(planId));
+      this.progress.set(prog);
+      if (prog.status === 'APPLYING') {
         this.startPolling();
       } else {
         this.stopPolling();
       }
-    } catch (error: unknown) {
-      this.error.set(this.errorToMessage(error));
+    } catch {
       this.stopPolling();
-    } finally {
-      this.loading.set(false);
     }
   }
 
@@ -215,15 +211,13 @@ export class PlanPageComponent {
       this.pollingActive.set(true);
       return;
     }
-
     this.pollingActive.set(true);
     this.pollingTimer = window.setInterval(async () => {
       try {
         const progress = await firstValueFrom(this.api.getPlanProgress(this.planId()));
         this.progress.set(progress);
         if (progress.status !== 'APPLYING') {
-          const plan = await firstValueFrom(this.api.getPlan(this.planId()));
-          this.plan.set(plan);
+          this.planResource.reload();
           this.stopPolling();
         }
       } catch {
@@ -253,12 +247,8 @@ export class PlanPageComponent {
   }
 
   private errorToMessage(error: unknown): string {
-    if (typeof error === 'string') {
-      return error;
-    }
-    if (error instanceof Error) {
-      return error.message;
-    }
+    if (typeof error === 'string') return error;
+    if (error instanceof Error) return error.message;
     return 'Erreur lors du chargement du plan';
   }
 }

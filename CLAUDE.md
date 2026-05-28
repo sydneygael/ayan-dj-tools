@@ -122,6 +122,7 @@ Detailed implementation patterns live in `.claude/skills/` (auto-loaded when rel
 | `audio-processing/` | JAudiotagger read/write, validation, backup |
 | `rag-vectordb/` | Qdrant vectorization, similarity search |
 | `frontend-flutter/` | Flutter Desktop — Riverpod, GoRouter, STOMP, CustomPainter |
+| `angular-developer/` | Angular 21 web UI — signals, linkedSignal, resource, forms, routing, SSR, ARIA, animations, Tailwind CSS, testing |
 
 ## Implementation Phases
 

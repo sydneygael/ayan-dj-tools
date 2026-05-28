@@ -7,7 +7,8 @@ Application desktop pour DJs — enrichissement automatique des tags audio via I
 | Outil | Version minimale |
 |-------|-----------------|
 | Java (JDK) | 21+ |
-| Flutter SDK | 3.22+ |
+| Node.js | 22+ (frontend Angular) |
+| Flutter SDK | 3.22+ (frontend Desktop) |
 | Docker Desktop | 27+ |
 | Git | 2.x |
 
@@ -64,11 +65,13 @@ Les credentials Spotify sont optionnels mais activent l'enrichissement automatiq
 ayan-dj-tools/
 ├── domain/                  # Java pur — use cases, ports, value objects (pas de Spring)
 ├── infra/                   # Spring Boot 4 — adapters REST/WS, Spotify, Qdrant, Redis
-└── ayan_dj_tools_flutter/   # Flutter Desktop — Windows, macOS, Linux
+├── ayan_dj_tools_flutter/   # Flutter Desktop — Windows, macOS, Linux
+└── ayan_dj_tools_web/       # Angular 21 — interface web (signals, Material 3, STOMP)
 ```
 
 L'architecture est hexagonale (ports & adapters) avec DDD. Le module `domain` n'a aucune dépendance Spring.
 Le frontend Flutter Desktop communique avec le backend via HTTP (Dio) et WebSocket STOMP (`stomp_dart_client`).
+Le frontend Angular communique via HTTP (HttpClient) et WebSocket STOMP (`@stomp/stompjs`).
 
 ---
 
@@ -150,6 +153,21 @@ docker-compose up -d
 
 # Tests
 ./gradlew test
+```
+
+### Frontend Angular Web
+
+```bash
+cd ayan_dj_tools_web
+
+# Installer les dépendances
+npm install
+
+# Lancer en mode dev (localhost:4200)
+npm start
+
+# Build de production
+npm run build
 ```
 
 ### Frontend Flutter

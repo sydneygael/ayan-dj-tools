@@ -29,7 +29,7 @@ public class AgentController {
 
     @PostMapping("/chat")
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        String conversationId = request.conversationId() != null
+        var conversationId = request.conversationId() != null
                 ? request.conversationId()
                 : UUID.randomUUID().toString();
 

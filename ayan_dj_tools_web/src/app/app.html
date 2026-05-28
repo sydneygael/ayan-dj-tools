@@ -1,0 +1,34 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav mode="side" opened class="sidenav">
+    <div class="brand">
+      <mat-icon fontSet="material-symbols-rounded">library_music</mat-icon>
+      Ayan DJ Tools
+    </div>
+
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive="nav-active"
+          [routerLinkActiveOptions]="{ exact: false }">
+          <mat-icon matListItemIcon fontSet="material-symbols-rounded">{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="topbar">
+      <span class="spacer"></span>
+      <div class="status-wrap">
+        <span class="dot" [ngClass]="{ up: backendOk(), down: !backendOk() }"></span>
+        <span class="status-label">{{ backendStatusLabel() }}</span>
+      </div>
+    </mat-toolbar>
+
+    <div class="page-content">
+      <router-outlet />
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

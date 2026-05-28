@@ -102,11 +102,14 @@ export class PlanPageComponent {
 
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
+  // Signal simple (pas resource) : mis à jour par le polling indépendamment des rechargements du plan.
+  // Un resource() le réinitialiserait à undefined à chaque reload, cassant l'affichage en cours d'exécution.
   readonly progress = signal<PlanProgressResponse | null>(null);
   readonly currentOperation = signal<TagOperation | null>(null);
   readonly planId = signal('');
   readonly pollingActive = signal(false);
 
+  // Le changement de planId() déclenche automatiquement le rechargement via les params réactifs.
   readonly planResource = resource({
     params: () => this.planId(),
     loader: ({ params: id }): Promise<TaggingPlan | null> => {
@@ -124,6 +127,7 @@ export class PlanPageComponent {
   private pollingTimer: number | null = null;
 
   constructor() {
+    // La subscription route reste RxJS : ActivatedRoute n'expose pas d'API signal native.
     this.route.paramMap
       .pipe(
         map((params) => params.get('id') ?? ''),
@@ -134,7 +138,7 @@ export class PlanPageComponent {
           this.error.set('Plan ID manquant');
           return;
         }
-        this.planId.set(id);
+        this.planId.set(id); // déclenche planResource via ses params réactifs
         void this.refreshProgress(id);
       });
 
@@ -206,6 +210,7 @@ export class PlanPageComponent {
     }
   }
 
+  // TODO : remplacer par STOMP /topic/plan/{id}/progress pour éviter le polling HTTP.
   private startPolling(): void {
     if (this.pollingTimer !== null) {
       this.pollingActive.set(true);

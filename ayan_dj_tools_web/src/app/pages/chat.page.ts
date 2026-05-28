@@ -1,0 +1,472 @@
+import { CommonModule } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Router } from '@angular/router';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { ApiService } from '../core/api.service';
+import { ChatRequest, OperatingMode, UiMessage } from '../core/models';
+import { PreferencesStore } from '../core/preferences.store';
+import { ChatQuickActionsComponent } from '../shared/chat-quick-actions.component';
+import { ChatToolCallCardComponent } from '../shared/chat-tool-call-card.component';
+import { FilePickerComponent } from '../shared/file-picker.component';
+
+// Détecte les intentions qui nécessitent une sélection de fichiers pour bloquer l'envoi à vide.
+const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
+
+@Component({
+  standalone: true,
+  selector: 'app-chat-page',
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    FilePickerComponent,
+    ChatQuickActionsComponent,
+    ChatToolCallCardComponent,
+  ],
+  template: `
+    <div class="page-header">
+      <h1>Chat</h1>
+      <div class="header-right">
+        <span class="file-badge">{{ prefs.selectedFileCount() }} fichier(s)</span>
+
+        <mat-form-field subscriptSizing="dynamic" class="mode-field">
+          <mat-label>Mode</mat-label>
+          <mat-select [value]="prefs.currentMode()" (selectionChange)="onModeChange($event.value)">
+            <mat-option value="PLAN">PLAN</mat-option>
+            <mat-option value="MANUAL">MANUAL</mat-option>
+            <mat-option value="APPLY">APPLY</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <p class="hint">Conseille Ayan et crée un plan de tagging.</p>
+
+    <div class="chat-grid">
+      <!-- Conversation -->
+      <mat-card class="conversation-card">
+        <mat-card-header>
+          <mat-card-title>Conversation</mat-card-title>
+          <mat-card-subtitle>{{ conversationId().slice(0, 8) }}…</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="messages">
+            @if (messages().length === 0) {
+              <div class="empty-messages">
+                <mat-icon fontSet="material-symbols-rounded">chat_bubble</mat-icon>
+                <span>Aucun message pour l'instant.</span>
+              </div>
+            } @else {
+              @for (msg of messages(); track $index) {
+                @switch (msg.kind) {
+                  @case ('text') {
+                    <div class="msg" [class.user]="msg.role === 'user'">
+                      <div class="msg-role">{{ msg.role === 'user' ? 'Vous' : 'Ayan' }}</div>
+                      <div class="msg-content">{{ msg.content }}</div>
+                    </div>
+                  }
+                  @case ('tool') {
+                    <app-chat-tool-call-card
+                      [name]="msg.name"
+                      [args]="msg.argsJson"
+                      [status]="msg.status"
+                      [result]="msg.resultJson"
+                    />
+                  }
+                }
+              }
+            }
+          </div>
+        </mat-card-content>
+
+        <mat-card-content class="quick-actions-wrap">
+          <app-chat-quick-actions (fire)="sendTemplated($event)" />
+        </mat-card-content>
+
+        <mat-card-actions class="input-area">
+          @if (guardError(); as g) {
+            <p class="warn-hint">
+              <mat-icon fontSet="material-symbols-rounded" class="warn-icon">warning</mat-icon>
+              {{ g }}
+            </p>
+          }
+          <div class="input-row">
+            <mat-form-field class="message-field" subscriptSizing="dynamic">
+              <input
+                matInput
+                [value]="messageInput()"
+                (input)="messageInput.set($any($event.target).value)"
+                placeholder="Ex : analyse les fichiers sélectionnés…"
+                (keyup.enter)="sendMessage()"
+              />
+            </mat-form-field>
+            <button mat-flat-button
+              (click)="sendMessage()"
+              [disabled]="!canSend()"
+              matTooltip="Envoyer (Entrée)">
+              <mat-icon fontSet="material-symbols-rounded">send</mat-icon>
+            </button>
+          </div>
+
+          <div class="action-row">
+            <button mat-button (click)="loadHistory()">
+              <mat-icon fontSet="material-symbols-rounded">history</mat-icon>
+              Historique
+            </button>
+            <button mat-button (click)="newConversation()">
+              <mat-icon fontSet="material-symbols-rounded">add_comment</mat-icon>
+              Nouvelle conversation
+            </button>
+          </div>
+
+          @if (chatError()) {
+            <p class="error">{{ chatError() }}</p>
+          }
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Plan creation -->
+      <mat-card class="plan-card">
+        <mat-card-header>
+          <mat-card-title>Créer un plan</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          <app-file-picker />
+
+          @if (prefs.selectedFileCount() > 0) {
+            <p class="hint" style="margin-top: 10px">
+              {{ prefs.selectedFileCount() }} fichier(s) prêt(s) — mode {{ prefs.currentMode() }}.
+            </p>
+          }
+        </mat-card-content>
+
+        @if (prefs.selectedFileCount() > 0) {
+          <mat-card-actions>
+            <button mat-flat-button
+              (click)="createPlan()"
+              [disabled]="isCreatingPlan()">
+              <mat-icon fontSet="material-symbols-rounded">task_alt</mat-icon>
+              Créer un plan ({{ prefs.selectedFileCount() }})
+            </button>
+          </mat-card-actions>
+        }
+
+        @if (planError()) {
+          <mat-card-content>
+            <p class="error">{{ planError() }}</p>
+          </mat-card-content>
+        }
+      </mat-card>
+    </div>
+  `,
+  styles: `
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .page-header h1 { margin: 0; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .file-badge {
+      font-size: .8rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .mode-field { width: 130px; }
+
+    .chat-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .conversation-card, .plan-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .messages {
+      min-height: 300px;
+      max-height: 440px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--surface-0);
+    }
+
+    .empty-messages {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 180px;
+      color: var(--muted);
+      font-size: .9rem;
+
+      mat-icon { font-size: 36px; width: 36px; height: 36px; opacity: .4; }
+    }
+
+    .msg {
+      margin: 6px 0;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .msg.user {
+      background: var(--accent-soft);
+      margin-left: 20%;
+    }
+
+    .msg-role {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .msg-content { white-space: pre-wrap; }
+
+    .quick-actions-wrap { padding-top: 0; }
+
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 16px 16px;
+    }
+
+    .warn-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: .83rem;
+      color: #c8a000;
+    }
+
+    .warn-icon { font-size: 16px; width: 16px; height: 16px; color: #c8a000; }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .message-field { flex: 1; }
+
+    .action-row {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 1100px) {
+      .chat-grid { grid-template-columns: 1fr; }
+    }
+  `
+})
+export class ChatPageComponent {
+  private readonly api = inject(ApiService);
+  readonly prefs = inject(PreferencesStore);
+  private readonly router = inject(Router);
+
+  readonly conversationId = signal<string>(crypto.randomUUID());
+  readonly messages = signal<UiMessage[]>([]);
+  readonly isSending = signal(false);
+  readonly chatError = signal<string | null>(null);
+  readonly messageInput = signal('');
+
+  readonly isCreatingPlan = signal(false);
+  readonly planError = signal<string | null>(null);
+
+  private streamSubscription: Subscription | null = null;
+
+  readonly guardError = computed<string | null>(() => {
+    const text = this.messageInput().trim();
+    if (!text) return null;
+    if (this.prefs.selectedFileCount() === 0 && INTENT_RX.test(text)) {
+      return "Cette demande nécessite une sélection. Sélectionne au moins un fichier dans le panneau de droite.";
+    }
+    return null;
+  });
+
+  readonly canSend = computed(() =>
+    this.messageInput().trim().length > 0 && !this.guardError() && !this.isSending()
+  );
+
+  onModeChange(mode: OperatingMode): void {
+    this.prefs.setCurrentMode(mode);
+  }
+
+  sendTemplated(message: string): void {
+    this.messageInput.set(message);
+    void this.sendMessage();
+  }
+
+  async sendMessage(): Promise<void> {
+    const message = this.messageInput().trim();
+    if (!message || this.guardError()) return;
+
+    this.chatError.set(null);
+    this.messages.update((all) => [...all, { kind: 'text', role: 'user', content: message }]);
+    this.messageInput.set('');
+    this.isSending.set(true);
+
+    const request: ChatRequest = {
+      message,
+      conversationId: this.conversationId(),
+      mode: this.prefs.currentMode(),
+      filePaths: this.prefs.selectedFiles(),
+      currentDir: this.prefs.currentDir()
+    };
+
+    // Mémorise la position du message assistant pour y ajouter les tokens de streaming in-place.
+    // Les tool-call cards insérées avant ce slot décalent l'index, d'où l'incrément dans le case 'tool-call'.
+    let assistantIndex = -1;
+    this.messages.update((all) => {
+      assistantIndex = all.length;
+      return [...all, { kind: 'text', role: 'assistant', content: '' }];
+    });
+
+    this.streamSubscription?.unsubscribe();
+    this.streamSubscription = this.api.chatStream(request).subscribe({
+      next: (event) => {
+        if (event.conversationId && event.conversationId !== this.conversationId()) {
+          this.conversationId.set(event.conversationId);
+        }
+        switch (event.type) {
+          case 'chunk':
+            if (event.token) {
+              this.messages.update((all) => {
+                const copy = [...all];
+                const target = copy[assistantIndex];
+                if (target?.kind === 'text' && target.role === 'assistant') {
+                  copy[assistantIndex] = { ...target, content: target.content + event.token };
+                }
+                return copy;
+              });
+            }
+            break;
+          case 'tool-call':
+            this.messages.update((all) => {
+              const copy = [...all];
+              const card: UiMessage = {
+                kind: 'tool',
+                toolCallId: event.toolCallId ?? crypto.randomUUID(),
+                name: event.toolName ?? 'unknown',
+                argsJson: event.toolArgsJson ?? '',
+                status: 'done'
+              };
+              copy.splice(assistantIndex, 0, card);
+              assistantIndex += 1;
+              return copy;
+            });
+            break;
+          case 'done':
+            if (event.reply) {
+              this.messages.update((all) => {
+                const copy = [...all];
+                const target = copy[assistantIndex];
+                if (target?.kind === 'text' && target.role === 'assistant') {
+                  copy[assistantIndex] = { ...target, content: event.reply ?? target.content };
+                }
+                return copy;
+              });
+            }
+            break;
+          case 'error':
+            this.chatError.set(event.token ?? 'Erreur de streaming');
+            break;
+        }
+      },
+      error: (err) => {
+        this.chatError.set(this.errorToMessage(err));
+        this.isSending.set(false);
+      },
+      complete: () => {
+        this.isSending.set(false);
+      }
+    });
+  }
+
+  async loadHistory(): Promise<void> {
+    this.chatError.set(null);
+    try {
+      const history = await firstValueFrom(this.api.getConversationHistory(this.conversationId()));
+      this.messages.set(
+        history.map((m) => ({
+          kind: 'text' as const,
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content
+        }))
+      );
+    } catch (error: unknown) {
+      this.chatError.set(this.errorToMessage(error));
+    }
+  }
+
+  newConversation(): void {
+    this.streamSubscription?.unsubscribe();
+    this.streamSubscription = null;
+    this.conversationId.set(crypto.randomUUID());
+    this.messages.set([]);
+    this.chatError.set(null);
+  }
+
+  async createPlan(): Promise<void> {
+    const filePaths = this.prefs.selectedFiles();
+    if (filePaths.length === 0) {
+      this.planError.set('Sélectionne au moins un fichier audio via le navigateur.');
+      return;
+    }
+
+    this.planError.set(null);
+    this.isCreatingPlan.set(true);
+    try {
+      const plan = await firstValueFrom(this.api.createPlan(filePaths, this.prefs.currentMode()));
+      await this.router.navigate(['/plan', plan.planId]);
+    } catch (error: unknown) {
+      this.planError.set(this.errorToMessage(error));
+    } finally {
+      this.isCreatingPlan.set(false);
+    }
+  }
+
+  private errorToMessage(error: unknown): string {
+    if (typeof error === 'string') return error;
+    if (error instanceof Error) return error.message;
+    return 'Une erreur est survenue';
+  }
+}

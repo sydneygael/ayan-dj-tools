@@ -1,0 +1,177 @@
+@use '@angular/material' as mat;
+
+// ── Angular Material M3 Theme ──────────────────────────────────────────────
+
+html {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      theme-type: dark,
+    ),
+    density: 0,
+  ));
+}
+
+html[data-theme='light'] {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      theme-type: light,
+    ),
+    density: 0,
+  ));
+}
+
+// Use rounded Material Symbols variant
+.material-symbols-rounded {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+}
+
+// ── Design tokens ──────────────────────────────────────────────────────────
+
+:root {
+  --surface-0: #111316;
+  --surface-1: #181c21;
+  --surface-2: #212832;
+  --text: #e9edf2;
+  --muted: #a9b2bc;
+  --border: #2d353f;
+  --accent-soft: #1e3658;
+  --accent-text: #d8e8ff;
+  --error: #d04a4a;
+  --success: #19a25f;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --surface-0: #ffffff;
+  --surface-1: #f4f7fb;
+  --surface-2: #e8edf4;
+  --text: #1e2630;
+  --muted: #556171;
+  --border: #cdd7e5;
+  --accent-soft: #d8e7ff;
+  --accent-text: #1d3d66;
+  --error: #c0392b;
+  --success: #1a7a47;
+  color-scheme: light;
+}
+
+// ── Base ────────────────────────────────────────────────────────────────────
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--surface-0);
+  color: var(--text);
+}
+
+// Override Material font
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-flat-button,
+.mat-mdc-stroked-button,
+.mat-mdc-icon-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab,
+mat-label,
+.mdc-text-field,
+.mat-mdc-form-field,
+.mat-mdc-select,
+.mat-mdc-option,
+.mat-mdc-list-item,
+.mat-mdc-card {
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif !important;
+}
+
+// ── Material overrides — match design tokens ────────────────────────────────
+
+// Sidenav
+.mat-drawer {
+  background: var(--surface-1) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border) !important;
+}
+
+.mat-drawer-container {
+  background: var(--surface-0) !important;
+  color: var(--text) !important;
+}
+
+// Toolbar
+.mat-toolbar {
+  background: var(--surface-1) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+  min-height: 48px !important;
+}
+
+// Nav list active item
+.mat-mdc-list-item.nav-active {
+  background: var(--accent-soft) !important;
+  color: var(--accent-text) !important;
+  border-radius: 8px;
+
+  .mat-icon { color: var(--accent-text) !important; }
+}
+
+// Cards
+.mat-mdc-card {
+  background: var(--surface-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  --mdc-elevated-card-container-color: var(--surface-1);
+}
+
+// Form field — dark surface
+.mat-mdc-form-field .mdc-text-field {
+  background: var(--surface-0) !important;
+}
+.mat-mdc-form-field .mdc-text-field--outlined .mdc-notched-outline__leading,
+.mat-mdc-form-field .mdc-text-field--outlined .mdc-notched-outline__notch,
+.mat-mdc-form-field .mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: var(--border) !important;
+}
+
+// ── Typography helpers ──────────────────────────────────────────────────────
+
+h1 { margin: 0 0 6px; font-size: 1.4rem; }
+h2 { margin: 0 0 10px; font-size: 1.05rem; }
+h3 { margin: 10px 0 6px; font-size: .95rem; }
+
+// ── Utility classes ─────────────────────────────────────────────────────────
+
+.hint  { margin-top: 0; color: var(--muted); font-size: .9rem; }
+.empty { color: var(--muted); font-size: .9rem; }
+.error { color: var(--error); margin: 4px 0; }
+.ok    { color: var(--success); margin: 4px 0; }
+.mono  { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+.small { font-size: .8rem; color: var(--muted); }
+.row   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+// ── Panel (legacy — use mat-card in new code) ───────────────────────────────
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--surface-1);
+}
+
+// ── Code blocks ─────────────────────────────────────────────────────────────
+
+pre {
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  overflow: auto;
+  margin: 0;
+  font-size: .85rem;
+}

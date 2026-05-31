@@ -10,6 +10,8 @@ interface PreferencesState {
   theme: ThemeMode;
   language: Lang;
   defaultMusicDir: string;
+  currentDir: string;
+  selectedFiles: string[];
 }
 
 const STORAGE_KEY = 'ayan.dj.preferences';
@@ -19,27 +21,26 @@ const DEFAULT_PREFERENCES: PreferencesState = {
   defaultMode: 'PLAN',
   theme: 'dark',
   language: 'fr',
-  defaultMusicDir: ''
+  defaultMusicDir: '',
+  currentDir: '',
+  selectedFiles: []
 };
 
 @Injectable({ providedIn: 'root' })
 export class PreferencesStore {
   private readonly state = signal<PreferencesState>(this.loadState());
 
-  readonly apiBaseUrl = computed(() => this.state().apiBaseUrl);
-  readonly defaultMode = computed(() => this.state().defaultMode);
-  readonly theme = computed(() => this.state().theme);
-  readonly language = computed(() => this.state().language);
+  readonly apiBaseUrl      = computed(() => this.state().apiBaseUrl);
+  readonly defaultMode     = computed(() => this.state().defaultMode);
+  readonly theme           = computed(() => this.state().theme);
+  readonly language        = computed(() => this.state().language);
   readonly defaultMusicDir = computed(() => this.state().defaultMusicDir);
+  readonly currentDir      = computed(() => this.state().currentDir || null);
+  readonly selectedFiles   = computed(() => this.state().selectedFiles);
+  readonly selectedFileCount = computed(() => this.state().selectedFiles.length);
 
   private readonly _currentMode = signal<OperatingMode>(this.state().defaultMode);
-  private readonly _selectedFiles = signal<string[]>([]);
-  private readonly _currentDir = signal<string | null>(null);
-
   readonly currentMode = this._currentMode.asReadonly();
-  readonly selectedFiles = this._selectedFiles.asReadonly();
-  readonly currentDir = this._currentDir.asReadonly();
-  readonly selectedFileCount = computed(() => this._selectedFiles().length);
 
   constructor() {
     effect(() => {
@@ -75,15 +76,15 @@ export class PreferencesStore {
   }
 
   setSelectedFiles(paths: string[]): void {
-    this._selectedFiles.set([...paths]);
+    this.patch({ selectedFiles: [...paths] });
   }
 
   clearSelectedFiles(): void {
-    this._selectedFiles.set([]);
+    this.patch({ selectedFiles: [] });
   }
 
   setCurrentDir(dir: string | null): void {
-    this._currentDir.set(dir && dir.trim() ? dir : null);
+    this.patch({ currentDir: dir?.trim() ?? '' });
   }
 
   exportJson(): string {
@@ -93,11 +94,13 @@ export class PreferencesStore {
   importJson(raw: string): void {
     const parsed = JSON.parse(raw) as Partial<PreferencesState>;
     this.state.set({
-      apiBaseUrl: parsed.apiBaseUrl ?? DEFAULT_PREFERENCES.apiBaseUrl,
-      defaultMode: parsed.defaultMode ?? DEFAULT_PREFERENCES.defaultMode,
-      theme: parsed.theme ?? DEFAULT_PREFERENCES.theme,
-      language: parsed.language ?? DEFAULT_PREFERENCES.language,
-      defaultMusicDir: parsed.defaultMusicDir ?? DEFAULT_PREFERENCES.defaultMusicDir
+      apiBaseUrl:      parsed.apiBaseUrl      ?? DEFAULT_PREFERENCES.apiBaseUrl,
+      defaultMode:     parsed.defaultMode     ?? DEFAULT_PREFERENCES.defaultMode,
+      theme:           parsed.theme           ?? DEFAULT_PREFERENCES.theme,
+      language:        parsed.language        ?? DEFAULT_PREFERENCES.language,
+      defaultMusicDir: parsed.defaultMusicDir ?? DEFAULT_PREFERENCES.defaultMusicDir,
+      currentDir:      parsed.currentDir      ?? DEFAULT_PREFERENCES.currentDir,
+      selectedFiles:   parsed.selectedFiles   ?? DEFAULT_PREFERENCES.selectedFiles
     });
     this._currentMode.set(this.state().defaultMode);
   }
@@ -108,18 +111,18 @@ export class PreferencesStore {
 
   private loadState(): PreferencesState {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_PREFERENCES;
-    }
+    if (!raw) return DEFAULT_PREFERENCES;
 
     try {
       const parsed = JSON.parse(raw) as Partial<PreferencesState>;
       return {
-        apiBaseUrl: parsed.apiBaseUrl ?? DEFAULT_PREFERENCES.apiBaseUrl,
-        defaultMode: parsed.defaultMode ?? DEFAULT_PREFERENCES.defaultMode,
-        theme: parsed.theme ?? DEFAULT_PREFERENCES.theme,
-        language: parsed.language ?? DEFAULT_PREFERENCES.language,
-        defaultMusicDir: parsed.defaultMusicDir ?? DEFAULT_PREFERENCES.defaultMusicDir
+        apiBaseUrl:      parsed.apiBaseUrl      ?? DEFAULT_PREFERENCES.apiBaseUrl,
+        defaultMode:     parsed.defaultMode     ?? DEFAULT_PREFERENCES.defaultMode,
+        theme:           parsed.theme           ?? DEFAULT_PREFERENCES.theme,
+        language:        parsed.language        ?? DEFAULT_PREFERENCES.language,
+        defaultMusicDir: parsed.defaultMusicDir ?? DEFAULT_PREFERENCES.defaultMusicDir,
+        currentDir:      parsed.currentDir      ?? DEFAULT_PREFERENCES.currentDir,
+        selectedFiles:   Array.isArray(parsed.selectedFiles) ? parsed.selectedFiles : []
       };
     } catch {
       return DEFAULT_PREFERENCES;

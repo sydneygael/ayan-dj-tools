@@ -7,8 +7,8 @@ public record SpotifyTrackItem(
         String name,
         List<SpotifyArtistItem> artists,
         SpotifyAlbum album,
-        long duration_ms,
-        int popularity
+        Long duration_ms,
+        Integer popularity
 ) {
 
     public String primaryArtist() {

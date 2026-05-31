@@ -6,6 +6,6 @@ public record SpotifyArtist(
         String id,
         String name,
         List<String> genres,
-        int popularity,
+        Integer popularity,
         SpotifyFollowers followers
 ) {}

@@ -36,7 +36,7 @@ class TrackVectorizationServiceTest {
         return new EnrichedTrackMetadata(
                 "sp123", "Daft Punk", "Around The World", "Homework",
                 List.of("Electronic"), List.of(), "Virgin", "FR",
-                "ISRC123", List.of(), 1997, 82, 420000, null
+                "ISRC123", List.of(), 1997, 82, 420000L, null
         );
     }
 

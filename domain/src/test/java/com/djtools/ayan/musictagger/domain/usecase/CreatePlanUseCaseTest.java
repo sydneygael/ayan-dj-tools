@@ -44,7 +44,7 @@ class CreatePlanUseCaseTest {
         var metadata = new EnrichedTrackMetadata(
                 "sp-123", "Daft Punk", "Around The World", "Homework",
                 List.of("Electronic", "House"), List.of(), "Virgin", "FR",
-                "ISRC123", List.of(), 1997, 80, 420000,
+                "ISRC123", List.of(), 1997, 80, 420000L,
                 new AudioFeatures(0.8, 0.9, 0.7, 0.1, 0.5, 0.1, 128.0, "A", "minor", 4)
         );
         when(metadataProvider.enrich("Daft Punk", "Around The World"))
@@ -76,7 +76,7 @@ class CreatePlanUseCaseTest {
         when(audioFileReader.readTags(path)).thenReturn(Optional.of(fileInfo));
         when(metadataProvider.enrich("Artist", "Title")).thenReturn(EnrichmentResult.success(
                 new EnrichedTrackMetadata("sp-1", "Artist", "Title", "Album",
-                        List.of("Techno"), List.of(), null, null, null, List.of(), 2020, 50, 300000, null)
+                        List.of("Techno"), List.of(), null, null, null, List.of(), 2020, 50, 300000L, null)
         ));
 
         TaggingPlan plan = useCase.execute("plan-2", List.of(path));

@@ -2,38 +2,38 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
 import com.djtools.ayan.musictagger.domain.model.OperatingMode;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
-import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
-import com.djtools.ayan.musictagger.infrastructure.service.ConversationHistoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AgentControllerTest {
 
     @Mock AyanAgentService agentService;
-    @Mock ConversationHistoryService historyService;
+    @Mock ChatMemory chatMemory;
     @InjectMocks AgentController controller;
 
     @Test
     void chat_returnsAgentReplyWithConversationId() {
         when(agentService.chatWithToolCalls(eq("conv-1"), eq("Analyse mon fichier"),
                 eq(OperatingMode.PLAN), any(), any()))
-                .thenReturn(new AyanAgentService.ChatResult("Voici l'analyse...", List.of()));
-        when(historyService.getMessageCount("conv-1")).thenReturn(2L);
+                .thenReturn(new AyanAgentService.ChatResult("Voici l'analyse...", "conv-1", List.of()));
+        when(chatMemory.get("conv-1")).thenReturn(List.of(
+                new UserMessage("Analyse mon fichier"),
+                new AssistantMessage("Voici l'analyse...")
+        ));
 
         var response = controller.chat(new AgentController.ChatRequest(
                 "Analyse mon fichier", "conv-1", OperatingMode.PLAN, List.of(), null));
@@ -49,8 +49,8 @@ class AgentControllerTest {
     void chat_generatesConversationIdWhenAbsent() {
         when(agentService.chatWithToolCalls(anyString(), eq("Salut"),
                 eq(OperatingMode.PLAN), any(), any()))
-                .thenReturn(new AyanAgentService.ChatResult("Bonjour !", List.of()));
-        when(historyService.getMessageCount(anyString())).thenReturn(2L);
+                .thenAnswer(inv -> new AyanAgentService.ChatResult("Bonjour !", inv.getArgument(0), List.of()));
+        when(chatMemory.get(anyString())).thenReturn(List.of());
 
         var response = controller.chat(new AgentController.ChatRequest(
                 "Salut", null, null, null, null));
@@ -62,8 +62,8 @@ class AgentControllerTest {
     @Test
     void chat_forwardsContextToAgent() {
         when(agentService.chatWithToolCalls(anyString(), anyString(), any(), any(), any()))
-                .thenReturn(new AyanAgentService.ChatResult("ok", List.of()));
-        when(historyService.getMessageCount(anyString())).thenReturn(1L);
+                .thenReturn(new AyanAgentService.ChatResult("ok", "c1", List.of()));
+        when(chatMemory.get(anyString())).thenReturn(List.of());
 
         controller.chat(new AgentController.ChatRequest(
                 "tag ça", "c1", OperatingMode.APPLY, List.of("C:/a.mp3", "C:/b.mp3"), "C:/music"));
@@ -76,20 +76,33 @@ class AgentControllerTest {
     }
 
     @Test
-    void getHistory_delegatesToService() {
-        var messages = List.of(new ChatMessage("user", "Test", LocalDateTime.now()));
-        when(historyService.getHistory("conv-1")).thenReturn(messages);
+    void getHistory_returnsMessagesFromChatMemory() {
+        when(chatMemory.get("conv-1")).thenReturn(List.of(
+                new UserMessage("Test"),
+                new AssistantMessage("Réponse")
+        ));
 
         var result = controller.getHistory("conv-1");
 
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().content()).isEqualTo("Test");
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).role()).isEqualTo("user");
+        assertThat(result.get(0).content()).isEqualTo("Test");
+        assertThat(result.get(1).role()).isEqualTo("assistant");
+        assertThat(result.get(1).content()).isEqualTo("Réponse");
     }
 
     @Test
-    void clearConversation_delegatesToService() {
-        controller.clearConversation("conv-1");
+    void getHistory_returnsEmptyListWhenNoMessages() {
+        when(chatMemory.get("conv-empty")).thenReturn(List.of());
 
-        verify(historyService).clearHistory("conv-1");
+        var result = controller.getHistory("conv-empty");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void clearConversation_delegatesToChatMemory() {
+        controller.clearConversation("conv-1");
+        verify(chatMemory).clear("conv-1");
     }
 }

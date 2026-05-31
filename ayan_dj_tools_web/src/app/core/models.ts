@@ -144,6 +144,8 @@ export interface EnrichedTrackMetadata {
   title?: string | null;
   album?: string | null;
   genres?: string[];
+  releaseYear?: number | null;
+  popularity?: number | null;
   durationMs?: number | null;
   audioFeatures?: AudioFeatures | null;
 }
@@ -216,4 +218,19 @@ export interface FileBrowserPage {
   totalEntries: number;
   totalPages: number;
   entries: FileEntry[];
+}
+
+export interface FileAnalysisItem {
+  filepath: string;
+  filename: string;
+  currentTags: Record<string, string>;
+  missingTags: string[];
+}
+
+export interface FileEnrichItem {
+  filepath: string;
+  filename: string;
+  status: 'SUCCESS' | 'NOT_FOUND' | 'ERROR';
+  message?: string | null;
+  metadata?: EnrichedTrackMetadata | null;
 }

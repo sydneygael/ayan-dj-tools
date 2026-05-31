@@ -1,18 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
-import { ChatRequest, OperatingMode, UiMessage } from '../core/models';
+import { ChatRequest, FileAnalysisItem, FileEnrichItem, OperatingMode, UiMessage } from '../core/models';
 import { PreferencesStore } from '../core/preferences.store';
-import { ChatQuickActionsComponent } from '../shared/chat-quick-actions.component';
+import { ChatQuickActionsComponent, QuickAction } from '../shared/chat-quick-actions.component';
 import { ChatToolCallCardComponent } from '../shared/chat-tool-call-card.component';
 import { FilePickerComponent } from '../shared/file-picker.component';
 
@@ -31,6 +32,7 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    MatSnackBarModule,
     FilePickerComponent,
     ChatQuickActionsComponent,
     ChatToolCallCardComponent,
@@ -63,7 +65,7 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
         </mat-card-header>
 
         <mat-card-content>
-          <div class="messages">
+          <div class="messages" #messagesContainer>
             @if (messages().length === 0) {
               <div class="empty-messages">
                 <mat-icon fontSet="material-symbols-rounded">chat_bubble</mat-icon>
@@ -75,7 +77,12 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
                   @case ('text') {
                     <div class="msg" [class.user]="msg.role === 'user'">
                       <div class="msg-role">{{ msg.role === 'user' ? 'Vous' : 'Ayan' }}</div>
-                      <div class="msg-content">{{ msg.content }}</div>
+                      <div class="msg-content">
+                        {{ msg.content }}
+                        @if (msg.role === 'assistant' && msg.content === '' && pendingReply()) {
+                          <span class="thinking-dots">···</span>
+                        }
+                      </div>
                     </div>
                   }
                   @case ('tool') {
@@ -93,7 +100,7 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
         </mat-card-content>
 
         <mat-card-content class="quick-actions-wrap">
-          <app-chat-quick-actions (fire)="sendTemplated($event)" />
+          <app-chat-quick-actions (fire)="onQuickAction($event)" />
         </mat-card-content>
 
         <mat-card-actions class="input-area">
@@ -145,7 +152,7 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
         </mat-card-header>
 
         <mat-card-content>
-          <app-file-picker />
+          <app-file-picker (filesSelected)="onFilesConfirmed($event)" />
 
           @if (prefs.selectedFileCount() > 0) {
             <p class="hint" style="margin-top: 10px">
@@ -258,6 +265,20 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
 
     .msg-content { white-space: pre-wrap; }
 
+    .thinking-dots {
+      display: inline-block;
+      color: var(--muted);
+      font-size: 1.4rem;
+      letter-spacing: .15em;
+      animation: thinking-blink 1.2s steps(1) infinite;
+    }
+
+    @keyframes thinking-blink {
+      0%, 100% { opacity: 1; }
+      33%       { opacity: .4; }
+      66%       { opacity: .1; }
+    }
+
     .quick-actions-wrap { padding-top: 0; }
 
     .input-area {
@@ -301,10 +322,14 @@ export class ChatPageComponent {
   private readonly api = inject(ApiService);
   readonly prefs = inject(PreferencesStore);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
+
+  @ViewChild('messagesContainer') private messagesContainerRef?: ElementRef<HTMLElement>;
 
   readonly conversationId = signal<string>(crypto.randomUUID());
   readonly messages = signal<UiMessage[]>([]);
   readonly isSending = signal(false);
+  readonly pendingReply = signal(false);
   readonly chatError = signal<string | null>(null);
   readonly messageInput = signal('');
 
@@ -330,19 +355,72 @@ export class ChatPageComponent {
     this.prefs.setCurrentMode(mode);
   }
 
+  onQuickAction(action: QuickAction): void {
+    if (action.direct === 'analyze') { void this.runDirectAnalyze(); return; }
+    if (action.direct === 'enrich')  { void this.runDirectEnrich();  return; }
+    this.sendTemplated(action.message);
+  }
+
+  async runDirectAnalyze(): Promise<void> {
+    const paths = this.prefs.selectedFiles();
+    this.addUserMessage('Analyse les fichiers sélectionnés et liste les tags manquants.');
+    const idx = this.addPendingAssistant();
+    this.isSending.set(true);
+    this.pendingReply.set(true);
+    try {
+      const items = await firstValueFrom(this.api.analyzeFiles(paths));
+      this.replaceAssistant(idx, this.formatAnalysis(items));
+    } catch (err) {
+      this.replaceAssistant(idx, '');
+      this.chatError.set(this.errorToMessage(err));
+    } finally {
+      this.isSending.set(false);
+      this.pendingReply.set(false);
+      this.scrollMessagesToBottom();
+    }
+  }
+
+  async runDirectEnrich(): Promise<void> {
+    const paths = this.prefs.selectedFiles();
+    this.addUserMessage('Enrichis les fichiers sélectionnés via Spotify.');
+    const idx = this.addPendingAssistant();
+    this.isSending.set(true);
+    this.pendingReply.set(true);
+    try {
+      const items = await firstValueFrom(this.api.enrichFiles(paths));
+      this.replaceAssistant(idx, this.formatEnrichment(items));
+    } catch (err) {
+      this.replaceAssistant(idx, '');
+      this.chatError.set(this.errorToMessage(err));
+    } finally {
+      this.isSending.set(false);
+      this.pendingReply.set(false);
+      this.scrollMessagesToBottom();
+    }
+  }
+
   sendTemplated(message: string): void {
     this.messageInput.set(message);
     void this.sendMessage();
   }
 
+  onFilesConfirmed(paths: string[]): void {
+    this.snackBar.open(
+      `${paths.length} fichier(s) prêt(s) — utilise les actions rapides ci-dessus.`,
+      'OK',
+      { duration: 4000, horizontalPosition: 'center', verticalPosition: 'top' }
+    );
+  }
+
   async sendMessage(): Promise<void> {
     const message = this.messageInput().trim();
-    if (!message || this.guardError()) return;
+    if (!message || this.guardError() || this.isSending()) return;
 
     this.chatError.set(null);
     this.messages.update((all) => [...all, { kind: 'text', role: 'user', content: message }]);
     this.messageInput.set('');
     this.isSending.set(true);
+    this.pendingReply.set(true);
 
     const request: ChatRequest = {
       message,
@@ -369,6 +447,7 @@ export class ChatPageComponent {
         switch (event.type) {
           case 'chunk':
             if (event.token) {
+              this.pendingReply.set(false);
               this.messages.update((all) => {
                 const copy = [...all];
                 const target = copy[assistantIndex];
@@ -395,6 +474,7 @@ export class ChatPageComponent {
             });
             break;
           case 'done':
+            this.pendingReply.set(false);
             if (event.reply) {
               this.messages.update((all) => {
                 const copy = [...all];
@@ -407,16 +487,20 @@ export class ChatPageComponent {
             }
             break;
           case 'error':
+            this.pendingReply.set(false);
             this.chatError.set(event.token ?? 'Erreur de streaming');
             break;
         }
       },
       error: (err) => {
+        this.pendingReply.set(false);
         this.chatError.set(this.errorToMessage(err));
         this.isSending.set(false);
       },
       complete: () => {
+        this.pendingReply.set(false);
         this.isSending.set(false);
+        this.scrollMessagesToBottom();
       }
     });
   }
@@ -462,6 +546,74 @@ export class ChatPageComponent {
     } finally {
       this.isCreatingPlan.set(false);
     }
+  }
+
+  private addUserMessage(text: string): void {
+    this.messages.update((all) => [...all, { kind: 'text', role: 'user', content: text }]);
+  }
+
+  private addPendingAssistant(): number {
+    let idx = -1;
+    this.messages.update((all) => { idx = all.length; return [...all, { kind: 'text', role: 'assistant', content: '' }]; });
+    return idx;
+  }
+
+  private replaceAssistant(idx: number, content: string): void {
+    this.messages.update((all) => {
+      const copy = [...all];
+      const t = copy[idx];
+      if (t?.kind === 'text' && t.role === 'assistant') copy[idx] = { ...t, content };
+      return copy;
+    });
+  }
+
+  private formatAnalysis(items: FileAnalysisItem[]): string {
+    if (!items.length) return 'Aucun fichier lisible dans la sélection.';
+    const complete = items.filter((i) => !i.missingTags.length).length;
+    const missing  = items.length - complete;
+    let out = `ANALYSE — ${items.length} fichier(s)\n`;
+    out += `─────────────────────────────────────\n`;
+    out += `✓ ${complete} complet(s)   ✗ ${missing} avec tags manquants\n\n`;
+    for (const item of items) {
+      out += `${item.filename}\n`;
+      const tags = Object.entries(item.currentTags).map(([k, v]) => `${k} : ${v}`).join('  |  ');
+      if (tags) out += `  ${tags}\n`;
+      if (item.missingTags.length) out += `  Manquants : ${item.missingTags.join(', ')}\n`;
+      else out += `  ✓ Tags complets\n`;
+    }
+    return out.trim();
+  }
+
+  private formatEnrichment(items: FileEnrichItem[]): string {
+    if (!items.length) return 'Aucun fichier traité.';
+    const ok  = items.filter((i) => i.status === 'SUCCESS').length;
+    const nf  = items.filter((i) => i.status === 'NOT_FOUND').length;
+    const err = items.filter((i) => i.status === 'ERROR').length;
+    let out = `ENRICHISSEMENT SPOTIFY — ${items.length} fichier(s)\n`;
+    out += `─────────────────────────────────────\n`;
+    out += `✓ ${ok} trouvé(s)   ✗ ${nf} introuvable(s)   ⚠ ${err} erreur(s)\n\n`;
+    for (const item of items) {
+      const icon = item.status === 'SUCCESS' ? '✓' : item.status === 'NOT_FOUND' ? '✗' : '⚠';
+      out += `${icon} ${item.filename}\n`;
+      if (item.status === 'SUCCESS' && item.metadata) {
+        const m = item.metadata;
+        const parts: string[] = [];
+        if (m.album)                     parts.push(`Album : ${m.album}`);
+        if (m.genres?.length)            parts.push(`Genre : ${m.genres.join(', ')}`);
+        if (m.audioFeatures?.bpm)        parts.push(`BPM : ${Math.round(m.audioFeatures.bpm)}`);
+        if (m.audioFeatures?.fullKey?.length) parts.push(`Tonalité : ${m.audioFeatures.fullKey}`);
+        if (m.releaseYear)               parts.push(`Année : ${m.releaseYear}`);
+        if (parts.length) out += `  ${parts.join('  |  ')}\n`;
+      } else if (item.message) {
+        out += `  ${item.message}\n`;
+      }
+    }
+    return out.trim();
+  }
+
+  private scrollMessagesToBottom(): void {
+    const el = this.messagesContainerRef?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 
   private errorToMessage(error: unknown): string {

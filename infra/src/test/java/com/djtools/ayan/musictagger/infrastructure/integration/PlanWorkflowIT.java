@@ -84,7 +84,7 @@ class PlanWorkflowIT {
                     EnrichmentResult.success(new EnrichedTrackMetadata(
                             "spotify:123", "Test Artist", "Test Title", "Test Album",
                             List.of("Electronic"), List.of(), null, null, null, List.of(),
-                            2024, 80, 210000,
+                            2024, 80, 210000L,
                             new AudioFeatures(0.8, 0.7, 0.6, 0.1, 0.0, 0.05, 128.0, "A", "minor", 4)
                     ))
             );

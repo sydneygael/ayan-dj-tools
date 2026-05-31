@@ -115,7 +115,7 @@ class SpotifyMusicMetadataAdapterTest {
                 id, name,
                 List.of(new SpotifyArtistItem(artistId, artist)),
                 new SpotifyAlbum(albumId(album), album, releaseDate, List.of()),
-                210000, popularity
+                210000L, popularity
         );
     }
 

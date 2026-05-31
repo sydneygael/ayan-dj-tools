@@ -13,7 +13,7 @@ class SimilarTrackResultTest {
         return new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
-                "ISRC123", List.of(), 2024, 80, 210000, null
+                "ISRC123", List.of(), 2024, 80, 210000L, null
         );
     }
 

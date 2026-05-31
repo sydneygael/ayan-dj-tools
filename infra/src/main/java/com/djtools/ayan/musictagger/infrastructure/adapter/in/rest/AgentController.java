@@ -3,8 +3,8 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 import com.djtools.ayan.musictagger.domain.model.OperatingMode;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
 import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
-import com.djtools.ayan.musictagger.infrastructure.service.ConversationHistoryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -20,28 +20,28 @@ import java.util.UUID;
 public class AgentController {
 
     private final AyanAgentService agentService;
-    private final ConversationHistoryService historyService;
+    private final ChatMemory chatMemory;
 
-    public AgentController(AyanAgentService agentService, ConversationHistoryService historyService) {
+    public AgentController(AyanAgentService agentService, ChatMemory chatMemory) {
         this.agentService = agentService;
-        this.historyService = historyService;
+        this.chatMemory = chatMemory;
     }
 
     @PostMapping("/chat")
     public ChatResponse chat(@RequestBody ChatRequest request) {
-        var conversationId = request.conversationId() != null
+        final var conversationId = request.conversationId() != null
                 ? request.conversationId()
                 : UUID.randomUUID().toString();
 
         final var mode = request.mode() != null ? request.mode() : OperatingMode.PLAN;
         final var result = agentService.chatWithToolCalls(
                 conversationId, request.message(), mode, request.filePaths(), request.currentDir());
-        final var messageCount = historyService.getMessageCount(conversationId);
+        final var messageCount = chatMemory.get(result.conversationId()).size();
         final var toolCalls = result.toolCalls().stream()
                 .map(tc -> new ToolCallInfo(tc.id(), tc.name(), tc.argumentsJson()))
                 .toList();
 
-        return new ChatResponse(result.reply(), conversationId, messageCount, LocalDateTime.now(), toolCalls);
+        return new ChatResponse(result.reply(), result.conversationId(), messageCount, LocalDateTime.now(), toolCalls);
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -68,9 +68,7 @@ public class AgentController {
                 })
                 .concatWith(Mono.fromSupplier(() -> {
                     final var reply = fullReply.toString();
-                    historyService.saveMessage(conversationId,
-                            new ChatMessage("assistant", reply, LocalDateTime.now()));
-                    final var messageCount = historyService.getMessageCount(conversationId);
+                    final var messageCount = (long) chatMemory.get(conversationId).size();
                     return new ChatStreamEvent(
                             "done", null, reply, conversationId, messageCount, LocalDateTime.now(),
                             null, null, null, null);
@@ -84,12 +82,14 @@ public class AgentController {
 
     @GetMapping("/conversations/{id}/history")
     public List<ChatMessage> getHistory(@PathVariable String id) {
-        return historyService.getHistory(id);
+        return chatMemory.get(id).stream()
+                .map(msg -> new ChatMessage(msg.getMessageType().getValue(), msg.getText(), null))
+                .toList();
     }
 
     @DeleteMapping("/conversations/{id}")
     public void clearConversation(@PathVariable String id) {
-        historyService.clearHistory(id);
+        chatMemory.clear(id);
     }
 
     public record ChatRequest(

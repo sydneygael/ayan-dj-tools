@@ -14,9 +14,9 @@ public record EnrichedTrackMetadata(
         String country,
         String isrc,
         List<String> tags,
-        int releaseYear,
-        int popularity,
-        long durationMs,
+        Integer releaseYear,
+        Integer popularity,
+        Long durationMs,
         AudioFeatures audioFeatures
 ) {
 

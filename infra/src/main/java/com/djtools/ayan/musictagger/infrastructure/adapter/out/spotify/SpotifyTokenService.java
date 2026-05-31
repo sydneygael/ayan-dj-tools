@@ -33,13 +33,15 @@ public class SpotifyTokenService {
 
     public synchronized String getAccessToken() {
         if (cachedToken != null && Instant.now().isBefore(tokenExpiry)) {
+            log.debug("Spotify token still valid (expires in ~{} s)",
+                    java.time.Duration.between(Instant.now(), tokenExpiry).getSeconds());
             return cachedToken;
         }
         return refreshToken();
     }
 
     private String refreshToken() {
-        log.debug("Refreshing Spotify access token");
+        log.info("Refreshing Spotify access token (client_id={})", clientId);
         final var credentials = clientId + ":" + clientSecret;
         final var encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 
@@ -57,11 +59,14 @@ public class SpotifyTokenService {
 
             cachedToken = response.access_token();
             tokenExpiry = Instant.now().plusSeconds(response.expires_in() - EXPIRY_BUFFER_SECONDS);
-            log.debug("Spotify token refreshed, expires in {} seconds", response.expires_in());
+            log.info("Spotify token refreshed — expires in {} s (effective buffer {}s)",
+                    response.expires_in(), EXPIRY_BUFFER_SECONDS);
             return cachedToken;
         } catch (SpotifyAuthException e) {
+            log.error("Spotify auth failed: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
+            log.error("Spotify token request failed: {}", e.getMessage(), e);
             throw new SpotifyAuthException("Failed to obtain Spotify access token", e);
         }
     }

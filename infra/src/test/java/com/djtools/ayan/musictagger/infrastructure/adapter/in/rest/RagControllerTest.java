@@ -24,7 +24,7 @@ class RagControllerTest {
         var track = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), null, null,
-                null, List.of(), 2024, 80, 210000, null
+                null, List.of(), 2024, 80, 210000L, null
         );
         return new SimilarTrackResult(track, 0.85);
     }

@@ -1,6 +1,13 @@
 server:
   port: 8000
 
+web:
+  search:
+    # Brave Search API key (optionnel) — gratuit jusqu'à 2000 req/mois
+    # Obtenir une clé : https://api.search.brave.com
+    # Sans clé, DuckDuckGo Instant Answer est utilisé en fallback (gratuit, sans compte).
+    brave-api-key: ${BRAVE_API_KEY:}
+
 springdoc:
   swagger-ui:
     path: /docs

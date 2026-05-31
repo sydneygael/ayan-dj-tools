@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, ViewChild, computed, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -26,15 +26,6 @@ interface Breadcrumb {
   ],
   template: `
     <div class="path-row">
-      <input
-        #directoryInput
-        type="file"
-        webkitdirectory
-        directory
-        multiple
-        style="display: none"
-        (change)="onDirectoryPicked($event)"
-      />
       <mat-form-field subscriptSizing="dynamic" class="path-field">
         <mat-label>Chemin du dossier</mat-label>
         <input
@@ -44,17 +35,16 @@ interface Breadcrumb {
           placeholder="C:\\Music ou /home/user/music"
           (keyup.enter)="browse(pathInput())"
         />
-        <mat-icon matSuffix fontSet="material-symbols-rounded">folder</mat-icon>
+        <button mat-icon-button matSuffix (click)="browse(pathInput())" [disabled]="loading()"
+                aria-label="Parcourir le dossier">
+          <mat-icon fontSet="material-symbols-rounded">{{ browsePage() ? 'folder_open' : 'folder' }}</mat-icon>
+        </button>
       </mat-form-field>
-      <button mat-stroked-button (click)="openDirectoryPicker()" [disabled]="loading()">
-        <mat-icon fontSet="material-symbols-rounded">folder_open</mat-icon>
-        Parcourir
-      </button>
-      <button mat-flat-button (click)="browse(pathInput())" [disabled]="loading()">
-        <mat-icon fontSet="material-symbols-rounded">search</mat-icon>
-        Ouvrir
-      </button>
     </div>
+
+    @if (!browsePage() && !error()) {
+      <p class="hint">Clique sur <mat-icon class="hint-icon" fontSet="material-symbols-rounded">folder</mat-icon> ou saisis un chemin (ex. <code>C:\\Music</code>) pour naviguer.</p>
+    }
 
     @if (error()) {
       <p class="error">{{ error() }}</p>
@@ -173,6 +163,27 @@ interface Breadcrumb {
     }
 
     .path-field { flex: 1; }
+
+    .hint {
+      font-size: .82rem;
+      color: var(--muted);
+      margin: 4px 2px 0;
+    }
+
+    .hint code {
+      background: var(--surface-1);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: .8rem;
+    }
+
+    .hint-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      vertical-align: middle;
+      color: var(--accent-text);
+    }
 
     .browser {
       border: 1px solid var(--border);
@@ -315,7 +326,6 @@ interface Breadcrumb {
 export class FilePickerComponent {
   private readonly api = inject(ApiService);
   private readonly prefs = inject(PreferencesStore);
-  @ViewChild('directoryInput') private directoryInput?: ElementRef<HTMLInputElement>;
 
   readonly browsePage = signal<FileBrowserPage | null>(null);
   readonly loading = signal(false);
@@ -343,33 +353,7 @@ export class FilePickerComponent {
 
   readonly selectedCount = computed(() => this.selected().size);
 
-  openDirectoryPicker(): void {
-    this.error.set(null);
-    this.directoryInput?.nativeElement.click();
-  }
-
-  onDirectoryPicked(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const files = input.files;
-    if (!files || files.length === 0) return;
-
-    const dir = this.extractDirectoryFromFile(files.item(0));
-    input.value = '';
-
-    if (!dir) {
-      this.error.set('Impossible de lire le chemin. Utilise la saisie manuelle.');
-      return;
-    }
-
-    this.pathInput.set(dir);
-    this.browse(dir);
-  }
-
   browse(path: string, page = 0): void {
-    if (!path.trim()) {
-      this.error.set('Veuillez entrer un chemin de dossier.');
-      return;
-    }
     this.loading.set(true);
     this.error.set(null);
     this.currentPageNum = page;
@@ -428,13 +412,5 @@ export class FilePickerComponent {
   formatSize(bytes: number): string {
     if (bytes > 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
     return `${(bytes / 1000).toFixed(0)} KB`;
-  }
-
-  private extractDirectoryFromFile(file: File | null): string | null {
-    if (!file) return null;
-    const abs = (file as File & { path?: string }).path;
-    if (!abs) return null;
-    const last = Math.max(abs.lastIndexOf('/'), abs.lastIndexOf('\\'));
-    return last > 0 ? abs.slice(0, last) : null;
   }
 }

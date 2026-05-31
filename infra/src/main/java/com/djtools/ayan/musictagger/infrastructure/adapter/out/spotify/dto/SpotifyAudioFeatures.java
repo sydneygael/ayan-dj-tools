@@ -4,16 +4,16 @@ import java.util.Map;
 
 public record SpotifyAudioFeatures(
         String id,
-        float danceability,
-        float energy,
-        float valence,
-        float acousticness,
-        float instrumentalness,
-        float speechiness,
-        float tempo,
-        int key,
-        int mode,
-        int time_signature
+        Float danceability,
+        Float energy,
+        Float valence,
+        Float acousticness,
+        Float instrumentalness,
+        Float speechiness,
+        Float tempo,
+        Integer key,
+        Integer mode,
+        Integer time_signature
 ) {
 
     private static final Map<Integer, String> KEY_MAP = Map.ofEntries(
@@ -24,14 +24,14 @@ public record SpotifyAudioFeatures(
     );
 
     public String musicalKey() {
-        return KEY_MAP.getOrDefault(key, "");
+        return KEY_MAP.getOrDefault(key != null ? key : -1, "");
     }
 
     public String musicalMode() {
-        return mode == 1 ? "Major" : "Minor";
+        return mode != null && mode == 1 ? "Major" : "Minor";
     }
 
-    public double bpm() {
-        return tempo;
+    public Double bpm() {
+        return tempo != null ? (double) tempo : null;
     }
 }

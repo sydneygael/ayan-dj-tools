@@ -8,6 +8,7 @@ export interface QuickAction {
   message: string;
   needsFiles: boolean;
   hint?: string;
+  direct?: 'analyze' | 'enrich';
 }
 
 const ACTIONS: QuickAction[] = [
@@ -15,13 +16,15 @@ const ACTIONS: QuickAction[] = [
     label: 'Analyser sélection',
     message: 'Analyse les fichiers sélectionnés et liste les tags manquants pour chacun.',
     needsFiles: true,
-    hint: 'scanMusicFile + detectMissingTags'
+    hint: 'scanMusicFile + detectMissingTags',
+    direct: 'analyze'
   },
   {
     label: 'Enrichir via Spotify',
     message: 'Enrichis les fichiers sélectionnés via Spotify et résume les correspondances trouvées.',
     needsFiles: true,
-    hint: 'enrichWithSpotify'
+    hint: 'enrichWithSpotify',
+    direct: 'enrich'
   },
   {
     label: 'Suggestions intelligentes',
@@ -60,8 +63,8 @@ const ACTIONS: QuickAction[] = [
           mat-stroked-button
           class="action-chip"
           [disabled]="isDisabled(action)"
-          [matTooltip]="action.hint ?? ''"
-          matTooltipShowDelay="600"
+          [matTooltip]="isDisabled(action) ? 'Sélectionne des fichiers dabord' : (action.hint ?? '')"
+          matTooltipShowDelay="400"
           (click)="trigger(action)"
         >
           {{ action.label }}
@@ -91,7 +94,7 @@ export class ChatQuickActionsComponent {
   private readonly prefs = inject(PreferencesStore);
   readonly actions = ACTIONS;
   readonly hasSelection = computed(() => this.prefs.selectedFileCount() > 0);
-  readonly fire = output<string>();
+  readonly fire = output<QuickAction>();
 
   isDisabled(action: QuickAction): boolean {
     return action.needsFiles && !this.hasSelection();
@@ -99,6 +102,6 @@ export class ChatQuickActionsComponent {
 
   trigger(action: QuickAction): void {
     if (this.isDisabled(action)) return;
-    this.fire.emit(action.message);
+    this.fire.emit(action);
   }
 }

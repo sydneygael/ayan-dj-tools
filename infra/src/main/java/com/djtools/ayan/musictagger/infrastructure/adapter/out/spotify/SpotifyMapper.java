@@ -21,7 +21,7 @@ public class SpotifyMapper {
                 null,
                 null,
                 List.of(),
-                track.album() != null ? track.album().releaseYear() : 0,
+                track.album() != null ? track.album().releaseYear() : null,
                 track.popularity(),
                 track.duration_ms(),
                 mapAudioFeatures(audioFeatures)
@@ -33,12 +33,12 @@ public class SpotifyMapper {
             return null;
         }
         return new AudioFeatures(
-                (double) src.danceability(),
-                (double) src.energy(),
-                (double) src.valence(),
-                (double) src.acousticness(),
-                (double) src.instrumentalness(),
-                (double) src.speechiness(),
+                src.danceability() != null ? (double) src.danceability() : null,
+                src.energy()       != null ? (double) src.energy()       : null,
+                src.valence()      != null ? (double) src.valence()      : null,
+                src.acousticness() != null ? (double) src.acousticness() : null,
+                src.instrumentalness() != null ? (double) src.instrumentalness() : null,
+                src.speechiness()  != null ? (double) src.speechiness()  : null,
                 src.bpm(),
                 src.musicalKey(),
                 src.musicalMode(),

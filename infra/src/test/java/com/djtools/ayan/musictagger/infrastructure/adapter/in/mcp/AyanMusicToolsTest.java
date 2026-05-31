@@ -36,12 +36,13 @@ class AyanMusicToolsTest {
     @Mock TrackVectorizationService vectorizationService;
     @Mock com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository audioFeaturesCache;
     @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService audioScannerService;
+    @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.web.WebSearchAdapter webSearchAdapter;
 
     private AyanMusicTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService);
+        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, webSearchAdapter);
     }
 
     @Test
@@ -120,15 +121,15 @@ class AyanMusicToolsTest {
         var metadata = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
-                "ISRC123", List.of(), 2024, 80, 210000, null
+                "ISRC123", List.of(), 2024, 80, 210000L, null
         );
         when(musicMetadataProvider.enrich("Artist", "Title"))
                 .thenReturn(EnrichmentResult.success(metadata));
 
-        EnrichmentResult result = tools.enrichWithSpotify("Artist", "Title");
+        AyanMusicTools.SpotifyEnrichmentResponse result = tools.enrichWithSpotify("Artist", "Title");
 
-        assertThat(result.isSuccess()).isTrue();
-        assertThat(result.data().artist()).isEqualTo("Artist");
+        assertThat(result.status()).isEqualTo("SUCCESS");
+        assertThat(result.metadata().artist()).isEqualTo("Artist");
     }
 
     @Test
@@ -182,7 +183,7 @@ class AyanMusicToolsTest {
         var metadata = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
-                "ISRC123", List.of(), 2024, 80, 210000, null
+                "ISRC123", List.of(), 2024, 80, 210000L, null
         );
         when(musicMetadataProvider.enrich("Artist", "Title"))
                 .thenReturn(EnrichmentResult.success(metadata));
@@ -197,7 +198,7 @@ class AyanMusicToolsTest {
         var track = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), null, null,
-                null, List.of(), 2024, 80, 210000, null
+                null, List.of(), 2024, 80, 210000L, null
         );
         when(vectorizationService.findSimilarTracks("electronic", 3))
                 .thenReturn(List.of(new SimilarTrackResult(track, 0.9)));

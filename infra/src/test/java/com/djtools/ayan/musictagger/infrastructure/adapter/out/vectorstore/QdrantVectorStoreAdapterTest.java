@@ -36,7 +36,7 @@ class QdrantVectorStoreAdapterTest {
         return new EnrichedTrackMetadata(
                 "sp123", "Daft Punk", "Around The World", "Homework",
                 List.of("Electronic", "House"), List.of("French House"), "Virgin", "FR",
-                "ISRC123", List.of(), 1997, 82, 420000,
+                "ISRC123", List.of(), 1997, 82, 420000L,
                 new AudioFeatures(0.8, 0.9, 0.7, null, null, null, 121.0, "Am", "minor", null)
         );
     }

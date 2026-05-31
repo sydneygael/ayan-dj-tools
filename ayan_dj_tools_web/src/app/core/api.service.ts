@@ -11,7 +11,9 @@ import {
   ChatStreamEvent,
   CollectionProfile,
   EnrichmentStats,
+  FileAnalysisItem,
   FileBrowserPage,
+  FileEnrichItem,
   OperatingMode,
   PlanProgressResponse,
   Playlist,
@@ -172,6 +174,14 @@ export class ApiService {
   browsePath(path: string, page = 0, size = 20): Observable<FileBrowserPage> {
     const params = new HttpParams().set('path', path).set('page', String(page)).set('size', String(size));
     return this.http.get<FileBrowserPage>(this.url('/api/files/browse'), { params });
+  }
+
+  analyzeFiles(filePaths: string[]): Observable<FileAnalysisItem[]> {
+    return this.http.post<FileAnalysisItem[]>(this.url('/api/files/analyze'), { filePaths });
+  }
+
+  enrichFiles(filePaths: string[]): Observable<FileEnrichItem[]> {
+    return this.http.post<FileEnrichItem[]>(this.url('/api/files/enrich'), { filePaths });
   }
 
   private url(path: string): string {

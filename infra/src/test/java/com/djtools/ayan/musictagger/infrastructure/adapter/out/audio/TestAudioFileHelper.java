@@ -4,7 +4,9 @@ import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.mp3.MP3File;
 import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.id3.ID3v24Frame;
 import org.jaudiotagger.tag.id3.ID3v24Tag;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyGEOB;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -60,6 +62,20 @@ final class TestAudioFileHelper {
                 os.write(frameData);
             }
         }
+        return file;
+    }
+
+    static Path createMp3WithSeratoGEOB(Path directory, String filename) throws Exception {
+        Path file = createMinimalMp3(directory, filename);
+        AudioFile audioFile = AudioFileIO.read(file.toFile());
+        var tag = new ID3v24Tag();
+        tag.setField(FieldKey.ARTIST, "Serato Artist");
+        tag.setField(FieldKey.TITLE, "Serato Title");
+        var geobFrame = new ID3v24Frame("GEOB");
+        ((FrameBodyGEOB) geobFrame.getBody()).setDescription("Serato Analysis");
+        tag.setFrame(geobFrame);
+        audioFile.setTag(tag);
+        audioFile.commit();
         return file;
     }
 

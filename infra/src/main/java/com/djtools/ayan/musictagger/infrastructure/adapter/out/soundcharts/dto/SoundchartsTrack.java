@@ -9,13 +9,14 @@ import java.util.List;
 public record SoundchartsTrack(
         String uuid,
         String name,
+        @JsonProperty("creditName") String creditName,            // artiste « crédité » (présent dans la recherche)
         List<SoundchartsArtistRef> artists,
-        @JsonProperty("releaseDate") String releaseDate,   // "YYYY-MM-DD" ou "YYYY"
+        @JsonProperty("releaseDate") String releaseDate,          // ISO "YYYY-MM-DDThh:mm:ss+00:00" ou "YYYY"
         List<SoundchartsGenreRef> genres,
-        String label,
-        String isrc,
-        String country,
-        Long duration,                                     // durée en ms, nullable
+        List<SoundchartsLabel> labels,
+        SoundchartsIsrc isrc,
+        Long duration,                                            // durée en SECONDES, nullable
+        SoundchartsAudio audio,
         SoundchartsExternalIds externalIds
 ) {
     /** Extrait l'année depuis releaseDate. */
@@ -25,8 +26,31 @@ public record SoundchartsTrack(
         catch (NumberFormatException e) { return null; }
     }
 
+    /** Artiste principal : premier de {@code artists}, sinon {@code creditName}. */
     public String primaryArtist() {
-        if (artists == null || artists.isEmpty()) return null;
-        return artists.getFirst().name();
+        if (artists != null && !artists.isEmpty() && artists.getFirst().name() != null) {
+            return artists.getFirst().name();
+        }
+        return creditName;
+    }
+
+    /** Valeur ISRC brute (sans le pays). */
+    public String isrcValue() {
+        return isrc != null ? isrc.value() : null;
+    }
+
+    /** Code pays ISO (ex: "GB") déduit de l'ISRC. */
+    public String countryCode() {
+        return isrc != null ? isrc.countryCode() : null;
+    }
+
+    /** Premier label, ou null. */
+    public String primaryLabel() {
+        return labels != null && !labels.isEmpty() ? labels.getFirst().name() : null;
+    }
+
+    /** Durée convertie en millisecondes (Soundcharts renvoie des secondes). */
+    public Long durationMs() {
+        return duration != null ? duration * 1000 : null;
     }
 }

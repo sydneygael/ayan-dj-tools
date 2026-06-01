@@ -4,6 +4,8 @@ import com.djtools.ayan.musictagger.domain.model.AudioFeatures;
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
 import com.djtools.ayan.musictagger.domain.model.EnrichmentResult;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsAudio;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsGenreRef;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,30 +99,75 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
     }
 
     private EnrichedTrackMetadata map(SoundchartsTrack track, String fallbackArtist, String fallbackTitle) {
-        final var genres = track.genres() == null
-                ? List.<String>of()
-                : track.genres().stream()
-                .map(g -> g != null ? g.name() : null)
-                .filter(Objects::nonNull)
-                .filter(s -> !s.isBlank())
-                .toList();
-
         return new EnrichedTrackMetadata(
                 track.uuid(),
                 firstNonBlank(track.primaryArtist(), fallbackArtist),
                 firstNonBlank(track.name(), fallbackTitle),
                 null,
-                genres,
-                List.of(),
-                track.label(),
-                track.country(),
-                track.isrc(),
+                genreRoots(track),
+                genreSubs(track),
+                track.primaryLabel(),
+                track.countryCode(),
+                track.isrcValue(),
                 List.of("soundcharts"),
                 track.releaseYear(),
                 null,
-                track.duration(),
-                (AudioFeatures) null
+                track.durationMs(),
+                toAudioFeatures(track.audio())
         );
+    }
+
+    /** Genres racines (ex: "electro", "pop"), distincts et non vides. */
+    private List<String> genreRoots(SoundchartsTrack track) {
+        if (track.genres() == null) return List.of();
+        return track.genres().stream()
+                .filter(Objects::nonNull)
+                .map(SoundchartsGenreRef::root)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    /** Sous-genres (ex: "dance", "electronic") aplatis, distincts et non vides → mappés sur styles. */
+    private List<String> genreSubs(SoundchartsTrack track) {
+        if (track.genres() == null) return List.of();
+        return track.genres().stream()
+                .filter(Objects::nonNull)
+                .flatMap(g -> g.subSafe().stream())
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private AudioFeatures toAudioFeatures(SoundchartsAudio audio) {
+        if (audio == null) return null;
+        return new AudioFeatures(
+                audio.danceability(),
+                audio.energy(),
+                audio.valence(),
+                audio.acousticness(),
+                audio.instrumentalness(),
+                audio.speechiness(),
+                audio.tempo(),
+                pitchClassName(audio.key()),
+                modeName(audio.mode()),
+                audio.timeSignature()
+        );
+    }
+
+    private static final String[] PITCH_CLASSES =
+            {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
+    /** Pitch class Soundcharts (0–11) → nom de note. -1 ou hors borne → null. */
+    private String pitchClassName(Integer key) {
+        if (key == null || key < 0 || key > 11) return null;
+        return PITCH_CLASSES[key];
+    }
+
+    /** mode Soundcharts : 1 = major, 0 = minor. */
+    private String modeName(Integer mode) {
+        if (mode == null) return null;
+        return mode == 1 ? "major" : "minor";
     }
 
     private String firstNonBlank(String first, String fallback) {

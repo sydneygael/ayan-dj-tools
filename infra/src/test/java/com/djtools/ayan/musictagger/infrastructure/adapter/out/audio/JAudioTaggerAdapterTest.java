@@ -16,6 +16,7 @@ class JAudioTaggerAdapterTest {
     private static Path tempDir;
     private static Path taggedFile;
     private static Path partialFile;
+    private static Path seratoFile;
 
     private final JAudioTaggerAdapter adapter = new JAudioTaggerAdapter();
 
@@ -24,6 +25,7 @@ class JAudioTaggerAdapterTest {
         tempDir = dir;
         taggedFile = TestAudioFileHelper.createMp3WithAllTags(dir, "test-with-tags.mp3");
         partialFile = TestAudioFileHelper.createMp3WithMissingTags(dir, "test-missing-tags.mp3");
+        seratoFile = TestAudioFileHelper.createMp3WithSeratoGEOB(dir, "test-serato.mp3");
     }
 
     @Test
@@ -77,5 +79,23 @@ class JAudioTaggerAdapterTest {
 
         assertThat(result).isPresent();
         assertThat(result.get().filename()).isEqualTo("test-with-tags.mp3");
+    }
+
+    @Test
+    void shouldReturnFalseForSeratoWhenNoGeobFrame() {
+        var filepath = new Filepath(taggedFile.toString());
+        Optional<MusicFileInfo> result = adapter.readTags(filepath);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().seratoAnalyzed()).isFalse();
+    }
+
+    @Test
+    void shouldDetectSeratoWhenGeobFramePresent() {
+        var filepath = new Filepath(seratoFile.toString());
+        Optional<MusicFileInfo> result = adapter.readTags(filepath);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().seratoAnalyzed()).isTrue();
     }
 }

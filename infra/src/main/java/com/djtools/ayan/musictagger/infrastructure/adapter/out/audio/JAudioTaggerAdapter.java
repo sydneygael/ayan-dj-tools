@@ -9,6 +9,9 @@ import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.id3.AbstractID3v2Frame;
+import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyGEOB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -54,7 +57,8 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
                     bpm,
                     key,
                     file.length(),
-                    file.lastModified()
+                    file.lastModified(),
+                    detectSeratoAnalysis(tag)
             ));
         } catch (Exception e) {
             throw new AudioProcessingException("Failed to read audio file: " + path.value(), e);
@@ -139,6 +143,34 @@ public class JAudioTaggerAdapter implements AudioFileReader, AudioFileWriter {
         } catch (IOException e) {
             log.error("Failed to restore backup for: {}", originalPath, e);
         }
+    }
+
+    private boolean detectSeratoAnalysis(Tag tag) {
+        if (tag == null) return false;
+        var it = tag.getFields();
+        while (it.hasNext()) {
+            if (it.next().getId().toLowerCase(Locale.ROOT).contains("serato")) return true;
+        }
+        if (tag instanceof AbstractID3v2Tag id3v2) {
+            return containsSeratoFrame(id3v2.getFrame("GEOB"));
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean containsSeratoFrame(Object raw) {
+        if (raw == null) return false;
+        if (raw instanceof List<?> list) return list.stream().anyMatch(this::isSeratoGEOB);
+        return isSeratoGEOB(raw);
+    }
+
+    private boolean isSeratoGEOB(Object obj) {
+        if (obj instanceof AbstractID3v2Frame frame
+                && frame.getBody() instanceof FrameBodyGEOB geob) {
+            var desc = geob.getDescription();
+            return desc != null && desc.toLowerCase(Locale.ROOT).contains("serato");
+        }
+        return false;
     }
 
     private String getField(Tag tag, FieldKey fieldKey) {

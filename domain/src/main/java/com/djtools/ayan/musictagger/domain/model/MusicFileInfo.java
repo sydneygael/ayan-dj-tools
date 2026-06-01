@@ -13,7 +13,8 @@ public record MusicFileInfo(
         String bpm,
         String key,
         long fileSize,
-        long lastModified
+        long lastModified,
+        boolean seratoAnalyzed
 ) {
 
     public boolean hasArtistAndTitle() {

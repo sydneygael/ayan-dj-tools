@@ -14,6 +14,7 @@ import {
   FileAnalysisItem,
   FileBrowserPage,
   FileEnrichItem,
+  HarmonicPlaylist,
   OperatingMode,
   PlanProgressResponse,
   Playlist,
@@ -147,6 +148,22 @@ export class ApiService {
 
   generatePlaylist(bpmMin: number, bpmMax: number, genre: string): Observable<Playlist> {
     return this.http.post<Playlist>(this.url('/api/playlist/generate'), { bpmMin, bpmMax, genre });
+  }
+
+  generateHarmonicPlaylist(
+    bpmMin: number,
+    bpmMax: number,
+    genre: string,
+    targetEnergy: number,
+    count: number
+  ): Observable<HarmonicPlaylist> {
+    return this.http.post<HarmonicPlaylist>(this.url('/api/playlist/generate-harmonic'), {
+      bpmMin,
+      bpmMax,
+      genre,
+      targetEnergy,
+      count
+    });
   }
 
   findSimilarTracks(query: string, limit = 5): Observable<SimilarTrackResult[]> {

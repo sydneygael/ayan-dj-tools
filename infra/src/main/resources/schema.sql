@@ -7,9 +7,10 @@ CREATE TABLE IF NOT EXISTS scanned_tracks (
     genre         VARCHAR(255),
     bpm           VARCHAR(50),
     key_name      VARCHAR(50),
-    file_size     BIGINT NOT NULL,
-    last_modified BIGINT NOT NULL,
-    scanned_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    file_size       BIGINT NOT NULL,
+    last_modified   BIGINT NOT NULL,
+    serato_analyzed BOOLEAN NOT NULL DEFAULT FALSE,
+    scanned_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Persistance durable des métadonnées enrichies (Soundcharts + fallback Spotify).

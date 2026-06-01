@@ -21,19 +21,20 @@ public class PostgresScannedTrackRepository implements ScannedTrackRepository {
     @Override
     public void save(MusicFileInfo track) {
         jdbcClient.sql("""
-                INSERT INTO scanned_tracks (filepath, filename, artist, title, album, genre, bpm, key_name, file_size, last_modified)
-                VALUES (:filepath, :filename, :artist, :title, :album, :genre, :bpm, :keyName, :fileSize, :lastModified)
+                INSERT INTO scanned_tracks (filepath, filename, artist, title, album, genre, bpm, key_name, file_size, last_modified, serato_analyzed)
+                VALUES (:filepath, :filename, :artist, :title, :album, :genre, :bpm, :keyName, :fileSize, :lastModified, :seratoAnalyzed)
                 ON CONFLICT (filepath) DO UPDATE SET
-                    filename      = EXCLUDED.filename,
-                    artist        = EXCLUDED.artist,
-                    title         = EXCLUDED.title,
-                    album         = EXCLUDED.album,
-                    genre         = EXCLUDED.genre,
-                    bpm           = EXCLUDED.bpm,
-                    key_name      = EXCLUDED.key_name,
-                    file_size     = EXCLUDED.file_size,
-                    last_modified = EXCLUDED.last_modified,
-                    scanned_at    = CURRENT_TIMESTAMP
+                    filename        = EXCLUDED.filename,
+                    artist          = EXCLUDED.artist,
+                    title           = EXCLUDED.title,
+                    album           = EXCLUDED.album,
+                    genre           = EXCLUDED.genre,
+                    bpm             = EXCLUDED.bpm,
+                    key_name        = EXCLUDED.key_name,
+                    file_size       = EXCLUDED.file_size,
+                    last_modified   = EXCLUDED.last_modified,
+                    serato_analyzed = EXCLUDED.serato_analyzed,
+                    scanned_at      = CURRENT_TIMESTAMP
                 """)
                 .param("filepath", track.filepath().value())
                 .param("filename", track.filename())
@@ -45,6 +46,7 @@ public class PostgresScannedTrackRepository implements ScannedTrackRepository {
                 .param("keyName", track.key())
                 .param("fileSize", track.fileSize())
                 .param("lastModified", track.lastModified())
+                .param("seratoAnalyzed", track.seratoAnalyzed())
                 .update();
     }
 
@@ -86,7 +88,8 @@ public class PostgresScannedTrackRepository implements ScannedTrackRepository {
                 rs.getString("bpm"),
                 rs.getString("key_name"),
                 rs.getLong("file_size"),
-                rs.getLong("last_modified")
+                rs.getLong("last_modified"),
+                rs.getBoolean("serato_analyzed")
         );
     }
 }

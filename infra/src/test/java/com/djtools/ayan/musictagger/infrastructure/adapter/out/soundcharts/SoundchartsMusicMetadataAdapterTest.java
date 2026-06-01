@@ -32,25 +32,27 @@ class SoundchartsMusicMetadataAdapterTest {
         var searchTrack = new SoundchartsTrack(
                 "song-123",
                 "Strobe",
+                "Deadmau5",
                 List.of(new SoundchartsArtistRef("artist-1", "Deadmau5")),
                 "2009-09-28",
-                List.of(new SoundchartsGenreRef(1, "Electronic")),
-                "Mau5trap",
-                "USUS10900862",
-                "US",
-                634000L,
+                List.of(new SoundchartsGenreRef("electro", List.of("electronic"))),
+                List.of(new SoundchartsLabel("Mau5trap", "indie")),
+                new SoundchartsIsrc("USUS10900862", "US", "United States"),
+                634L,
+                null,
                 new SoundchartsExternalIds("spotify:track:xyz", null, null, null)
         );
         var detailTrack = new SoundchartsTrack(
                 "song-123",
                 "Strobe",
+                "Deadmau5",
                 List.of(new SoundchartsArtistRef("artist-1", "Deadmau5")),
                 "2009-09-28",
-                List.of(new SoundchartsGenreRef(1, "Progressive House"), new SoundchartsGenreRef(2, "Electronic")),
-                "Mau5trap",
-                "USUS10900862",
-                "US",
-                634000L,
+                List.of(new SoundchartsGenreRef("electro", List.of("progressive house", "electronic"))),
+                List.of(new SoundchartsLabel("Mau5trap", "indie")),
+                new SoundchartsIsrc("USUS10900862", "US", "United States"),
+                634L,
+                new SoundchartsAudio(0.02, 0.5, 0.8, 0.9, 7, 0.1, -7.0, 0, 0.03, 128.0, 4, 0.3),
                 new SoundchartsExternalIds("spotify:track:xyz", null, null, null)
         );
 
@@ -65,9 +67,17 @@ class SoundchartsMusicMetadataAdapterTest {
         assertThat(result.data().sourceId()).isEqualTo("song-123");
         assertThat(result.data().artist()).isEqualTo("Deadmau5");
         assertThat(result.data().title()).isEqualTo("Strobe");
-        assertThat(result.data().genres()).containsExactly("Progressive House", "Electronic");
+        assertThat(result.data().genres()).containsExactly("electro");
+        assertThat(result.data().styles()).containsExactly("progressive house", "electronic");
+        assertThat(result.data().label()).isEqualTo("Mau5trap");
+        assertThat(result.data().isrc()).isEqualTo("USUS10900862");
+        assertThat(result.data().country()).isEqualTo("US");
         assertThat(result.data().releaseYear()).isEqualTo(2009);
         assertThat(result.data().durationMs()).isEqualTo(634000L);
+        assertThat(result.data().audioFeatures()).isNotNull();
+        assertThat(result.data().audioFeatures().bpm()).isEqualTo(128.0);
+        assertThat(result.data().audioFeatures().musicalKey()).isEqualTo("G");
+        assertThat(result.data().audioFeatures().mode()).isEqualTo("minor");
         verify(apiClient).searchSongByName(eq("Deadmau5 Strobe"), eq(0), eq(5));
         verify(apiClient).getSongMetadata("song-123");
     }

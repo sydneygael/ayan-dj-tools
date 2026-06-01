@@ -1,0 +1,98 @@
+{
+  "type": "song",
+  "object": {
+    "uuid": "11e8262e-eab0-1e12-b8ac-aa1c026db3d8",
+    "name": "Agolo",
+    "isrc": {
+      "value": "GBAPA9400001",
+      "countryCode": "GB",
+      "countryName": "United Kingdom"
+    },
+    "iswcs": [],
+    "creditName": "Angelique Kidjo",
+    "artists": [
+      {
+        "uuid": "11e81bbd-1e64-37a6-8a5f-a0369fe50396",
+        "slug": "angelique-kidjo",
+        "name": "Angelique Kidjo",
+        "appUrl": "https://app.soundcharts.com/app/artist/angelique-kidjo/overview",
+        "imageUrl": "https://assets.soundcharts.com/artist/4/6/e/11e81bbd-1e64-37a6-8a5f-a0369fe50396.jpg"
+      }
+    ],
+    "mainArtists": [
+      {
+        "uuid": "11e81bbd-1e64-37a6-8a5f-a0369fe50396",
+        "slug": "angelique-kidjo",
+        "name": "Angelique Kidjo",
+        "appUrl": "https://app.soundcharts.com/app/artist/angelique-kidjo/overview",
+        "imageUrl": "https://assets.soundcharts.com/artist/4/6/e/11e81bbd-1e64-37a6-8a5f-a0369fe50396.jpg"
+      }
+    ],
+    "releaseDate": "1994-01-01T00:00:00+00:00",
+    "copyright": "℗ 1994 Island Records, a division of Universal Music Operations Limited",
+    "appUrl": "https://app.soundcharts.com/app/song/11e8262e-eab0-1e12-b8ac-aa1c026db3d8/overview",
+    "imageUrl": "https://assets.soundcharts.com/song/0/b/a/11e8262e-eab0-1e12-b8ac-aa1c026db3d8.jpg",
+    "duration": 288,
+    "explicit": false,
+    "genres": [
+      {
+        "root": "electro",
+        "sub": ["dance", "electronic"]
+      },
+      {
+        "root": "pop",
+        "sub": ["pop"]
+      },
+      {
+        "root": "rock",
+        "sub": ["rock"]
+      },
+      {
+        "root": "traditional",
+        "sub": ["worldwide"]
+      }
+    ],
+    "composers": ["Angelique Kidjo", "Jean Hebrail"],
+    "producers": ["Will Mowat"],
+    "labels": [
+      {
+        "name": "Island",
+        "type": "Universal"
+      }
+    ],
+    "audio": {
+      "acousticness": 0.04,
+      "danceability": 0.7,
+      "energy": 0.81,
+      "instrumentalness": 0.14,
+      "key": 0,
+      "liveness": 0.38,
+      "loudness": -8.21,
+      "mode": 1,
+      "speechiness": 0.04,
+      "tempo": 93.95,
+      "timeSignature": 4,
+      "valence": 0.84
+    },
+    "languageCode": "yo",
+    "distributor": "Universal",
+    "credits": [
+      {
+        "uuid": "52771806-3648-4c4a-8020-0ec14d37dcc6",
+        "name": "Jean Hebrail",
+        "roles": ["composer"]
+      },
+      {
+        "uuid": "2d0e057f-5533-4b16-baa7-cff7360761fa",
+        "name": "Will Mowat",
+        "roles": ["producer", "mix"]
+      },
+      {
+        "uuid": "a3fe8e4d-684c-40f2-a432-6ed90b014336",
+        "name": "Angélique Kidjo",
+        "roles": ["composer", "songwriter", "writer", "lyricist"]
+      }
+    ]
+  },
+  "errors": []
+}

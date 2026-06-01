@@ -5,6 +5,7 @@ import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.port.out.AudioFileWriter;
 import com.djtools.ayan.musictagger.domain.port.out.ScannedTrackRepository;
 import com.djtools.ayan.musictagger.domain.port.out.TaggingHistoryRepository;
+import com.djtools.ayan.musictagger.domain.usecase.BuildHarmonicPlaylistUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.CreatePlanUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.ExecutePlanUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
@@ -27,5 +28,10 @@ public class DomainConfig {
     @Bean
     public ExecutePlanUseCase executePlanUseCase(AudioFileWriter audioFileWriter, TaggingHistoryRepository historyRepository) {
         return new ExecutePlanUseCase(audioFileWriter, historyRepository);
+    }
+
+    @Bean
+    public BuildHarmonicPlaylistUseCase buildHarmonicPlaylistUseCase() {
+        return new BuildHarmonicPlaylistUseCase();
     }
 }

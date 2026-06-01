@@ -9,6 +9,7 @@ import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService;
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
+import com.djtools.ayan.musictagger.infrastructure.service.PlaylistService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -36,6 +37,7 @@ public class AyanMusicTools {
     private final TrackVectorizationService vectorizationService;
     private final AudioFeaturesCacheRepository audioFeaturesCache;
     private final AudioScannerService audioScannerService;
+    private final PlaylistService playlistService;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
@@ -44,7 +46,8 @@ public class AyanMusicTools {
                           ManualModeService manualModeService,
                           TrackVectorizationService vectorizationService,
                           AudioFeaturesCacheRepository audioFeaturesCache,
-                          AudioScannerService audioScannerService) {
+                          AudioScannerService audioScannerService,
+                          PlaylistService playlistService) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
@@ -53,6 +56,7 @@ public class AyanMusicTools {
         this.vectorizationService = vectorizationService;
         this.audioFeaturesCache = audioFeaturesCache;
         this.audioScannerService = audioScannerService;
+        this.playlistService = playlistService;
     }
 
     @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
@@ -183,6 +187,27 @@ public class AyanMusicTools {
         final var clampedSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
         final var clampedPage = Math.max(page, 0);
         return audioScannerService.browse(Path.of(directoryPath), clampedPage, clampedSize);
+    }
+
+    @Tool(description = "Génère une playlist de loop mixing (technique 3/4) à partir de la collection : "
+            + "morceaux dans une plage de BPM, sélectionnés par similarité sémantique (RAG) et danceability.")
+    public Playlist generateLoopMixingPlaylist(
+            @ToolParam(description = "BPM minimum") int bpmMin,
+            @ToolParam(description = "BPM maximum") int bpmMax,
+            @ToolParam(description = "Genre principal (optionnel, peut être vide)") String genre) {
+        return playlistService.generateLoopMixingPlaylist(bpmMin, bpmMax, genre);
+    }
+
+    @Tool(description = "Génère une playlist mixée harmoniquement via la roue de Camelot (« Mixed in Key ») : "
+            + "chaque transition reste dans une tonalité compatible et privilégie un écart de ±6 BPM. "
+            + "Retourne les morceaux ordonnés avec leur clé Camelot, le type de transition et des statistiques.")
+    public HarmonicPlaylist generateHarmonicMixedPlaylist(
+            @ToolParam(description = "Genre principal (optionnel, peut être vide)") String genre,
+            @ToolParam(description = "BPM minimum") int minBpm,
+            @ToolParam(description = "BPM maximum") int maxBpm,
+            @ToolParam(description = "Énergie cible 0.0–1.0") double targetEnergy,
+            @ToolParam(description = "Nombre de morceaux souhaité") int count) {
+        return playlistService.generateHarmonicPlaylist(minBpm, maxBpm, genre, targetEnergy, count);
     }
 
 }

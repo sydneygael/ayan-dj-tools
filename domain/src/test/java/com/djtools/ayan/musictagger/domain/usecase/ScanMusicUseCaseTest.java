@@ -36,8 +36,8 @@ class ScanMusicUseCaseTest {
         var path1 = new Filepath("/music/song1.mp3");
         var path2 = new Filepath("/music/song2.mp3");
 
-        var info1 = new MusicFileInfo(path1, "song1.mp3", "Artist1", "Title1", "Album1", "Pop", "120", "Am", 1000, 123456);
-        var info2 = new MusicFileInfo(path2, "song2.mp3", "Artist2", "Title2", null, null, null, null, 2000, 654321);
+        var info1 = new MusicFileInfo(path1, "song1.mp3", "Artist1", "Title1", "Album1", "Pop", "120", "Am", 1000, 123456, false);
+        var info2 = new MusicFileInfo(path2, "song2.mp3", "Artist2", "Title2", null, null, null, null, 2000, 654321, false);
 
         when(audioFileReader.readTags(path1)).thenReturn(Optional.of(info1));
         when(audioFileReader.readTags(path2)).thenReturn(Optional.of(info2));
@@ -54,7 +54,7 @@ class ScanMusicUseCaseTest {
         var path1 = new Filepath("/music/good.mp3");
         var path2 = new Filepath("/music/bad.mp3");
 
-        var info = new MusicFileInfo(path1, "good.mp3", "Artist", "Title", null, null, null, null, 1000, 123456);
+        var info = new MusicFileInfo(path1, "good.mp3", "Artist", "Title", null, null, null, null, 1000, 123456, false);
 
         when(audioFileReader.readTags(path1)).thenReturn(Optional.of(info));
         when(audioFileReader.readTags(path2)).thenReturn(Optional.empty());
@@ -67,7 +67,7 @@ class ScanMusicUseCaseTest {
     @Test
     void shouldDetectMissingTags() {
         var path = new Filepath("/music/incomplete.mp3");
-        var info = new MusicFileInfo(path, "incomplete.mp3", "Artist", "Title", null, null, null, null, 1000, 123456);
+        var info = new MusicFileInfo(path, "incomplete.mp3", "Artist", "Title", null, null, null, null, 1000, 123456, false);
 
         when(audioFileReader.readTags(path)).thenReturn(Optional.of(info));
 
@@ -81,7 +81,7 @@ class ScanMusicUseCaseTest {
     @Test
     void shouldReportNoMissingTagsWhenComplete() {
         var path = new Filepath("/music/complete.mp3");
-        var info = new MusicFileInfo(path, "complete.mp3", "Artist", "Title", "Album", "Pop", "128", "Cm", 1000, 123456);
+        var info = new MusicFileInfo(path, "complete.mp3", "Artist", "Title", "Album", "Pop", "128", "Cm", 1000, 123456, false);
 
         when(audioFileReader.readTags(path)).thenReturn(Optional.of(info));
 

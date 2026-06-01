@@ -37,7 +37,7 @@ class CreatePlanUseCaseTest {
     void shouldCreatePlanWithEnrichedSuggestions() {
         var path = new Filepath("/music/Daft Punk - Around The World.mp3");
         var fileInfo = new MusicFileInfo(path, "Daft Punk - Around The World.mp3",
-                null, null, null, null, null, null, 1000, 0);
+                null, null, null, null, null, null, 1000, 0, false);
 
         when(audioFileReader.readTags(path)).thenReturn(Optional.of(fileInfo));
 
@@ -71,7 +71,7 @@ class CreatePlanUseCaseTest {
     void shouldCreatePlanForFileWithExistingTags() {
         var path = new Filepath("/music/track.mp3");
         var fileInfo = new MusicFileInfo(path, "track.mp3",
-                "Artist", "Title", "Album", "Techno", "130", "Cm", 1000, 0);
+                "Artist", "Title", "Album", "Techno", "130", "Cm", 1000, 0, false);
 
         when(audioFileReader.readTags(path)).thenReturn(Optional.of(fileInfo));
         when(metadataProvider.enrich("Artist", "Title")).thenReturn(EnrichmentResult.success(
@@ -102,7 +102,7 @@ class CreatePlanUseCaseTest {
     void shouldHandleSpotifyNotFound() {
         var path = new Filepath("/music/Unknown - Track.mp3");
         var fileInfo = new MusicFileInfo(path, "Unknown - Track.mp3",
-                null, null, null, null, null, null, 1000, 0);
+                null, null, null, null, null, null, 1000, 0, false);
 
         when(audioFileReader.readTags(path)).thenReturn(Optional.of(fileInfo));
         when(metadataProvider.enrich("Unknown", "Track")).thenReturn(EnrichmentResult.notFound());
@@ -119,8 +119,8 @@ class CreatePlanUseCaseTest {
     void shouldHandleMultipleFiles() {
         var path1 = new Filepath("/music/a.mp3");
         var path2 = new Filepath("/music/b.mp3");
-        var info1 = new MusicFileInfo(path1, "a.mp3", "A", "B", null, null, null, null, 100, 0);
-        var info2 = new MusicFileInfo(path2, "b.mp3", "C", "D", "Album", "Genre", "120", "Am", 200, 0);
+        var info1 = new MusicFileInfo(path1, "a.mp3", "A", "B", null, null, null, null, 100, 0, false);
+        var info2 = new MusicFileInfo(path2, "b.mp3", "C", "D", "Album", "Genre", "120", "Am", 200, 0, false);
 
         when(audioFileReader.readTags(path1)).thenReturn(Optional.of(info1));
         when(audioFileReader.readTags(path2)).thenReturn(Optional.of(info2));

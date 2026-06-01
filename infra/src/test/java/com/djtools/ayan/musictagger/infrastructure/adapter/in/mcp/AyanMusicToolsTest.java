@@ -36,17 +36,18 @@ class AyanMusicToolsTest {
     @Mock TrackVectorizationService vectorizationService;
     @Mock com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository audioFeaturesCache;
     @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService audioScannerService;
+    @Mock com.djtools.ayan.musictagger.infrastructure.service.PlaylistService playlistService;
     private AyanMusicTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService);
+        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, playlistService);
     }
 
     @Test
     void scanMusicFile_returnsFileInfo() {
         var filepath = new Filepath("C:/music/test.mp3");
-        var info = new MusicFileInfo(filepath, "test.mp3", "Artist", "Title", "Album", "Genre", "120", "Am", 1000, 123456);
+        var info = new MusicFileInfo(filepath, "test.mp3", "Artist", "Title", "Album", "Genre", "120", "Am", 1000, 123456, false);
         when(scanMusicUseCase.execute(any())).thenReturn(List.of(info));
 
         MusicFileInfo result = tools.scanMusicFile("C:/music/test.mp3");
@@ -216,5 +217,28 @@ class AyanMusicToolsTest {
 
         assertThat(result.filepath()).isEqualTo("/test.mp3");
         assertThat(result.source()).isEqualTo("spotify+rag");
+    }
+
+    @Test
+    void generateLoopMixingPlaylist_delegatesToService() {
+        var playlist = new Playlist("pl-1", "3/4 Loop Mixing", "THREE_QUARTER_LOOP", List.of(), java.time.Instant.now());
+        when(playlistService.generateLoopMixingPlaylist(120, 130, "house")).thenReturn(playlist);
+
+        Playlist result = tools.generateLoopMixingPlaylist(120, 130, "house");
+
+        assertThat(result.playlistId()).isEqualTo("pl-1");
+        verify(playlistService).generateLoopMixingPlaylist(120, 130, "house");
+    }
+
+    @Test
+    void generateHarmonicMixedPlaylist_delegatesToService() {
+        var harmonic = new HarmonicPlaylist("hp-1", "Harmonic Mix - house", List.of(),
+                new PlaylistStats(0, 0, 0, 0, Map.of(), 0), java.time.Instant.now());
+        when(playlistService.generateHarmonicPlaylist(120, 130, "house", 0.7, 15)).thenReturn(harmonic);
+
+        HarmonicPlaylist result = tools.generateHarmonicMixedPlaylist("house", 120, 130, 0.7, 15);
+
+        assertThat(result.playlistId()).isEqualTo("hp-1");
+        verify(playlistService).generateHarmonicPlaylist(120, 130, "house", 0.7, 15);
     }
 }

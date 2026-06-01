@@ -163,6 +163,31 @@ export interface SimilarTrackResult {
   similarityScore: number;
 }
 
+export interface PlaylistTrack {
+  track: EnrichedTrackMetadata;
+  position: number;
+  camelotKey: string;
+  transitionType: string | null;
+  transitionQuality: number;
+}
+
+export interface PlaylistStats {
+  totalTracks: number;
+  avgBpm: number;
+  avgEnergy: number;
+  avgTransitionQuality: number;
+  keyDistribution: Record<string, number>;
+  perfectTransitions: number;
+}
+
+export interface HarmonicPlaylist {
+  playlistId: string;
+  name: string;
+  tracks: PlaylistTrack[];
+  stats: PlaylistStats;
+  createdAt: string;
+}
+
 export interface StatsReport {
   totalPlansCreated: number;
   totalTagsApplied: number;

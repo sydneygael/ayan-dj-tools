@@ -63,7 +63,7 @@ class TrackVectorizationServiceTest {
     @Test
     void smartSuggestTags_combinesSpotifyAndRag() {
         var fileInfo = new MusicFileInfo(new Filepath("/test.mp3"), "test.mp3", "Daft Punk", "Around The World",
-                null, null, null, null, 0, 0);
+                null, null, null, null, 0, 0, false);
         when(audioFileReader.readTags(any())).thenReturn(Optional.of(fileInfo));
 
         var metadata = sampleTrack();
@@ -83,7 +83,7 @@ class TrackVectorizationServiceTest {
     @Test
     void smartSuggestTags_emptyWhenNoArtistOrTitle() {
         var fileInfo = new MusicFileInfo(new Filepath("/test.mp3"), "test.mp3", null, null,
-                null, null, null, null, 0, 0);
+                null, null, null, null, 0, 0, false);
         when(audioFileReader.readTags(any())).thenReturn(Optional.of(fileInfo));
 
         SmartTagSuggestion suggestion = service.smartSuggestTags("/test.mp3");
@@ -95,7 +95,7 @@ class TrackVectorizationServiceTest {
     @Test
     void smartSuggestTags_fallsBackToRagOnly() {
         var fileInfo = new MusicFileInfo(new Filepath("/test.mp3"), "test.mp3", "Unknown", "Track",
-                null, null, null, null, 0, 0);
+                null, null, null, null, 0, 0, false);
         when(audioFileReader.readTags(any())).thenReturn(Optional.of(fileInfo));
         when(musicMetadataProvider.enrich("Unknown", "Track")).thenReturn(EnrichmentResult.notFound());
         when(vectorStorePort.findSimilar(anyString(), eq(5)))

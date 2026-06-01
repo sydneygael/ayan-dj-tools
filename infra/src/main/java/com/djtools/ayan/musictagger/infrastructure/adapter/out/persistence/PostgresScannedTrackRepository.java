@@ -10,20 +10,30 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class H2ScannedTrackRepository implements ScannedTrackRepository {
+public class PostgresScannedTrackRepository implements ScannedTrackRepository {
 
     private final JdbcClient jdbcClient;
 
-    public H2ScannedTrackRepository(JdbcClient jdbcClient) {
+    public PostgresScannedTrackRepository(JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
     }
 
     @Override
     public void save(MusicFileInfo track) {
         jdbcClient.sql("""
-                MERGE INTO scanned_tracks (filepath, filename, artist, title, album, genre, bpm, key_name, file_size, last_modified)
-                KEY (filepath)
+                INSERT INTO scanned_tracks (filepath, filename, artist, title, album, genre, bpm, key_name, file_size, last_modified)
                 VALUES (:filepath, :filename, :artist, :title, :album, :genre, :bpm, :keyName, :fileSize, :lastModified)
+                ON CONFLICT (filepath) DO UPDATE SET
+                    filename      = EXCLUDED.filename,
+                    artist        = EXCLUDED.artist,
+                    title         = EXCLUDED.title,
+                    album         = EXCLUDED.album,
+                    genre         = EXCLUDED.genre,
+                    bpm           = EXCLUDED.bpm,
+                    key_name      = EXCLUDED.key_name,
+                    file_size     = EXCLUDED.file_size,
+                    last_modified = EXCLUDED.last_modified,
+                    scanned_at    = CURRENT_TIMESTAMP
                 """)
                 .param("filepath", track.filepath().value())
                 .param("filename", track.filename())

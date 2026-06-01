@@ -40,7 +40,25 @@ services:
       timeout: 5s
       retries: 3
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: dj-tagger-postgres
+    environment:
+      POSTGRES_DB: ayan
+      POSTGRES_USER: ayan
+      POSTGRES_PASSWORD: ayan
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ayan -d ayan"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   ollama-data:
   redis-data:
   qdrant-data:
+  postgres-data:

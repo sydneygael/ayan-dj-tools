@@ -36,13 +36,11 @@ class AyanMusicToolsTest {
     @Mock TrackVectorizationService vectorizationService;
     @Mock com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository audioFeaturesCache;
     @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService audioScannerService;
-    @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.web.WebSearchAdapter webSearchAdapter;
-
     private AyanMusicTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, webSearchAdapter);
+        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService);
     }
 
     @Test

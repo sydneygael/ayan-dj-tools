@@ -7,8 +7,6 @@ import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService;
-import com.djtools.ayan.musictagger.infrastructure.adapter.out.web.WebSearchAdapter;
-import com.djtools.ayan.musictagger.infrastructure.adapter.out.web.WebSearchResult;
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
@@ -38,7 +36,6 @@ public class AyanMusicTools {
     private final TrackVectorizationService vectorizationService;
     private final AudioFeaturesCacheRepository audioFeaturesCache;
     private final AudioScannerService audioScannerService;
-    private final WebSearchAdapter webSearchAdapter;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
@@ -47,8 +44,7 @@ public class AyanMusicTools {
                           ManualModeService manualModeService,
                           TrackVectorizationService vectorizationService,
                           AudioFeaturesCacheRepository audioFeaturesCache,
-                          AudioScannerService audioScannerService,
-                          WebSearchAdapter webSearchAdapter) {
+                          AudioScannerService audioScannerService) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
@@ -57,7 +53,6 @@ public class AyanMusicTools {
         this.vectorizationService = vectorizationService;
         this.audioFeaturesCache = audioFeaturesCache;
         this.audioScannerService = audioScannerService;
-        this.webSearchAdapter = webSearchAdapter;
     }
 
     @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
@@ -190,14 +185,4 @@ public class AyanMusicTools {
         return audioScannerService.browse(Path.of(directoryPath), clampedPage, clampedSize);
     }
 
-    @Tool(description = """
-            Recherche des informations sur un artiste, un album ou un morceau sur le web.
-            Utile quand Spotify ne trouve pas de résultat ou pour compléter les informations
-            (biographie, discographie, date de sortie, label, contexte culturel, etc.).
-            Retourne un résumé et plusieurs sources. Utilise les résultats pour enrichir les tags.
-            """)
-    public WebSearchResult searchWeb(
-            @ToolParam(description = "Requête de recherche, ex : 'Angélique Kidjo Agolo album 1994'") String query) {
-        return webSearchAdapter.search(query);
-    }
 }

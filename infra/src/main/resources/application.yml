@@ -1,12 +1,15 @@
 server:
   port: 8000
 
-web:
-  search:
-    # Brave Search API key (optionnel) — gratuit jusqu'à 2000 req/mois
-    # Obtenir une clé : https://api.search.brave.com
-    # Sans clé, DuckDuckGo Instant Answer est utilisé en fallback (gratuit, sans compte).
-    brave-api-key: ${BRAVE_API_KEY:}
+soundcharts:
+  # Soundcharts API — source primaire de métadonnées musicales
+  # Credentials : https://soundcharts.com/
+  # Sans credentials, Soundcharts est ignoré et Spotify prend le relais.
+  app-id:  ${SOUNDCHARTS_APP_ID:SA34-API_EA6FB274}
+  api-key: ${SOUNDCHARTS_API_KEY:ecdb29da90754c5a}
+  base-url: ${SOUNDCHARTS_BASE_URL:https://customer.soundcharts.com}
+  search-limit: 5
+
 
 springdoc:
   swagger-ui:
@@ -29,12 +32,13 @@ spotify:
     cache-ttl-minutes: 60
 
 
+
 spring:
   datasource:
-    url: jdbc:h2:file:${user.home}/.ayan/library;AUTO_SERVER=TRUE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:ayan}
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER:ayan}
+    password: ${POSTGRES_PASSWORD:ayan}
   sql:
     init:
       mode: always

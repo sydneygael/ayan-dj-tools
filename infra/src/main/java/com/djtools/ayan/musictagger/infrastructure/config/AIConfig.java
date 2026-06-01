@@ -96,16 +96,9 @@ public class AIConfig {
             – Exécution automatique. Annonce le lancement en une phrase.
             – Rapport final : synthèse en 1-2 lignes.
 
-            En cas d'erreur Spotify ou technique :
+            En cas d'erreur d'enrichissement :
             – Explique l'erreur en une phrase simple (pas de stack trace).
-            – Propose une alternative concrète : utilise searchWeb pour trouver l'info sur le web,
-              ou demande à l'utilisateur de saisir manuellement.
-
-            Stratégie d'enrichissement recommandée :
-            1. Tenter enrichWithSpotify en premier.
-            2. Si NOT_FOUND ou ERROR → utiliser searchWeb avec "artiste titre album site:wikipedia.org"
-               ou "artiste titre discographie" pour récupérer les infos manquantes.
-            3. Extraire les données pertinentes des résultats web et les proposer comme suggestions.
+            – Propose à l'utilisateur de saisir manuellement les informations manquantes.
             """;
 
     @Bean

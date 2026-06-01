@@ -52,7 +52,7 @@ public class SpotifyConfig {
     }
 
     @Bean("spotifyMetadataProvider")
-    MusicMetadataProvider spotifyMetadataProvider(
+    SpotifyMusicMetadataAdapter spotifyMetadataProvider(
             SpotifyApiClient apiClient,
             SpotifyRateLimiter rateLimiter,
             SpotifyCacheService cacheService,
@@ -60,4 +60,5 @@ public class SpotifyConfig {
     ) {
         return new SpotifyMusicMetadataAdapter(apiClient, rateLimiter, cacheService, mapper);
     }
+
 }

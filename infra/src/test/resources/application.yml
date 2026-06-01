@@ -11,6 +11,12 @@ spotify:
     requests-per-second: 10
     cache-ttl-minutes: 60
 
+soundcharts:
+  app-id: test-app-id
+  api-key: test-api-key
+  base-url: https://customer.api.soundcharts.com
+  search-limit: 5
+
 spring:
   ai:
     ollama:

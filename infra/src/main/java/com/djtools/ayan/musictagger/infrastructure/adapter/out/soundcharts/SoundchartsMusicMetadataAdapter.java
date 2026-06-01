@@ -62,6 +62,36 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
         }
     }
 
+    /** Recherche libre par terme — retourne les morceaux trouvés sans appel de détail supplémentaire. */
+    public List<EnrichedTrackMetadata> searchByTerm(String term, int limit) {
+        if (term == null || term.isBlank()) return List.of();
+        try {
+            final var response = apiClient.searchSongByName(term.trim(), 0, Math.max(1, limit));
+            if (response == null || response.items() == null) return List.of();
+            return response.items().stream()
+                    .filter(Objects::nonNull)
+                    .map(t -> new EnrichedTrackMetadata(
+                            t.uuid(),
+                            t.primaryArtist(),
+                            t.name(),
+                            null,
+                            List.of(),
+                            List.of(),
+                            t.primaryLabel(),
+                            t.countryCode(),
+                            t.isrcValue(),
+                            List.of("soundcharts"),
+                            t.releaseYear(),
+                            null,
+                            t.durationMs(),
+                            null))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Soundcharts searchByTerm failed for '{}': {}", term, e.getMessage());
+            return List.of();
+        }
+    }
+
     private java.util.Optional<SoundchartsTrack> fetchDetails(String uuid) {
         if (uuid == null || uuid.isBlank()) {
             return java.util.Optional.empty();

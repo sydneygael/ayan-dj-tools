@@ -20,8 +20,11 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.djtools.ayan.musictagger.infrastructure.service.MusicLookupResult;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,11 +41,12 @@ class AyanMusicToolsTest {
     @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService audioScannerService;
     @Mock com.djtools.ayan.musictagger.infrastructure.service.PlaylistService playlistService;
     @Mock com.djtools.ayan.musictagger.infrastructure.service.SongSearchService songSearchService;
+    @Mock com.djtools.ayan.musictagger.infrastructure.service.MusicLookupService musicLookupService;
     private AyanMusicTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, playlistService, songSearchService);
+        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, playlistService, songSearchService, musicLookupService);
     }
 
     @Test
@@ -259,6 +263,42 @@ class AyanMusicToolsTest {
         assertThat(criteria.bpmMin()).isEqualTo(120);
         assertThat(criteria.bpmMax()).isEqualTo(130);
         assertThat(criteria.limit()).isEqualTo(10);
+    }
+
+    @Test
+    void lookupMusicInfo_delegatesQueryToService() {
+        var track = new EnrichedTrackMetadata("sc-1", "Dua Lipa", "Levitating", null,
+                List.of(), List.of(), null, null, null, List.of("soundcharts"), 2020, null, null, null);
+        var result = new MusicLookupResult(true, "soundcharts", "dua lipa levitating", List.of(track), null);
+        when(musicLookupService.lookup("dua lipa levitating")).thenReturn(result);
+
+        MusicLookupResult r = tools.lookupMusicInfo("dua lipa levitating", null, null, null);
+
+        assertThat(r.found()).isTrue();
+        assertThat(r.source()).isEqualTo("soundcharts");
+        assertThat(r.tracks()).hasSize(1);
+        verify(musicLookupService).lookup("dua lipa levitating");
+    }
+
+    @Test
+    void lookupMusicInfo_buildsQueryFromPartsWhenQueryIsBlank() {
+        when(musicLookupService.lookup(eq("Dua Lipa Levitating")))
+                .thenReturn(new MusicLookupResult(false, "none", "Dua Lipa Levitating", List.of(), null));
+
+        tools.lookupMusicInfo(null, "Dua Lipa", "Levitating", null);
+
+        verify(musicLookupService).lookup("Dua Lipa Levitating");
+    }
+
+    @Test
+    void lookupMusicInfo_nothingFound_returnsFalse() {
+        when(musicLookupService.lookup(anyString()))
+                .thenReturn(new MusicLookupResult(false, "none", "xyzabc", List.of(), null));
+
+        MusicLookupResult r = tools.lookupMusicInfo("xyzabc", null, null, null);
+
+        assertThat(r.found()).isFalse();
+        assertThat(r.source()).isEqualTo("none");
     }
 
     @Test

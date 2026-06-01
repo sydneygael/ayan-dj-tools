@@ -79,8 +79,22 @@ Le frontend Angular communique via HTTP (HttpClient) et WebSocket STOMP (`@stomp
 
 ### Chat — écran d'accueil (`/`)
 
-Interface de conversation avec l'agent IA Ayan. Envoyez des messages en langage naturel pour déclencher
-des scans, des enrichissements ou des suggestions de tags.
+Interface de conversation avec l'agent IA Ayan. Envoyez des messages en langage naturel pour piloter
+l'application. Capacités principales :
+
+- **Scanner** des fichiers audio et **détecter les tags manquants**
+- **Suggérer** artiste/titre à partir du nom de fichier
+- **Enrichir** les métadonnées via Spotify et l'analyse audio
+- **Créer un plan** de modifications, puis **prévisualiser** et **appliquer** les tags (backup + rollback)
+- **Consulter l'historique** des modifications
+- **Rechercher des morceaux similaires** (RAG sémantique)
+- **Rechercher des morceaux par critères** — décrivez en dialogue ce que vous cherchez (genre, BPM,
+  énergie, années, ambiance) et Ayan propose une sélection (10 par défaut), chaque morceau accompagné
+  de sa pertinence et des raisons de la correspondance. Ex. : « donne-moi 10 morceaux house énergiques
+  entre 120 et 130 BPM ». Filtrage best-effort : les morceaux non enrichis restent éligibles mais
+  classés derrière les correspondances confirmées.
+- **Générer des playlists** — loop mixing (plage de BPM) ou mix harmonique via la roue de Camelot,
+  directement depuis la conversation.
 
 ### Plan (`/plan/:id`)
 
@@ -95,10 +109,21 @@ Révision du plan de tagging proposé par l'agent. Trois modes d'affichage selon
 Recherche par ID de plan. Affiche la liste des fichiers modifiés avec le diff complet des tags
 (valeur avant / valeur après, avec indicateur succès/erreur par fichier).
 
-### Playlist (`/playlist`) — `Ctrl+L`
+### Playlist & RAG (`/playlist`) — `Ctrl+L`
 
-Génération de playlist à partir de la bibliothèque enrichie. Filtres : BPM min/max, genre.
-Chaque piste affiche artiste, titre, album, genres, BPM, tonalité et durée.
+Trois panneaux exploitant la bibliothèque enrichie (vectorisée dans Qdrant) :
+
+- **Génération Playlist (loop mixing)** — filtres BPM min/max + genre. Sélection groove/danceabilité
+  élevée triée par pertinence sémantique. Chaque piste affiche artiste, titre et BPM.
+- **Mix Harmonique (Camelot)** — séquençage façon *Mixed In Key* : roue de Camelot + transitions
+  **±6 BPM**. Filtres BPM min/max, genre, énergie cible et nombre de pistes. Chaque morceau porte son
+  badge de **clé Camelot** (ex. `8A`), son BPM et son **type de transition** coloré
+  (`PERFECT_MATCH`, `ADJACENT_KEY`, `MODE_CHANGE`, `JUMP`) avec sa qualité en %. Bandeau de **stats** :
+  BPM moyen, énergie moyenne, compatibilité harmonique globale, nombre de transitions parfaites.
+  Comportement best-effort : renvoie la plus longue chaîne compatible possible (jamais d'erreur), mais
+  un morceau sans tonalité mappable est ignoré du séquençage harmonique.
+- **Recherche Similaire (RAG)** — requête en texte libre (ex. `house groovy energetic 128 bpm`) +
+  nombre de résultats. Renvoie les morceaux les plus proches sémantiquement avec leur score.
 
 ### Statistiques (`/stats`) — `Ctrl+S`
 

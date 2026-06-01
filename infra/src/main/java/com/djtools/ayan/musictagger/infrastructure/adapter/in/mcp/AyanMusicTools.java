@@ -10,6 +10,8 @@ import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScanne
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlaylistService;
+import com.djtools.ayan.musictagger.infrastructure.service.MusicLookupResult;
+import com.djtools.ayan.musictagger.infrastructure.service.MusicLookupService;
 import com.djtools.ayan.musictagger.infrastructure.service.SongSearchService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
 import org.springframework.ai.tool.annotation.Tool;
@@ -40,6 +42,7 @@ public class AyanMusicTools {
     private final AudioScannerService audioScannerService;
     private final PlaylistService playlistService;
     private final SongSearchService songSearchService;
+    private final MusicLookupService musicLookupService;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
@@ -50,7 +53,8 @@ public class AyanMusicTools {
                           AudioFeaturesCacheRepository audioFeaturesCache,
                           AudioScannerService audioScannerService,
                           PlaylistService playlistService,
-                          SongSearchService songSearchService) {
+                          SongSearchService songSearchService,
+                          MusicLookupService musicLookupService) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
@@ -61,6 +65,7 @@ public class AyanMusicTools {
         this.audioScannerService = audioScannerService;
         this.playlistService = playlistService;
         this.songSearchService = songSearchService;
+        this.musicLookupService = musicLookupService;
     }
 
     @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
@@ -212,6 +217,30 @@ public class AyanMusicTools {
             @ToolParam(description = "Énergie cible 0.0–1.0") double targetEnergy,
             @ToolParam(description = "Nombre de morceaux souhaité") int count) {
         return playlistService.generateHarmonicPlaylist(minBpm, maxBpm, genre, targetEnergy, count);
+    }
+
+    @Tool(description = "Recherche des informations musicales sur un artiste, un album ou un morceau "
+            + "en interrogeant des sources externes dans l'ordre : Soundcharts → Internet → Spotify. "
+            + "À utiliser pour les questions de découverte externe (« qui est l'artiste X ? », "
+            + "« quels morceaux a sorti Y ? », « donne-moi des infos sur cet album »). "
+            + "Ne pas confondre avec searchSongs qui cherche dans la bibliothèque locale de l'utilisateur. "
+            + "Si rien n'est trouvé, répond simplement qu'aucun résultat n'a été trouvé. "
+            + "En cas d'erreur d'une source, passe silencieusement à la suivante.")
+    public MusicLookupResult lookupMusicInfo(
+            @ToolParam(description = "Requête libre : nom d'artiste, titre, album ou combinaison") String query,
+            @ToolParam(required = false, description = "Nom de l'artiste (si connu séparément de la requête)") String artist,
+            @ToolParam(required = false, description = "Titre du morceau (si connu séparément)") String song,
+            @ToolParam(required = false, description = "Nom de l'album (si connu séparément)") String album) {
+        return musicLookupService.lookup(buildLookupQuery(query, artist, song, album));
+    }
+
+    private String buildLookupQuery(String query, String artist, String song, String album) {
+        if (query != null && !query.isBlank()) return query.trim();
+        final var sb = new StringBuilder();
+        if (artist != null && !artist.isBlank()) sb.append(artist.trim()).append(' ');
+        if (song != null && !song.isBlank()) sb.append(song.trim()).append(' ');
+        if (album != null && !album.isBlank()) sb.append(album.trim()).append(' ');
+        return sb.toString().trim();
     }
 
     @Tool(description = "Recherche des morceaux dans la collection à partir de critères donnés en langage naturel "

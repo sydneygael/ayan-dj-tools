@@ -24,7 +24,8 @@ public class ExecutePlanUseCase {
     private final AudioFileWriter audioFileWriter;
     private final TaggingHistoryRepository historyRepository;
 
-    public ExecutePlanUseCase(AudioFileWriter audioFileWriter, TaggingHistoryRepository historyRepository) {
+    public ExecutePlanUseCase(AudioFileWriter audioFileWriter,
+                              TaggingHistoryRepository historyRepository) {
         this.audioFileWriter = audioFileWriter;
         this.historyRepository = historyRepository;
     }

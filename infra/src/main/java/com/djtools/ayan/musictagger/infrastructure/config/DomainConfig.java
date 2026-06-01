@@ -9,6 +9,7 @@ import com.djtools.ayan.musictagger.domain.usecase.BuildHarmonicPlaylistUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.CreatePlanUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.ExecutePlanUseCase;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
+import com.djtools.ayan.musictagger.domain.usecase.SearchSongsUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,5 +34,10 @@ public class DomainConfig {
     @Bean
     public BuildHarmonicPlaylistUseCase buildHarmonicPlaylistUseCase() {
         return new BuildHarmonicPlaylistUseCase();
+    }
+
+    @Bean
+    public SearchSongsUseCase searchSongsUseCase() {
+        return new SearchSongsUseCase();
     }
 }

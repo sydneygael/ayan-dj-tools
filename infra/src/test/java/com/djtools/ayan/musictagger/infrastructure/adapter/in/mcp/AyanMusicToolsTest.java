@@ -37,11 +37,12 @@ class AyanMusicToolsTest {
     @Mock com.djtools.ayan.musictagger.domain.port.out.AudioFeaturesCacheRepository audioFeaturesCache;
     @Mock com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService audioScannerService;
     @Mock com.djtools.ayan.musictagger.infrastructure.service.PlaylistService playlistService;
+    @Mock com.djtools.ayan.musictagger.infrastructure.service.SongSearchService songSearchService;
     private AyanMusicTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, playlistService);
+        tools = new AyanMusicTools(scanMusicUseCase, musicMetadataProvider, audioFeatureExtractor, planManagementService, manualModeService, vectorizationService, audioFeaturesCache, audioScannerService, playlistService, songSearchService);
     }
 
     @Test
@@ -240,5 +241,35 @@ class AyanMusicToolsTest {
 
         assertThat(result.playlistId()).isEqualTo("hp-1");
         verify(playlistService).generateHarmonicPlaylist(120, 130, "house", 0.7, 15);
+    }
+
+    @Test
+    void searchSongs_buildsCriteriaAndDelegatesToService() {
+        var searchResult = new SongSearchResult(List.of(), 0, "Genre : house  |  BPM : 120-130  |  Limite : 10");
+        when(songSearchService.search(any(SongSearchCriteria.class))).thenReturn(searchResult);
+
+        SongSearchResult result = tools.searchSongs("house", null, 120, 130, null, null, null, null, 10);
+
+        assertThat(result.criteriaSummary()).contains("house");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(SongSearchCriteria.class);
+        verify(songSearchService).search(captor.capture());
+        var criteria = captor.getValue();
+        assertThat(criteria.genre()).isEqualTo("house");
+        assertThat(criteria.bpmMin()).isEqualTo(120);
+        assertThat(criteria.bpmMax()).isEqualTo(130);
+        assertThat(criteria.limit()).isEqualTo(10);
+    }
+
+    @Test
+    void searchSongs_nullLimitFallsBackToDefault() {
+        when(songSearchService.search(any(SongSearchCriteria.class)))
+                .thenReturn(new SongSearchResult(List.of(), 0, ""));
+
+        tools.searchSongs("techno", null, null, null, null, null, null, null, null);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(SongSearchCriteria.class);
+        verify(songSearchService).search(captor.capture());
+        assertThat(captor.getValue().limit()).isEqualTo(10);
     }
 }

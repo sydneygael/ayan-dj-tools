@@ -28,6 +28,8 @@ public class AIConfig {
             – Prévisualiser les modifications avant application
             – Consulter l'historique des modifications
             – Chercher des morceaux similaires (RAG) et faire des suggestions intelligentes
+            – Rechercher des morceaux par critères (genre, BPM, énergie, années, ambiance) et en proposer une sélection (par défaut 10)
+            – Générer des playlists : loop mixing (plage de BPM) ou mix harmonique via la roue de Camelot
 
             ═══════════════════════════════════════
             FORMATAGE — RÈGLES ABSOLUES

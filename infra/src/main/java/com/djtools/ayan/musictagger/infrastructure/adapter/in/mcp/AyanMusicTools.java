@@ -10,6 +10,7 @@ import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScanne
 import com.djtools.ayan.musictagger.infrastructure.service.ManualModeService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlanManagementService;
 import com.djtools.ayan.musictagger.infrastructure.service.PlaylistService;
+import com.djtools.ayan.musictagger.infrastructure.service.SongSearchService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -38,6 +39,7 @@ public class AyanMusicTools {
     private final AudioFeaturesCacheRepository audioFeaturesCache;
     private final AudioScannerService audioScannerService;
     private final PlaylistService playlistService;
+    private final SongSearchService songSearchService;
 
     public AyanMusicTools(ScanMusicUseCase scanMusicUseCase,
                           MusicMetadataProvider musicMetadataProvider,
@@ -47,7 +49,8 @@ public class AyanMusicTools {
                           TrackVectorizationService vectorizationService,
                           AudioFeaturesCacheRepository audioFeaturesCache,
                           AudioScannerService audioScannerService,
-                          PlaylistService playlistService) {
+                          PlaylistService playlistService,
+                          SongSearchService songSearchService) {
         this.scanMusicUseCase = scanMusicUseCase;
         this.musicMetadataProvider = musicMetadataProvider;
         this.audioFeatureExtractor = audioFeatureExtractor;
@@ -57,6 +60,7 @@ public class AyanMusicTools {
         this.audioFeaturesCache = audioFeaturesCache;
         this.audioScannerService = audioScannerService;
         this.playlistService = playlistService;
+        this.songSearchService = songSearchService;
     }
 
     @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
@@ -208,6 +212,29 @@ public class AyanMusicTools {
             @ToolParam(description = "Énergie cible 0.0–1.0") double targetEnergy,
             @ToolParam(description = "Nombre de morceaux souhaité") int count) {
         return playlistService.generateHarmonicPlaylist(minBpm, maxBpm, genre, targetEnergy, count);
+    }
+
+    @Tool(description = "Recherche des morceaux dans la collection à partir de critères donnés en langage naturel "
+            + "(genre, plage de BPM, niveau d'énergie, plage d'années, ambiance). "
+            + "Combine recherche sémantique (RAG) et filtrage par critères. "
+            + "Retourne par défaut 10 morceaux classés par pertinence, avec la raison de chaque correspondance "
+            + "et un résumé des critères appliqués. "
+            + "À utiliser quand l'utilisateur demande des morceaux par critères plutôt que par fichier précis. "
+            + "Tous les critères sont optionnels : ne renseigne que ceux mentionnés par l'utilisateur.")
+    public SongSearchResult searchSongs(
+            @ToolParam(required = false, description = "Genre musical (ex: house, techno, afrobeats)") String genre,
+            @ToolParam(required = false, description = "Ambiance ou vibe en texte libre (ex: dark, festif, mélancolique)") String mood,
+            @ToolParam(required = false, description = "BPM minimum") Integer bpmMin,
+            @ToolParam(required = false, description = "BPM maximum") Integer bpmMax,
+            @ToolParam(required = false, description = "Énergie minimum, 0.0–1.0") Double energyMin,
+            @ToolParam(required = false, description = "Énergie maximum, 0.0–1.0") Double energyMax,
+            @ToolParam(required = false, description = "Année de sortie minimum") Integer yearMin,
+            @ToolParam(required = false, description = "Année de sortie maximum") Integer yearMax,
+            @ToolParam(required = false, description = "Nombre de morceaux souhaité (défaut 10, max 50)") Integer limit) {
+        final var criteria = new SongSearchCriteria(
+                genre, mood, bpmMin, bpmMax, energyMin, energyMax, yearMin, yearMax,
+                limit == null ? 0 : limit);
+        return songSearchService.search(criteria);
     }
 
 }

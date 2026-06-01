@@ -20,7 +20,9 @@ public class ScanMusicUseCase {
     private final AudioFileReader audioFileReader;
     private final ScannedTrackRepository scannedTrackRepository;
 
-    public ScanMusicUseCase(AudioFileReader audioFileReader, ScannedTrackRepository scannedTrackRepository) {
+    public ScanMusicUseCase(
+            AudioFileReader audioFileReader,
+            ScannedTrackRepository scannedTrackRepository) {
         this.audioFileReader = audioFileReader;
         this.scannedTrackRepository = scannedTrackRepository;
     }

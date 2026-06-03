@@ -12,19 +12,24 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Recherche musicale externe en chaîne : Soundcharts → Internet (DuckDuckGo) → Spotify.
- *
- * <p>Différent de {@code SongSearchService} qui cherche dans la collection locale vectorisée (Qdrant).
- * Ici on interroge des sources externes pour répondre à des questions de découverte :
- * « Qui est cet artiste ? », « Quels morceaux existe-t-il ? », « Infos sur cet album ? ».
+ * External music lookup chain:
+ * 1) Soundcharts
+ * 2) DuckDuckGo + Spotify in parallel if Soundcharts is empty.
  */
 @Service
 public class MusicLookupService {
 
     private static final Logger log = LoggerFactory.getLogger(MusicLookupService.class);
     private static final int SEARCH_LIMIT = 8;
+    private static final long SOUNDCHARTS_TIMEOUT_SECONDS = 8;
+    private static final long WEB_TIMEOUT_SECONDS = 8;
+    private static final long SPOTIFY_TIMEOUT_SECONDS = 12;
 
     private final SoundchartsMusicMetadataAdapter soundcharts;
     private final DuckDuckGoSearchAdapter duckDuckGo;
@@ -33,10 +38,10 @@ public class MusicLookupService {
     private final SpotifyRateLimiter spotifyRateLimiter;
 
     public MusicLookupService(SoundchartsMusicMetadataAdapter soundcharts,
-                               DuckDuckGoSearchAdapter duckDuckGo,
-                               SpotifyApiClient spotifyApiClient,
-                               SpotifyMapper spotifyMapper,
-                               SpotifyRateLimiter spotifyRateLimiter) {
+                              DuckDuckGoSearchAdapter duckDuckGo,
+                              SpotifyApiClient spotifyApiClient,
+                              SpotifyMapper spotifyMapper,
+                              SpotifyRateLimiter spotifyRateLimiter) {
         this.soundcharts = soundcharts;
         this.duckDuckGo = duckDuckGo;
         this.spotifyApiClient = spotifyApiClient;
@@ -50,23 +55,46 @@ public class MusicLookupService {
         }
         log.info("MusicLookup: '{}'", query);
 
-        // ── 1. Soundcharts ────────────────────────────────────────────────────
-        List<EnrichedTrackMetadata> scTracks = List.of();
-        try {
-            scTracks = soundcharts.searchByTerm(query, SEARCH_LIMIT);
-        } catch (Exception e) {
-            log.warn("Soundcharts lookup failed for '{}': {}", query, e.getMessage());
-        }
-        if (!scTracks.isEmpty()) {
-            log.info("MusicLookup: {} track(s) via Soundcharts for '{}'", scTracks.size(), query);
-            return new MusicLookupResult(true, "soundcharts", query, scTracks, null);
+        final List<EnrichedTrackMetadata> soundchartsTracks;
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            soundchartsTracks = CompletableFuture
+                    .supplyAsync(() -> soundcharts.searchByTerm(query, SEARCH_LIMIT), executor)
+                    .completeOnTimeout(List.of(), SOUNDCHARTS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .exceptionally(error -> {
+                        log.warn("Soundcharts lookup failed for '{}': {}", query, rootMessage(error));
+                        return List.of();
+                    })
+                    .join();
         }
 
-        // ── 2. Internet (DuckDuckGo) ──────────────────────────────────────────
-        final var webSummary = duckDuckGo.search(query);
+        if (!soundchartsTracks.isEmpty()) {
+            log.info("MusicLookup: {} track(s) via Soundcharts for '{}'", soundchartsTracks.size(), query);
+            return new MusicLookupResult(true, "soundcharts", query, soundchartsTracks, null);
+        }
 
-        // ── 3. Spotify ────────────────────────────────────────────────────────
-        final var spotifyTracks = searchSpotify(query);
+        final Optional<String> webSummary;
+        final List<EnrichedTrackMetadata> spotifyTracks;
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final var webFuture = CompletableFuture
+                    .supplyAsync(() -> searchWebSafely(query), executor)
+                    .completeOnTimeout(Optional.empty(), WEB_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .exceptionally(error -> {
+                        log.warn("Web lookup failed for '{}': {}", query, rootMessage(error));
+                        return Optional.empty();
+                    });
+
+            final var spotifyFuture = CompletableFuture
+                    .supplyAsync(() -> searchSpotify(query), executor)
+                    .completeOnTimeout(List.of(), SPOTIFY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .exceptionally(error -> {
+                        log.warn("Spotify lookup failed for '{}': {}", query, rootMessage(error));
+                        return List.of();
+                    });
+
+            webSummary = webFuture.join();
+            spotifyTracks = spotifyFuture.join();
+        }
+
         if (!spotifyTracks.isEmpty()) {
             log.info("MusicLookup: {} track(s) via Spotify for '{}'", spotifyTracks.size(), query);
             return new MusicLookupResult(true, "spotify", query, spotifyTracks, webSummary.orElse(null));
@@ -79,6 +107,15 @@ public class MusicLookupService {
 
         log.info("MusicLookup: nothing found for '{}'", query);
         return new MusicLookupResult(false, "none", query, List.of(), null);
+    }
+
+    private Optional<String> searchWebSafely(String query) {
+        try {
+            return duckDuckGo.search(query);
+        } catch (Exception e) {
+            log.warn("DuckDuckGo search failed for '{}': {}", query, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     private List<EnrichedTrackMetadata> searchSpotify(String query) {
@@ -96,5 +133,13 @@ public class MusicLookupService {
             log.warn("Spotify search failed for '{}': {}", query, e.getMessage());
             return List.of();
         }
+    }
+
+    private static String rootMessage(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current.getMessage();
     }
 }

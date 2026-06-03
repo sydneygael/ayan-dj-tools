@@ -85,6 +85,22 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
                       </div>
                     </div>
                   }
+                  @case ('status') {
+                    <div class="status-msg"
+                         [class.running]="msg.state === 'running'"
+                         [class.done]="msg.state === 'done'"
+                         [class.error]="msg.state === 'error'">
+                      <mat-icon fontSet="material-symbols-rounded"
+                                class="status-icon"
+                                [class.spin]="msg.state === 'running'">
+                        {{ statusIcon(msg.state) }}
+                      </mat-icon>
+                      <div class="status-content">
+                        <div class="status-title">{{ msg.title }}</div>
+                        <div class="status-detail">{{ msg.detail }}</div>
+                      </div>
+                    </div>
+                  }
                   @case ('tool') {
                     <app-chat-tool-call-card
                       [name]="msg.name"
@@ -124,7 +140,10 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
               (click)="sendMessage()"
               [disabled]="!canSend()"
               matTooltip="Envoyer (Entrée)">
-              <mat-icon fontSet="material-symbols-rounded">send</mat-icon>
+              <mat-icon fontSet="material-symbols-rounded"
+                        [class.spin]="isSending()">
+                {{ isSending() ? 'progress_activity' : 'send' }}
+              </mat-icon>
             </button>
           </div>
 
@@ -172,7 +191,10 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
             <button mat-flat-button
               (click)="createPlan()"
               [disabled]="isCreatingPlan()">
-              <mat-icon fontSet="material-symbols-rounded">task_alt</mat-icon>
+              <mat-icon fontSet="material-symbols-rounded"
+                        [class.spin]="isCreatingPlan()">
+                {{ isCreatingPlan() ? 'progress_activity' : 'task_alt' }}
+              </mat-icon>
               Créer un plan ({{ prefs.selectedFileCount() }})
             </button>
           </mat-card-actions>
@@ -271,6 +293,52 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
 
     .msg-content { white-space: pre-wrap; }
 
+    .status-msg {
+      margin: 6px 0;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-text);
+      background: var(--surface-0);
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .status-msg.done {
+      border-left-color: var(--success, #2a8);
+    }
+
+    .status-msg.error {
+      border-left-color: var(--error, #f44336);
+    }
+
+    .status-icon {
+      margin-top: 1px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--muted);
+    }
+
+    .status-content {
+      display: grid;
+      gap: 2px;
+    }
+
+    .status-title {
+      font-size: .83rem;
+      font-weight: 600;
+    }
+
+    .status-detail {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
     .thinking-dots {
       display: inline-block;
       color: var(--muted);
@@ -283,6 +351,11 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
       0%, 100% { opacity: 1; }
       33%       { opacity: .4; }
       66%       { opacity: .1; }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     .quick-actions-wrap { padding-top: 0; }
@@ -375,11 +448,19 @@ export class ChatPageComponent {
     const paths = this.prefs.selectedFiles();
     this.addUserMessage('Analyse les fichiers sélectionnés et liste les tags manquants.');
     const idx = this.addPendingAssistant();
+    const statusIdx = this.addStatusMessage(
+      'Analyse des fichiers',
+      'Préparation de la requête HTTP...',
+      'running'
+    );
     this.isSending.set(true);
     try {
+      this.updateStatusMessage(statusIdx, 'Analyse des fichiers', 'Lecture des tags en cours...', 'running');
       const items = await firstValueFrom(this.api.analyzeFiles(paths));
+      this.updateStatusMessage(statusIdx, 'Analyse des fichiers', 'Analyse terminée.', 'done');
       this.replaceAssistant(idx, this.formatAnalysis(items));
     } catch (err) {
+      this.updateStatusMessage(statusIdx, 'Analyse des fichiers', this.errorToMessage(err), 'error');
       this.replaceAssistant(idx, '');
       this.chatError.set(this.errorToMessage(err));
     } finally {
@@ -392,11 +473,19 @@ export class ChatPageComponent {
     const paths = this.prefs.selectedFiles();
     this.addUserMessage('Enrichis les fichiers sélectionnés via Spotify.');
     const idx = this.addPendingAssistant();
+    const statusIdx = this.addStatusMessage(
+      'Enrichissement Spotify',
+      'Préparation de la requête HTTP...',
+      'running'
+    );
     this.isSending.set(true);
     try {
+      this.updateStatusMessage(statusIdx, 'Enrichissement Spotify', 'Recherche des métadonnées...', 'running');
       const items = await firstValueFrom(this.api.enrichFiles(paths));
+      this.updateStatusMessage(statusIdx, 'Enrichissement Spotify', 'Enrichissement terminé.', 'done');
       this.replaceAssistant(idx, this.formatEnrichment(items));
     } catch (err) {
+      this.updateStatusMessage(statusIdx, 'Enrichissement Spotify', this.errorToMessage(err), 'error');
       this.replaceAssistant(idx, '');
       this.chatError.set(this.errorToMessage(err));
     } finally {
@@ -418,7 +507,7 @@ export class ChatPageComponent {
     );
   }
 
-  async sendMessage(override?: ChatRequest): Promise<void> {
+  sendMessage(override?: ChatRequest): void {
     if (this.isSending()) return;
 
     const request: ChatRequest = override ?? {
@@ -441,43 +530,51 @@ export class ChatPageComponent {
 
     this.isSending.set(true);
     const idx = this.addPendingAssistant();
+    const statusIdx = this.addStatusMessage('Chat', 'Étape 1/3 · Connexion au backend...', 'running');
+    this.scrollMessagesToBottom();
 
-    try {
-      const response = await firstValueFrom(this.api.chat(request));
-      if (response.conversationId) this.conversationId.set(response.conversationId);
+    let accumulated = '';
+    let streamStarted = false;
 
-      if (response.toolCalls && response.toolCalls.length) {
-        this.messages.update((all) => {
-          const copy = [...all];
-          const cards: UiMessage[] = response.toolCalls!.map(tc => ({
-            kind: 'tool' as const,
-            toolCallId: tc.id,
-            name: tc.name,
-            argsJson: tc.argumentsJson ?? '',
-            status: 'done' as const
-          }));
-          copy.splice(idx, 0, ...cards);
-          return copy;
-        });
+    this.api.chatStream(request).subscribe({
+      next: (event) => {
+        if (event.type === 'chunk' && event.token) {
+          if (!streamStarted) {
+            streamStarted = true;
+            this.updateStatusMessage(statusIdx, 'Chat', 'Étape 2/3 · Réponse en cours de génération...', 'running');
+          }
+          accumulated += event.token;
+          this.replaceAssistant(idx, accumulated);
+          this.scrollMessagesToBottom();
+        } else if (event.type === 'done') {
+          if (event.conversationId) this.conversationId.set(event.conversationId);
+          this.updateStatusMessage(statusIdx, 'Chat', 'Étape 3/3 · Réponse terminée.', 'done');
+          this.replaceAssistant(idx, event.reply ?? accumulated);
+          this.isSending.set(false);
+          this.scrollMessagesToBottom();
+        } else if (event.type === 'error') {
+          this.updateStatusMessage(statusIdx, 'Chat', event.reply ?? 'Erreur du serveur', 'error');
+          this.replaceAssistant(idx, '');
+          this.chatError.set(event.reply ?? 'Erreur du serveur');
+          this.lastFailedRequest.set(request);
+          this.isSending.set(false);
+        }
+      },
+      error: (err) => {
+        this.updateStatusMessage(statusIdx, 'Chat', this.errorToMessage(err), 'error');
+        this.replaceAssistant(idx, '');
+        this.chatError.set(this.errorToMessage(err));
+        this.lastFailedRequest.set(request);
+        this.isSending.set(false);
       }
-
-      this.replaceAssistant(idx + (response.toolCalls?.length ?? 0), response.reply ?? '');
-
-    } catch (err) {
-      this.replaceAssistant(idx, '');
-      this.chatError.set(this.errorToMessage(err));
-      this.lastFailedRequest.set(request);
-    } finally {
-      this.isSending.set(false);
-      this.scrollMessagesToBottom();
-    }
+    });
   }
 
   async retry(): Promise<void> {
     const req = this.lastFailedRequest();
     if (!req) return;
     this.chatError.set(null);
-    await this.sendMessage(req);
+    this.sendMessage(req);
   }
 
   async loadHistory(): Promise<void> {
@@ -510,12 +607,21 @@ export class ChatPageComponent {
       return;
     }
 
+    this.addUserMessage('Crée un plan de tagging pour les fichiers sélectionnés.');
+    const statusIdx = this.addStatusMessage('Création du plan', 'Étape 1/2 · Envoi de la demande...', 'running');
     this.planError.set(null);
     this.isCreatingPlan.set(true);
     try {
       const plan = await firstValueFrom(this.api.createPlan(filePaths, this.prefs.currentMode()));
+      this.updateStatusMessage(
+        statusIdx,
+        'Création du plan',
+        `Étape 2/2 · Plan créé (${plan.operations.length} opérations).`,
+        'done'
+      );
       await this.router.navigate(['/plan', plan.planId]);
     } catch (error: unknown) {
+      this.updateStatusMessage(statusIdx, 'Création du plan', this.errorToMessage(error), 'error');
       this.planError.set(this.errorToMessage(error));
     } finally {
       this.isCreatingPlan.set(false);
@@ -524,6 +630,43 @@ export class ChatPageComponent {
 
   private addUserMessage(text: string): void {
     this.messages.update((all) => [...all, { kind: 'text', role: 'user', content: text }]);
+  }
+
+  statusIcon(state: 'running' | 'done' | 'error'): string {
+    if (state === 'done') return 'task_alt';
+    if (state === 'error') return 'error';
+    return 'progress_activity';
+  }
+
+  private addStatusMessage(
+    title: string,
+    detail: string,
+    state: 'running' | 'done' | 'error'
+  ): number {
+    let idx = -1;
+    this.messages.update((all) => {
+      idx = all.length;
+      return [...all, { kind: 'status', title, detail, state }];
+    });
+    this.scrollMessagesToBottom();
+    return idx;
+  }
+
+  private updateStatusMessage(
+    idx: number,
+    title: string,
+    detail: string,
+    state: 'running' | 'done' | 'error'
+  ): void {
+    this.messages.update((all) => {
+      const copy = [...all];
+      const target = copy[idx];
+      if (target?.kind === 'status') {
+        copy[idx] = { kind: 'status', title, detail, state };
+      }
+      return copy;
+    });
+    this.scrollMessagesToBottom();
   }
 
   private addPendingAssistant(): number {

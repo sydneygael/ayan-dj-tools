@@ -28,7 +28,7 @@ class AyanAgentServiceTest {
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
-        service = new AyanAgentService(chatClient);
+        service = new AyanAgentService(chatClient, 120);
         lenient().when(chatClient.prompt()).thenReturn(requestSpec);
         lenient().when(requestSpec.user(anyString())).thenReturn(requestSpec);
         lenient().when(requestSpec.advisors(any(Consumer.class))).thenReturn(requestSpec);

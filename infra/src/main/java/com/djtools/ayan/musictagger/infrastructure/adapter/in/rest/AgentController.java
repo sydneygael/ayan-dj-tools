@@ -5,7 +5,9 @@ import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
 import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,7 +43,15 @@ public class AgentController {
         return new ChatResponse(result.reply(), result.conversationId(), messageCount, LocalDateTime.now(), toolCalls);
     }
 
-@GetMapping("/conversations/{id}/history")
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter chatStream(@RequestBody ChatRequest request) {
+        final var mode = request.mode() != null ? request.mode() : OperatingMode.PLAN;
+        return agentService.streamChat(
+                request.conversationId(), request.message(), mode,
+                request.filePaths(), request.currentDir());
+    }
+
+    @GetMapping("/conversations/{id}/history")
     public List<ChatMessage> getHistory(@PathVariable String id) {
         return chatMemory.get(id).stream()
                 .map(msg -> new ChatMessage(msg.getMessageType().getValue(), msg.getText(), null))

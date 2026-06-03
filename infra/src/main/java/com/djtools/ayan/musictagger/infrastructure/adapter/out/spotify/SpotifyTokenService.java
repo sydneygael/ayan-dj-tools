@@ -5,10 +5,12 @@ import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.exception
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Base64;
 
 public class SpotifyTokenService {
@@ -26,8 +28,12 @@ public class SpotifyTokenService {
     public SpotifyTokenService(String authUrl, String clientId, String clientSecret) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
+        final var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(10));
         this.tokenClient = RestClient.builder()
                 .baseUrl(authUrl)
+                .requestFactory(factory)
                 .build();
     }
 

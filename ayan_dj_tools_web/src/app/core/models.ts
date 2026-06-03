@@ -46,6 +46,12 @@ export interface ChatStreamEvent {
 export type UiMessage =
   | { kind: 'text'; role: 'user' | 'assistant'; content: string }
   | {
+      kind: 'status';
+      title: string;
+      detail: string;
+      state: 'running' | 'done' | 'error';
+    }
+  | {
       kind: 'tool';
       toolCallId: string;
       name: string;

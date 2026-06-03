@@ -4,9 +4,12 @@ import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+
+import java.time.Duration;
 
 @Configuration
 @EnableConfigurationProperties(SpotifyProperties.class)
@@ -23,8 +26,12 @@ public class SpotifyConfig {
 
     @Bean
     SpotifyApiClient spotifyApiClient(SpotifyTokenService tokenService) {
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(15));
         RestClient restClient = RestClient.builder()
                 .baseUrl("https://api.spotify.com/v1")
+                .requestFactory(factory)
                 .requestInterceptor((request, body, execution) -> {
                     request.getHeaders().setBearerAuth(tokenService.getAccessToken());
                     return execution.execute(request, body);
@@ -32,8 +39,8 @@ public class SpotifyConfig {
                 .build();
 
         RestClientAdapter adapter = RestClientAdapter.create(restClient);
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(adapter).build();
-        return factory.createClient(SpotifyApiClient.class);
+        HttpServiceProxyFactory proxyFactory = HttpServiceProxyFactory.builderFor(adapter).build();
+        return proxyFactory.createClient(SpotifyApiClient.class);
     }
 
     @Bean

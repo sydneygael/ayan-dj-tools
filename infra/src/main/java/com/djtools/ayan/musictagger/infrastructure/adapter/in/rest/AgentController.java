@@ -5,10 +5,7 @@ import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
 import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,43 +41,7 @@ public class AgentController {
         return new ChatResponse(result.reply(), result.conversationId(), messageCount, LocalDateTime.now(), toolCalls);
     }
 
-    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ChatStreamEvent> chatStream(@RequestBody ChatRequest request) {
-        final var conversationId = request.conversationId() != null
-                ? request.conversationId()
-                : UUID.randomUUID().toString();
-
-        final var mode = request.mode() != null ? request.mode() : OperatingMode.PLAN;
-        final var fullReply = new StringBuilder();
-
-        return agentService.chatStreamWithToolCalls(
-                        conversationId, request.message(), mode, request.filePaths(), request.currentDir())
-                .map(event -> switch (event.kind()) {
-                    case TOKEN -> {
-                        fullReply.append(event.token());
-                        yield new ChatStreamEvent(
-                                "chunk", event.token(), null, conversationId, null, null,
-                                null, null, null, null);
-                    }
-                    case TOOL_CALL -> new ChatStreamEvent(
-                            "tool-call", null, null, conversationId, null, LocalDateTime.now(),
-                            event.toolCallId(), event.toolName(), event.toolArgsJson(), null);
-                })
-                .concatWith(Mono.fromSupplier(() -> {
-                    final var reply = fullReply.toString();
-                    final var messageCount = (long) chatMemory.get(conversationId).size();
-                    return new ChatStreamEvent(
-                            "done", null, reply, conversationId, messageCount, LocalDateTime.now(),
-                            null, null, null, null);
-                }))
-                .onErrorResume(error -> Flux.just(
-                        new ChatStreamEvent(
-                                "error", error.getMessage(), null, conversationId, null, null,
-                                null, null, null, null)
-                ));
-    }
-
-    @GetMapping("/conversations/{id}/history")
+@GetMapping("/conversations/{id}/history")
     public List<ChatMessage> getHistory(@PathVariable String id) {
         return chatMemory.get(id).stream()
                 .map(msg -> new ChatMessage(msg.getMessageType().getValue(), msg.getText(), null))
@@ -109,17 +70,4 @@ public class AgentController {
     ) {}
 
     public record ToolCallInfo(String id, String name, String argumentsJson) {}
-
-    public record ChatStreamEvent(
-            String type,
-            String token,
-            String reply,
-            String conversationId,
-            Long messageCount,
-            LocalDateTime timestamp,
-            String toolCallId,
-            String toolName,
-            String toolArgsJson,
-            String toolResultJson
-    ) {}
 }

@@ -2,10 +2,12 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.Optional;
 
 /**
@@ -22,8 +24,12 @@ public class DuckDuckGoSearchAdapter {
 
     public DuckDuckGoSearchAdapter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(10));
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.duckduckgo.com")
+                .requestFactory(factory)
                 .build();
     }
 

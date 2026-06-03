@@ -262,7 +262,7 @@ public class AyanMusicTools {
             @ToolParam(required = false, description = "Nombre de morceaux souhaité (défaut 10, max 50)") Integer limit) {
         final var criteria = new SongSearchCriteria(
                 genre, mood, bpmMin, bpmMax, energyMin, energyMax, yearMin, yearMax,
-                limit == null ? 0 : limit);
+                limit == null ? 10 : limit);
         return songSearchService.search(criteria);
     }
 

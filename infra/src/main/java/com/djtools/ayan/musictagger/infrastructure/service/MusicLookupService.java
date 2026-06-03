@@ -51,7 +51,12 @@ public class MusicLookupService {
         log.info("MusicLookup: '{}'", query);
 
         // ── 1. Soundcharts ────────────────────────────────────────────────────
-        final var scTracks = soundcharts.searchByTerm(query, SEARCH_LIMIT);
+        List<EnrichedTrackMetadata> scTracks = List.of();
+        try {
+            scTracks = soundcharts.searchByTerm(query, SEARCH_LIMIT);
+        } catch (Exception e) {
+            log.warn("Soundcharts lookup failed for '{}': {}", query, e.getMessage());
+        }
         if (!scTracks.isEmpty()) {
             log.info("MusicLookup: {} track(s) via Soundcharts for '{}'", scTracks.size(), query);
             return new MusicLookupResult(true, "soundcharts", query, scTracks, null);

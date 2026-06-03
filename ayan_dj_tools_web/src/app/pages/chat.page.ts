@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { firstValueFrom, Subscription } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { ChatRequest, FileAnalysisItem, FileEnrichItem, OperatingMode, UiMessage } from '../core/models';
 import { PreferencesStore } from '../core/preferences.store';
@@ -79,7 +79,7 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
                       <div class="msg-role">{{ msg.role === 'user' ? 'Vous' : 'Ayan' }}</div>
                       <div class="msg-content">
                         {{ msg.content }}
-                        @if (msg.role === 'assistant' && msg.content === '' && pendingReply()) {
+                        @if (msg.role === 'assistant' && msg.content === '' && isSending()) {
                           <span class="thinking-dots">···</span>
                         }
                       </div>
@@ -141,6 +141,12 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
 
           @if (chatError()) {
             <p class="error">{{ chatError() }}</p>
+            @if (lastFailedRequest()) {
+              <button mat-stroked-button (click)="retry()">
+                <mat-icon fontSet="material-symbols-rounded">refresh</mat-icon>
+                Réessayer
+              </button>
+            }
           }
         </mat-card-actions>
       </mat-card>
@@ -313,6 +319,12 @@ const INTENT_RX = /\b(analys|tagu|enrichi|plan|applique|scan|simil)/i;
       flex-wrap: wrap;
     }
 
+    .error {
+      margin: 4px 0;
+      font-size: .85rem;
+      color: var(--error, #f44336);
+    }
+
     @media (max-width: 1100px) {
       .chat-grid { grid-template-columns: 1fr; }
     }
@@ -329,14 +341,12 @@ export class ChatPageComponent {
   readonly conversationId = signal<string>(crypto.randomUUID());
   readonly messages = signal<UiMessage[]>([]);
   readonly isSending = signal(false);
-  readonly pendingReply = signal(false);
   readonly chatError = signal<string | null>(null);
   readonly messageInput = signal('');
+  readonly lastFailedRequest = signal<ChatRequest | null>(null);
 
   readonly isCreatingPlan = signal(false);
   readonly planError = signal<string | null>(null);
-
-  private streamSubscription: Subscription | null = null;
 
   readonly guardError = computed<string | null>(() => {
     const text = this.messageInput().trim();
@@ -366,7 +376,6 @@ export class ChatPageComponent {
     this.addUserMessage('Analyse les fichiers sélectionnés et liste les tags manquants.');
     const idx = this.addPendingAssistant();
     this.isSending.set(true);
-    this.pendingReply.set(true);
     try {
       const items = await firstValueFrom(this.api.analyzeFiles(paths));
       this.replaceAssistant(idx, this.formatAnalysis(items));
@@ -375,7 +384,6 @@ export class ChatPageComponent {
       this.chatError.set(this.errorToMessage(err));
     } finally {
       this.isSending.set(false);
-      this.pendingReply.set(false);
       this.scrollMessagesToBottom();
     }
   }
@@ -385,7 +393,6 @@ export class ChatPageComponent {
     this.addUserMessage('Enrichis les fichiers sélectionnés via Spotify.');
     const idx = this.addPendingAssistant();
     this.isSending.set(true);
-    this.pendingReply.set(true);
     try {
       const items = await firstValueFrom(this.api.enrichFiles(paths));
       this.replaceAssistant(idx, this.formatEnrichment(items));
@@ -394,7 +401,6 @@ export class ChatPageComponent {
       this.chatError.set(this.errorToMessage(err));
     } finally {
       this.isSending.set(false);
-      this.pendingReply.set(false);
       this.scrollMessagesToBottom();
     }
   }
@@ -412,97 +418,66 @@ export class ChatPageComponent {
     );
   }
 
-  async sendMessage(): Promise<void> {
-    const message = this.messageInput().trim();
-    if (!message || this.guardError() || this.isSending()) return;
+  async sendMessage(override?: ChatRequest): Promise<void> {
+    if (this.isSending()) return;
 
-    this.chatError.set(null);
-    this.messages.update((all) => [...all, { kind: 'text', role: 'user', content: message }]);
-    this.messageInput.set('');
-    this.isSending.set(true);
-    this.pendingReply.set(true);
-
-    const request: ChatRequest = {
-      message,
+    const request: ChatRequest = override ?? {
+      message: this.messageInput().trim(),
       conversationId: this.conversationId(),
       mode: this.prefs.currentMode(),
       filePaths: this.prefs.selectedFiles(),
       currentDir: this.prefs.currentDir()
     };
 
-    // Mémorise la position du message assistant pour y ajouter les tokens de streaming in-place.
-    // Les tool-call cards insérées avant ce slot décalent l'index, d'où l'incrément dans le case 'tool-call'.
-    let assistantIndex = -1;
-    this.messages.update((all) => {
-      assistantIndex = all.length;
-      return [...all, { kind: 'text', role: 'assistant', content: '' }];
-    });
+    if (!request.message || (!override && (this.guardError() || !request.message))) return;
 
-    this.streamSubscription?.unsubscribe();
-    this.streamSubscription = this.api.chatStream(request).subscribe({
-      next: (event) => {
-        if (event.conversationId && event.conversationId !== this.conversationId()) {
-          this.conversationId.set(event.conversationId);
-        }
-        switch (event.type) {
-          case 'chunk':
-            if (event.token) {
-              this.pendingReply.set(false);
-              this.messages.update((all) => {
-                const copy = [...all];
-                const target = copy[assistantIndex];
-                if (target?.kind === 'text' && target.role === 'assistant') {
-                  copy[assistantIndex] = { ...target, content: target.content + event.token };
-                }
-                return copy;
-              });
-            }
-            break;
-          case 'tool-call':
-            this.messages.update((all) => {
-              const copy = [...all];
-              const card: UiMessage = {
-                kind: 'tool',
-                toolCallId: event.toolCallId ?? crypto.randomUUID(),
-                name: event.toolName ?? 'unknown',
-                argsJson: event.toolArgsJson ?? '',
-                status: 'done'
-              };
-              copy.splice(assistantIndex, 0, card);
-              assistantIndex += 1;
-              return copy;
-            });
-            break;
-          case 'done':
-            this.pendingReply.set(false);
-            if (event.reply) {
-              this.messages.update((all) => {
-                const copy = [...all];
-                const target = copy[assistantIndex];
-                if (target?.kind === 'text' && target.role === 'assistant') {
-                  copy[assistantIndex] = { ...target, content: event.reply ?? target.content };
-                }
-                return copy;
-              });
-            }
-            break;
-          case 'error':
-            this.pendingReply.set(false);
-            this.chatError.set(event.token ?? 'Erreur de streaming');
-            break;
-        }
-      },
-      error: (err) => {
-        this.pendingReply.set(false);
-        this.chatError.set(this.errorToMessage(err));
-        this.isSending.set(false);
-      },
-      complete: () => {
-        this.pendingReply.set(false);
-        this.isSending.set(false);
-        this.scrollMessagesToBottom();
+    this.chatError.set(null);
+    this.lastFailedRequest.set(null);
+
+    if (!override) {
+      this.messages.update((all) => [...all, { kind: 'text', role: 'user', content: request.message }]);
+      this.messageInput.set('');
+    }
+
+    this.isSending.set(true);
+    const idx = this.addPendingAssistant();
+
+    try {
+      const response = await firstValueFrom(this.api.chat(request));
+      if (response.conversationId) this.conversationId.set(response.conversationId);
+
+      if (response.toolCalls && response.toolCalls.length) {
+        this.messages.update((all) => {
+          const copy = [...all];
+          const cards: UiMessage[] = response.toolCalls!.map(tc => ({
+            kind: 'tool' as const,
+            toolCallId: tc.id,
+            name: tc.name,
+            argsJson: tc.argumentsJson ?? '',
+            status: 'done' as const
+          }));
+          copy.splice(idx, 0, ...cards);
+          return copy;
+        });
       }
-    });
+
+      this.replaceAssistant(idx + (response.toolCalls?.length ?? 0), response.reply ?? '');
+
+    } catch (err) {
+      this.replaceAssistant(idx, '');
+      this.chatError.set(this.errorToMessage(err));
+      this.lastFailedRequest.set(request);
+    } finally {
+      this.isSending.set(false);
+      this.scrollMessagesToBottom();
+    }
+  }
+
+  async retry(): Promise<void> {
+    const req = this.lastFailedRequest();
+    if (!req) return;
+    this.chatError.set(null);
+    await this.sendMessage(req);
   }
 
   async loadHistory(): Promise<void> {
@@ -522,11 +497,10 @@ export class ChatPageComponent {
   }
 
   newConversation(): void {
-    this.streamSubscription?.unsubscribe();
-    this.streamSubscription = null;
     this.conversationId.set(crypto.randomUUID());
     this.messages.set([]);
     this.chatError.set(null);
+    this.lastFailedRequest.set(null);
   }
 
   async createPlan(): Promise<void> {
@@ -617,8 +591,15 @@ export class ChatPageComponent {
   }
 
   private errorToMessage(error: unknown): string {
-    if (typeof error === 'string') return error;
-    if (error instanceof Error) return error.message;
-    return 'Une erreur est survenue';
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('Failed to fetch') || msg.includes('ERR_CONNECTION_REFUSED') || msg.includes('NetworkError'))
+      return "Impossible de joindre le serveur. Vérifie que le backend est démarré.";
+    if (msg.includes('503') || msg.toLowerCase().includes('service unavailable'))
+      return "Ollama est inaccessible. Lance : docker-compose up -d";
+    if (msg.includes('504') || msg.includes('timeout'))
+      return "Délai dépassé — Ollama met trop longtemps à répondre.";
+    if (msg.includes('401') || msg.includes('403'))
+      return "Accès refusé — vérifie les credentials Spotify/Soundcharts.";
+    return msg || "Une erreur est survenue";
   }
 }

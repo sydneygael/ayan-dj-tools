@@ -104,15 +104,41 @@ class RedisChatMemoryRepositoryIT {
     }
 
     @Test
-    void multipleSavesAppendMessages() {
-        repository.saveAll("it-conv-append", List.of(new UserMessage("Msg 1")));
-        repository.saveAll("it-conv-append", List.of(new AssistantMessage("Reply 1")));
-        repository.saveAll("it-conv-append", List.of(new UserMessage("Msg 2")));
+    void saveAll_replacesExistingMessages_noDuplication() {
+        // First save (turn 1)
+        repository.saveAll("it-conv-replace", List.of(
+                new UserMessage("Msg 1"),
+                new AssistantMessage("Reply 1")
+        ));
 
-        final var history = repository.findByConversationId("it-conv-append");
-        assertThat(history).hasSize(3);
+        // Second save is the full authoritative list (MessageWindowChatMemory pattern)
+        repository.saveAll("it-conv-replace", List.of(
+                new UserMessage("Msg 1"),
+                new AssistantMessage("Reply 1"),
+                new UserMessage("Msg 2"),
+                new AssistantMessage("Reply 2")
+        ));
+
+        // Must have 4 messages, not 6 — saveAll replaces, never appends
+        final var history = repository.findByConversationId("it-conv-replace");
+        assertThat(history).hasSize(4);
         assertThat(history.get(0).getText()).isEqualTo("Msg 1");
-        assertThat(history.get(1).getText()).isEqualTo("Reply 1");
-        assertThat(history.get(2).getText()).isEqualTo("Msg 2");
+        assertThat(history.get(3).getText()).isEqualTo("Reply 2");
+    }
+
+    @Test
+    void saveAll_filtersOutEmptyAssistantMessages() {
+        // Empty-text AssistantMessage simulates a tool-call request (getText()=blank/null)
+        // which must not be persisted into long-term memory
+        repository.saveAll("it-conv-tools", List.of(
+                new UserMessage("Lance l'analyse"),
+                new AssistantMessage(""),
+                new AssistantMessage("J'ai scanné le fichier.")
+        ));
+
+        final var history = repository.findByConversationId("it-conv-tools");
+        assertThat(history).hasSize(2);
+        assertThat(history.get(0).getText()).isEqualTo("Lance l'analyse");
+        assertThat(history.get(1).getText()).isEqualTo("J'ai scanné le fichier.");
     }
 }

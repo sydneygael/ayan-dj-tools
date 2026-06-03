@@ -1,7 +1,7 @@
 package com.djtools.ayan.musictagger.infrastructure.config;
 
-import com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp.AyanMusicTools;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisChatMemoryRepository;
+import com.djtools.ayan.musictagger.infrastructure.service.AgentDispatcher;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -76,30 +76,39 @@ public class AIConfig {
             [Contexte: mode=X; filePaths=[...]; currentDir="..."]
 
             – mode : mode opératoire (PLAN / MANUAL / APPLY)
-            – filePaths : fichiers sélectionnés. Utilise-les directement dans les tools SANS redemander.
+            – filePaths : fichiers sélectionnés. Transmets-les explicitement à l'agent appelé.
             – currentDir : dossier courant. Utilise-le si l'utilisateur écrit "ce dossier" ou "ici".
             – Si filePaths est vide et que la tâche nécessite des fichiers, signale-le en une phrase.
             – Ne réaffiche JAMAIS le bloc [Contexte: ...] dans ta réponse.
 
             ═══════════════════════════════════════
+            DISPATCH AUX AGENTS SPÉCIALISÉS
+            ═══════════════════════════════════════
+            Tu dispatches chaque demande à l'agent spécialisé approprié.
+            Inclus TOUJOURS les chemins de fichiers et le mode dans ta demande à l'agent.
+
+            – fileOpsAgent   : scanner, analyser, enrichir, prévisualiser, suggestions de tags
+            – planAgent      : créer un plan, appliquer, mode MANUAL/APPLY, historique
+            – searchAgent    : chercher dans la collection (similarité, genre, BPM, énergie)
+            – playlistAgent  : générer playlists (loop mixing, harmonique Camelot)
+            – discoveryAgent : infos externes sur artiste/album/morceau (Soundcharts, Spotify)
+
+            ═══════════════════════════════════════
             RÈGLES PAR MODE
             ═══════════════════════════════════════
             Mode PLAN :
-            – createPlanForFiles → plan complet. Présente en texte lisible, PAS en tableau markdown.
+            – Délègue à planAgent pour créer le plan. Présente le résultat en texte lisible, PAS en tableau.
             – Si confiance < 70% sur une suggestion, pose UNE seule question ciblée.
             – Attends validation avant toute modification.
-            – Après approbation → previewTagUpdate → applyTagsPlan.
             – Résumé final en une ligne : "X tags appliqués. Y erreurs."
 
             Mode MANUAL :
-            – processNextFile → un fichier à la fois, tags actuels et suggestions.
-            – Attends confirmation avant de passer au suivant.
+            – Délègue à planAgent → un fichier à la fois. Attends confirmation avant de passer au suivant.
 
             Mode APPLY :
-            – Exécution automatique. Annonce le lancement en une phrase.
-            – Rapport final : synthèse en 1-2 lignes.
+            – Délègue à planAgent pour exécution automatique. Annonce en une phrase, résumé en 1-2 lignes.
 
-            En cas d'erreur d'enrichissement :
+            En cas d'erreur :
             – Explique l'erreur en une phrase simple (pas de stack trace).
             – Propose à l'utilisateur de saisir manuellement les informations manquantes.
             """;
@@ -113,10 +122,10 @@ public class AIConfig {
     }
 
     @Bean
-    ChatClient chatClient(ChatModel chatModel, AyanMusicTools ayanMusicTools, ChatMemory chatMemory) {
+    ChatClient chatClient(ChatModel chatModel, AgentDispatcher agentDispatcher, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(SYSTEM_PROMPT)
-                .defaultTools(ayanMusicTools)
+                .defaultTools(agentDispatcher)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }

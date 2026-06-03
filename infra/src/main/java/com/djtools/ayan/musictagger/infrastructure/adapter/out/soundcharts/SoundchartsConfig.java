@@ -7,9 +7,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+
+import java.time.Duration;
 
 @Configuration
 @EnableConfigurationProperties(SoundchartsProperties.class)
@@ -17,8 +20,12 @@ public class SoundchartsConfig {
 
     @Bean
     SoundchartsApiClient soundchartsApiClient(SoundchartsProperties properties) {
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(15));
         RestClient restClient = RestClient.builder()
                 .baseUrl(properties.baseUrl())
+                .requestFactory(factory)
                 .requestInterceptor((request, body, execution) -> {
                     request.getHeaders().set("x-app-id", properties.appId());
                     request.getHeaders().set("x-api-key", properties.apiKey());
@@ -27,8 +34,8 @@ public class SoundchartsConfig {
                 .build();
 
         RestClientAdapter adapter = RestClientAdapter.create(restClient);
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(adapter).build();
-        return factory.createClient(SoundchartsApiClient.class);
+        HttpServiceProxyFactory proxyFactory = HttpServiceProxyFactory.builderFor(adapter).build();
+        return proxyFactory.createClient(SoundchartsApiClient.class);
     }
 
     @Bean

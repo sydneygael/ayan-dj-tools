@@ -44,15 +44,30 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
     @Override
     public void saveAll(String conversationId, List<Message> messages) {
         final var key = KEY_PREFIX + conversationId;
-        for (final var message : messages) {
-            redisTemplate.opsForList().rightPush(key, toStored(message));
-        }
+        // Delete first — saveAll is a full replace, not an append.
+        // Without this, every turn duplicates the entire history (O(N²) growth).
+        redisTemplate.delete(key);
+        // Only persist user and non-empty assistant messages.
+        // Tool call requests (AssistantMessage with getText()=null) and ToolResponseMessage
+        // are ephemeral: they serve one round-trip and must not pollute long-term memory.
+        final var storable = messages.stream().filter(this::isStorable).toList();
+        if (storable.isEmpty()) return;
+        storable.forEach(m -> redisTemplate.opsForList().rightPush(key, toStored(m)));
         redisTemplate.expire(key, TTL);
     }
 
     @Override
     public void deleteByConversationId(String conversationId) {
         redisTemplate.delete(KEY_PREFIX + conversationId);
+    }
+
+    private boolean isStorable(Message message) {
+        if (message instanceof UserMessage) return true;
+        if (message instanceof AssistantMessage) {
+            final var text = message.getText();
+            return text != null && !text.isBlank();
+        }
+        return false;
     }
 
     private StoredMessage toStored(Message message) {

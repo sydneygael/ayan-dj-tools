@@ -55,10 +55,10 @@ spring:
         timeout: 120s
       chat:
         options:
-          model: mistral
+          model: qwen3:8b
           temperature: 0.3
-          num_ctx: 4096
-          num_predict: 512
+          num_ctx: 8192
+          num_predict: 1024
       embedding:
         options:
           model: nomic-embed-text
@@ -77,6 +77,7 @@ dj-tagger:
 logging:
   level:
     com.djtools.ayan: INFO
+    org.springframework.ai: DEBUG
 
 management:
   endpoints:

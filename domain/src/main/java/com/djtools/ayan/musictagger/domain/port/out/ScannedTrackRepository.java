@@ -10,5 +10,6 @@ public interface ScannedTrackRepository {
     void saveAll(List<MusicFileInfo> tracks);
     Optional<MusicFileInfo> findByFilepath(String filepath);
     List<MusicFileInfo> findAll();
+    List<MusicFileInfo> findByArtist(String artist, int limit);
     void delete(String filepath);
 }

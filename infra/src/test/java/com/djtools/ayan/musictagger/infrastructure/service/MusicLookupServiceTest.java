@@ -1,6 +1,9 @@
 package com.djtools.ayan.musictagger.infrastructure.service;
 
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
+import com.djtools.ayan.musictagger.domain.model.MusicFileInfo;
+import com.djtools.ayan.musictagger.domain.model.vo.Filepath;
+import com.djtools.ayan.musictagger.domain.port.out.ScannedTrackRepository;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.SoundchartsMusicMetadataAdapter;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyApiClient;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyMapper;
@@ -9,7 +12,7 @@ import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.Spoti
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.SpotifySearchResponse;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.SpotifySearchTracks;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.dto.SpotifyTrackItem;
-import com.djtools.ayan.musictagger.infrastructure.adapter.out.web.DuckDuckGoSearchAdapter;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.web.TavilySearchAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,15 +34,17 @@ import static org.mockito.Mockito.when;
 class MusicLookupServiceTest {
 
     @Mock SoundchartsMusicMetadataAdapter soundcharts;
-    @Mock DuckDuckGoSearchAdapter duckDuckGo;
+    @Mock TavilySearchAdapter tavily;
     @Mock SpotifyApiClient spotifyApiClient;
     @Mock SpotifyRateLimiter spotifyRateLimiter;
+    @Mock ScannedTrackRepository scannedTrackRepository;
 
     private MusicLookupService service;
 
     @BeforeEach
     void setUp() {
-        service = new MusicLookupService(soundcharts, duckDuckGo, spotifyApiClient, new SpotifyMapper(), spotifyRateLimiter);
+        when(scannedTrackRepository.findByArtist(anyString(), anyInt())).thenReturn(List.of());
+        service = new MusicLookupService(soundcharts, tavily, spotifyApiClient, new SpotifyMapper(), spotifyRateLimiter, scannedTrackRepository);
     }
 
     private EnrichedTrackMetadata track(String id, String artist, String title) {
@@ -58,13 +63,13 @@ class MusicLookupServiceTest {
         assertThat(result.source()).isEqualTo("soundcharts");
         assertThat(result.tracks()).hasSize(1);
         assertThat(result.tracks().getFirst().artist()).isEqualTo("Dua Lipa");
-        verifyNoInteractions(duckDuckGo, spotifyApiClient);
+        verifyNoInteractions(tavily, spotifyApiClient);
     }
 
     @Test
     void lookup_fallsBackToWebWhenSoundchartsEmpty() {
         when(soundcharts.searchByTerm(any(), anyInt())).thenReturn(List.of());
-        when(duckDuckGo.search("unknown artist")).thenReturn(Optional.of("Some web summary about music"));
+        when(tavily.search("unknown artist")).thenReturn(Optional.of("Some web summary about music"));
         when(spotifyApiClient.searchTracks(anyString(), anyString(), anyInt()))
                 .thenReturn(new SpotifySearchResponse(new SpotifySearchTracks(List.of(), 0)));
 
@@ -79,7 +84,7 @@ class MusicLookupServiceTest {
     @Test
     void lookup_fallsBackToSpotifyWhenSoundchartsAndWebEmpty() {
         when(soundcharts.searchByTerm(any(), anyInt())).thenReturn(List.of());
-        when(duckDuckGo.search(anyString())).thenReturn(Optional.empty());
+        when(tavily.search(anyString())).thenReturn(Optional.empty());
         var spotifyItem = new SpotifyTrackItem("sp-1", "Song Title",
                 List.of(new SpotifyArtistItem("art-1", "Artist")), null, 200000L, 70);
         when(spotifyApiClient.searchTracks(anyString(), anyString(), anyInt()))
@@ -96,7 +101,7 @@ class MusicLookupServiceTest {
     @Test
     void lookup_returnsNotFoundWhenAllSourcesEmpty() {
         when(soundcharts.searchByTerm(any(), anyInt())).thenReturn(List.of());
-        when(duckDuckGo.search(anyString())).thenReturn(Optional.empty());
+        when(tavily.search(anyString())).thenReturn(Optional.empty());
         when(spotifyApiClient.searchTracks(anyString(), anyString(), anyInt()))
                 .thenReturn(new SpotifySearchResponse(new SpotifySearchTracks(List.of(), 0)));
 
@@ -109,17 +114,49 @@ class MusicLookupServiceTest {
     }
 
     @Test
+    void lookup_localTracksIncludedWhenSoundchartsReturnsResults() {
+        var localFile = new MusicFileInfo(new Filepath("/music/dua-lipa-levitating.mp3"),
+                "dua-lipa-levitating.mp3", "Dua Lipa", "Levitating", null, null, null, null, 0L, 0L, false);
+        when(soundcharts.searchByTerm("dua lipa", 8))
+                .thenReturn(List.of(track("sc-1", "Dua Lipa", "Levitating")));
+        when(scannedTrackRepository.findByArtist("dua lipa", 20)).thenReturn(List.of(localFile));
+
+        var result = service.lookup("dua lipa");
+
+        assertThat(result.source()).isEqualTo("soundcharts");
+        assertThat(result.localTracks()).hasSize(1);
+        assertThat(result.localTracks().getFirst().artist()).isEqualTo("Dua Lipa");
+    }
+
+    @Test
+    void lookup_localOnlyWhenAllExternalSourcesEmpty() {
+        var localFile = new MusicFileInfo(new Filepath("/music/unknown-track.mp3"),
+                "unknown-track.mp3", "Rare Artist", "Track 1", null, null, null, null, 0L, 0L, false);
+        when(soundcharts.searchByTerm(any(), anyInt())).thenReturn(List.of());
+        when(tavily.search(anyString())).thenReturn(Optional.empty());
+        when(spotifyApiClient.searchTracks(anyString(), anyString(), anyInt()))
+                .thenReturn(new SpotifySearchResponse(new SpotifySearchTracks(List.of(), 0)));
+        when(scannedTrackRepository.findByArtist("Rare Artist", 20)).thenReturn(List.of(localFile));
+
+        var result = service.lookup("Rare Artist");
+
+        assertThat(result.found()).isTrue();
+        assertThat(result.source()).isEqualTo("local");
+        assertThat(result.localTracks()).hasSize(1);
+    }
+
+    @Test
     void lookup_emptyQuery_returnsNotFoundWithoutCallingApis() {
         var result = service.lookup("  ");
 
         assertThat(result.found()).isFalse();
-        verifyNoInteractions(soundcharts, duckDuckGo, spotifyApiClient);
+        verifyNoInteractions(soundcharts, tavily, spotifyApiClient);
     }
 
     @Test
     void lookup_soundchartsException_continuesChain() {
         when(soundcharts.searchByTerm(any(), anyInt())).thenReturn(List.of()); // already handles internally
-        when(duckDuckGo.search(anyString())).thenReturn(Optional.of("web result"));
+        when(tavily.search(anyString())).thenReturn(Optional.of("web result"));
         when(spotifyApiClient.searchTracks(anyString(), anyString(), anyInt()))
                 .thenReturn(new SpotifySearchResponse(new SpotifySearchTracks(List.of(), 0)));
 
@@ -127,6 +164,6 @@ class MusicLookupServiceTest {
 
         assertThat(result.found()).isTrue();
         assertThat(result.source()).isEqualTo("web");
-        verify(duckDuckGo).search("some query");
+        verify(tavily).search("some query");
     }
 }

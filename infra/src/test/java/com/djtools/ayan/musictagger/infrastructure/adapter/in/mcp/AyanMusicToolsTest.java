@@ -269,7 +269,7 @@ class AyanMusicToolsTest {
     void lookupMusicInfo_delegatesQueryToService() {
         var track = new EnrichedTrackMetadata("sc-1", "Dua Lipa", "Levitating", null,
                 List.of(), List.of(), null, null, null, List.of("soundcharts"), 2020, null, null, null);
-        var result = new MusicLookupResult(true, "soundcharts", "dua lipa levitating", List.of(track), null);
+        var result = new MusicLookupResult(true, "soundcharts", "dua lipa levitating", List.of(track), null, List.of());
         when(musicLookupService.lookup("dua lipa levitating")).thenReturn(result);
 
         MusicLookupResult r = tools.lookupMusicInfo("dua lipa levitating", null, null, null);
@@ -283,7 +283,7 @@ class AyanMusicToolsTest {
     @Test
     void lookupMusicInfo_buildsQueryFromPartsWhenQueryIsBlank() {
         when(musicLookupService.lookup(eq("Dua Lipa Levitating")))
-                .thenReturn(new MusicLookupResult(false, "none", "Dua Lipa Levitating", List.of(), null));
+                .thenReturn(new MusicLookupResult(false, "none", "Dua Lipa Levitating", List.of(), null, List.of()));
 
         tools.lookupMusicInfo(null, "Dua Lipa", "Levitating", null);
 
@@ -293,7 +293,7 @@ class AyanMusicToolsTest {
     @Test
     void lookupMusicInfo_nothingFound_returnsFalse() {
         when(musicLookupService.lookup(anyString()))
-                .thenReturn(new MusicLookupResult(false, "none", "xyzabc", List.of(), null));
+                .thenReturn(new MusicLookupResult(false, "none", "xyzabc", List.of(), null, List.of()));
 
         MusicLookupResult r = tools.lookupMusicInfo("xyzabc", null, null, null);
 

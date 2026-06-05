@@ -1,9 +1,12 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence;
 
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ChatMessageType;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -11,9 +14,14 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * Implémentation Redis de ChatMemoryStore (LangChain4j).
+ * Stocke les messages USER et AI non-vides. Ignore les autres types (tool results éphémères).
+ */
 @Component
-public class RedisChatMemoryRepository implements ChatMemoryRepository {
+public class RedisChatMemoryRepository implements ChatMemoryStore {
 
+    private static final Logger log = LoggerFactory.getLogger(RedisChatMemoryRepository.class);
     private static final String KEY_PREFIX = "chat-memory:";
     private static final Duration TTL = Duration.ofHours(24);
 
@@ -26,13 +34,8 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
     }
 
     @Override
-    public List<String> findConversationIds() {
-        return List.of();
-    }
-
-    @Override
-    public List<Message> findByConversationId(String conversationId) {
-        final var key = KEY_PREFIX + conversationId;
+    public List<ChatMessage> getMessages(Object memoryId) {
+        final var key = KEY_PREFIX + memoryId;
         final var raw = redisTemplate.opsForList().range(key, 0, -1);
         if (raw == null) return List.of();
         return raw.stream()
@@ -42,14 +45,9 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
     }
 
     @Override
-    public void saveAll(String conversationId, List<Message> messages) {
-        final var key = KEY_PREFIX + conversationId;
-        // Delete first — saveAll is a full replace, not an append.
-        // Without this, every turn duplicates the entire history (O(N²) growth).
+    public void updateMessages(Object memoryId, List<ChatMessage> messages) {
+        final var key = KEY_PREFIX + memoryId;
         redisTemplate.delete(key);
-        // Only persist user and non-empty assistant messages.
-        // Tool call requests (AssistantMessage with getText()=null) and ToolResponseMessage
-        // are ephemeral: they serve one round-trip and must not pollute long-term memory.
         final var storable = messages.stream().filter(this::isStorable).toList();
         if (storable.isEmpty()) return;
         storable.forEach(m -> redisTemplate.opsForList().rightPush(key, toStored(m)));
@@ -57,27 +55,31 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
     }
 
     @Override
-    public void deleteByConversationId(String conversationId) {
-        redisTemplate.delete(KEY_PREFIX + conversationId);
+    public void deleteMessages(Object memoryId) {
+        redisTemplate.delete(KEY_PREFIX + memoryId);
     }
 
-    private boolean isStorable(Message message) {
-        if (message instanceof UserMessage) return true;
-        if (message instanceof AssistantMessage) {
-            final var text = message.getText();
+    private boolean isStorable(ChatMessage message) {
+        if (message.type() == ChatMessageType.USER) return true;
+        if (message.type() == ChatMessageType.AI) {
+            final var text = ((AiMessage) message).text();
             return text != null && !text.isBlank();
         }
         return false;
     }
 
-    private StoredMessage toStored(Message message) {
-        return new StoredMessage(message.getMessageType().getValue(), message.getText());
+    private StoredMessage toStored(ChatMessage message) {
+        final var role = message.type() == ChatMessageType.USER ? "user" : "assistant";
+        final var text = message.type() == ChatMessageType.USER
+                ? ((UserMessage) message).singleText()
+                : ((AiMessage) message).text();
+        return new StoredMessage(role, text);
     }
 
-    private Message toMessage(StoredMessage stored) {
+    private ChatMessage toMessage(StoredMessage stored) {
         return "user".equals(stored.role())
-                ? new UserMessage(stored.content())
-                : new AssistantMessage(stored.content());
+                ? UserMessage.from(stored.content())
+                : AiMessage.from(stored.content());
     }
 
     public record StoredMessage(String role, String content) {}

@@ -3,16 +3,15 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.vectorstore;
 import com.djtools.ayan.musictagger.domain.model.AudioFeatures;
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
 import com.djtools.ayan.musictagger.domain.model.SimilarTrackResult;
+import com.djtools.ayan.musictagger.infrastructure.config.QdrantClientConfig;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.EmbeddingStore;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaApiAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -29,10 +28,9 @@ import java.util.Random;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
-        classes = {QdrantVectorStoreAdapter.class, QdrantVectorStoreAdapterIT.MockEmbeddingConfig.class},
+        classes = {QdrantVectorStoreAdapter.class, QdrantClientConfig.class, QdrantVectorStoreAdapterIT.MockEmbeddingConfig.class},
         properties = "dj-tagger.rag.similarity-threshold=0.0"
 )
-@EnableAutoConfiguration(exclude = {OllamaApiAutoConfiguration.class, OllamaChatAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class})
 @Testcontainers
 class QdrantVectorStoreAdapterIT {
 
@@ -41,17 +39,16 @@ class QdrantVectorStoreAdapterIT {
 
     @DynamicPropertySource
     static void qdrantProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.ai.vectorstore.qdrant.host", qdrant::getHost);
-        registry.add("spring.ai.vectorstore.qdrant.port", qdrant::getGrpcPort);
-        registry.add("spring.ai.vectorstore.qdrant.collection-name", () -> "dj-tracks-test");
-        registry.add("spring.ai.vectorstore.qdrant.initialize-schema", () -> "true");
+        registry.add("qdrant.host", qdrant::getHost);
+        registry.add("qdrant.port", qdrant::getGrpcPort);
+        registry.add("qdrant.collection-name", () -> "dj-tracks-test");
     }
 
     @Autowired
     QdrantVectorStoreAdapter adapter;
 
     @Autowired
-    VectorStore vectorStore;
+    EmbeddingStore<TextSegment> embeddingStore;
 
     @TestConfiguration
     static class MockEmbeddingConfig {
@@ -97,16 +94,30 @@ class QdrantVectorStoreAdapterIT {
         adapter.store(track("sp-dedup-1", "Artist", "Title v2", List.of("Electronic")));
 
         // Search for the track — should only get one result
-        var request = SearchRequest.builder()
-                .query("Artist Title")
-                .topK(10)
-                .similarityThreshold(0.0)
+        var queryEmbedding = deterministicEmbedding("Artist Title");
+        var request = EmbeddingSearchRequest.builder()
+                .queryEmbedding(queryEmbedding)
+                .maxResults(10)
+                .minScore(0.0)
                 .build();
-        var docs = vectorStore.similaritySearch(request);
+        var matches = embeddingStore.search(request).matches();
 
-        String expectedUuid = java.util.UUID.nameUUIDFromBytes("sp-dedup-1".getBytes()).toString();
-        long count = docs.stream().filter(d -> expectedUuid.equals(d.getId())).count();
+        String expectedId = java.util.UUID.nameUUIDFromBytes("sp-dedup-1".getBytes()).toString();
+        long count = matches.stream().filter(m -> expectedId.equals(m.embeddingId())).count();
         assertThat(count).isLessThanOrEqualTo(1);
+    }
+
+    private static Embedding deterministicEmbedding(String text) {
+        var random = new Random(text.hashCode());
+        float[] vector = new float[768];
+        for (int i = 0; i < 768; i++) {
+            vector[i] = random.nextFloat() * 2 - 1;
+        }
+        float norm = 0;
+        for (float v : vector) norm += v * v;
+        norm = (float) Math.sqrt(norm);
+        for (int i = 0; i < 768; i++) vector[i] /= norm;
+        return Embedding.from(vector);
     }
 
     /**
@@ -116,43 +127,27 @@ class QdrantVectorStoreAdapterIT {
     static class DeterministicEmbeddingModel implements EmbeddingModel {
 
         @Override
-        public float[] embed(Document document) {
-            return generateVector(document.getText());
+        public Response<Embedding> embed(String text) {
+            return Response.from(deterministicEmbedding(text));
         }
 
         @Override
-        public float[] embed(String text) {
-            return generateVector(text);
+        public Response<Embedding> embed(TextSegment textSegment) {
+            return embed(textSegment.text());
         }
 
         @Override
-        public org.springframework.ai.embedding.EmbeddingResponse call(org.springframework.ai.embedding.EmbeddingRequest request) {
-            var embeddings = request.getInstructions().stream()
-                    .map(text -> {
-                        float[] vector = generateVector(text);
-                        return new org.springframework.ai.embedding.Embedding(vector, 0);
-                    })
-                    .toList();
-            return new org.springframework.ai.embedding.EmbeddingResponse(embeddings);
+        public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
+            return Response.from(textSegments.stream().map(s -> deterministicEmbedding(s.text())).toList());
         }
 
         @Override
-        public int dimensions() {
+        public int dimension() {
             return 768;
         }
 
-        private float[] generateVector(String text) {
-            var random = new Random(text.hashCode());
-            float[] vector = new float[768];
-            for (int i = 0; i < 768; i++) {
-                vector[i] = random.nextFloat() * 2 - 1;
-            }
-            // Normalize
-            float norm = 0;
-            for (float v : vector) norm += v * v;
-            norm = (float) Math.sqrt(norm);
-            for (int i = 0; i < 768; i++) vector[i] /= norm;
-            return vector;
+        private static Embedding deterministicEmbedding(String text) {
+            return QdrantVectorStoreAdapterIT.deterministicEmbedding(text);
         }
     }
 }

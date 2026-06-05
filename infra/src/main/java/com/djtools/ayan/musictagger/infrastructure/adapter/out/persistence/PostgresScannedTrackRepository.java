@@ -71,6 +71,20 @@ public class PostgresScannedTrackRepository implements ScannedTrackRepository {
     }
 
     @Override
+    public List<MusicFileInfo> findByArtist(String artist, int limit) {
+        return jdbcClient.sql("""
+                SELECT * FROM scanned_tracks
+                WHERE artist ILIKE :pattern
+                ORDER BY title
+                LIMIT :limit
+                """)
+                .param("pattern", "%" + artist + "%")
+                .param("limit", limit)
+                .query((rs, rowNum) -> mapRow(rs))
+                .list();
+    }
+
+    @Override
     public void delete(String filepath) {
         jdbcClient.sql("DELETE FROM scanned_tracks WHERE filepath = :filepath")
                 .param("filepath", filepath)

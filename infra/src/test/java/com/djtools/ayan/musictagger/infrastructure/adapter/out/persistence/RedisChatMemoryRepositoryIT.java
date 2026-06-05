@@ -1,16 +1,11 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence;
 
 import com.djtools.ayan.musictagger.infrastructure.config.RedisConfig;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaApiAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration;
-import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,8 +18,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = {RedisChatMemoryRepository.class, RedisConfig.class})
-@EnableAutoConfiguration(exclude = {OllamaApiAutoConfiguration.class, OllamaChatAutoConfiguration.class,
-        OllamaEmbeddingAutoConfiguration.class, QdrantVectorStoreAutoConfiguration.class})
 @Testcontainers
 class RedisChatMemoryRepositoryIT {
 
@@ -38,107 +31,90 @@ class RedisChatMemoryRepositoryIT {
     @BeforeEach
     void cleanRedis() {
         final var keys = redisTemplate.keys("chat-memory:*");
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
+        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
     }
 
     @Test
     void saveAndRetrieveMessages() {
-        repository.saveAll("it-conv-1", List.of(
-                new UserMessage("Salut Ayan"),
-                new AssistantMessage("Bonjour !")
+        repository.updateMessages("it-conv-1", List.of(
+                UserMessage.from("Salut Ayan"),
+                AiMessage.from("Bonjour !")
         ));
 
-        final var history = repository.findByConversationId("it-conv-1");
+        final var history = repository.getMessages("it-conv-1");
 
         assertThat(history).hasSize(2);
-        assertThat(history.get(0).getMessageType().getValue()).isEqualTo("user");
-        assertThat(history.get(0).getText()).isEqualTo("Salut Ayan");
-        assertThat(history.get(1).getMessageType().getValue()).isEqualTo("assistant");
-        assertThat(history.get(1).getText()).isEqualTo("Bonjour !");
+        assertThat(((UserMessage) history.get(0)).singleText()).isEqualTo("Salut Ayan");
+        assertThat(((AiMessage) history.get(1)).text()).isEqualTo("Bonjour !");
     }
 
     @Test
-    void findByConversationId_returnsEmptyWhenNoMessages() {
-        assertThat(repository.findByConversationId("unknown-conv")).isEmpty();
+    void getMessages_returnsEmptyWhenNoMessages() {
+        assertThat(repository.getMessages("unknown-conv")).isEmpty();
     }
 
     @Test
-    void deleteByConversationId_removesAllMessages() {
-        repository.saveAll("it-conv-3", List.of(
-                new UserMessage("Test"),
-                new AssistantMessage("Réponse")
+    void deleteMessages_removesAllMessages() {
+        repository.updateMessages("it-conv-3", List.of(
+                UserMessage.from("Test"),
+                AiMessage.from("Réponse")
         ));
 
-        repository.deleteByConversationId("it-conv-3");
+        repository.deleteMessages("it-conv-3");
 
-        assertThat(repository.findByConversationId("it-conv-3")).isEmpty();
+        assertThat(repository.getMessages("it-conv-3")).isEmpty();
     }
 
     @Test
     void separateConversationsAreIsolated() {
-        repository.saveAll("conv-A", List.of(new UserMessage("Conversation A")));
-        repository.saveAll("conv-B", List.of(new UserMessage("Conversation B")));
+        repository.updateMessages("conv-A", List.of(UserMessage.from("Conversation A")));
+        repository.updateMessages("conv-B", List.of(UserMessage.from("Conversation B")));
 
-        assertThat(repository.findByConversationId("conv-A")).hasSize(1);
-        assertThat(repository.findByConversationId("conv-B")).hasSize(1);
-        assertThat(repository.findByConversationId("conv-A").getFirst().getText()).isEqualTo("Conversation A");
-        assertThat(repository.findByConversationId("conv-B").getFirst().getText()).isEqualTo("Conversation B");
+        assertThat(repository.getMessages("conv-A")).hasSize(1);
+        assertThat(repository.getMessages("conv-B")).hasSize(1);
+        assertThat(((UserMessage) repository.getMessages("conv-A").getFirst()).singleText()).isEqualTo("Conversation A");
     }
 
     @Test
     void preservesMessageOrder() {
-        repository.saveAll("it-conv-order", List.of(
-                new UserMessage("Message 1"),
-                new AssistantMessage("Réponse 1"),
-                new UserMessage("Message 2"),
-                new AssistantMessage("Réponse 2")
+        repository.updateMessages("it-conv-order", List.of(
+                UserMessage.from("Message 1"),
+                AiMessage.from("Réponse 1"),
+                UserMessage.from("Message 2"),
+                AiMessage.from("Réponse 2")
         ));
 
-        final var history = repository.findByConversationId("it-conv-order");
+        final var history = repository.getMessages("it-conv-order");
 
         assertThat(history).hasSize(4);
-        assertThat(history.get(0).getText()).isEqualTo("Message 1");
-        assertThat(history.get(2).getText()).isEqualTo("Message 2");
+        assertThat(((UserMessage) history.get(0)).singleText()).isEqualTo("Message 1");
+        assertThat(((UserMessage) history.get(2)).singleText()).isEqualTo("Message 2");
     }
 
     @Test
-    void saveAll_replacesExistingMessages_noDuplication() {
-        // First save (turn 1)
-        repository.saveAll("it-conv-replace", List.of(
-                new UserMessage("Msg 1"),
-                new AssistantMessage("Reply 1")
+    void updateMessages_replacesExistingMessages_noDuplication() {
+        repository.updateMessages("it-conv-replace", List.of(
+                UserMessage.from("Msg 1"), AiMessage.from("Reply 1")
+        ));
+        repository.updateMessages("it-conv-replace", List.of(
+                UserMessage.from("Msg 1"), AiMessage.from("Reply 1"),
+                UserMessage.from("Msg 2"), AiMessage.from("Reply 2")
         ));
 
-        // Second save is the full authoritative list (MessageWindowChatMemory pattern)
-        repository.saveAll("it-conv-replace", List.of(
-                new UserMessage("Msg 1"),
-                new AssistantMessage("Reply 1"),
-                new UserMessage("Msg 2"),
-                new AssistantMessage("Reply 2")
-        ));
-
-        // Must have 4 messages, not 6 — saveAll replaces, never appends
-        final var history = repository.findByConversationId("it-conv-replace");
-        assertThat(history).hasSize(4);
-        assertThat(history.get(0).getText()).isEqualTo("Msg 1");
-        assertThat(history.get(3).getText()).isEqualTo("Reply 2");
+        assertThat(repository.getMessages("it-conv-replace")).hasSize(4);
     }
 
     @Test
-    void saveAll_filtersOutEmptyAssistantMessages() {
-        // Empty-text AssistantMessage simulates a tool-call request (getText()=blank/null)
-        // which must not be persisted into long-term memory
-        repository.saveAll("it-conv-tools", List.of(
-                new UserMessage("Lance l'analyse"),
-                new AssistantMessage(""),
-                new AssistantMessage("J'ai scanné le fichier.")
+    void updateMessages_filtersOutEmptyAiMessages() {
+        repository.updateMessages("it-conv-tools", List.of(
+                UserMessage.from("Lance l'analyse"),
+                AiMessage.from(""),
+                AiMessage.from("J'ai scanné le fichier.")
         ));
 
-        final var history = repository.findByConversationId("it-conv-tools");
+        final var history = repository.getMessages("it-conv-tools");
         assertThat(history).hasSize(2);
-        assertThat(history.get(0).getText()).isEqualTo("Lance l'analyse");
-        assertThat(history.get(1).getText()).isEqualTo("J'ai scanné le fichier.");
+        assertThat(((UserMessage) history.get(0)).singleText()).isEqualTo("Lance l'analyse");
+        assertThat(((AiMessage) history.get(1)).text()).isEqualTo("J'ai scanné le fichier.");
     }
 }

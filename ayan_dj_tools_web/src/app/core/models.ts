@@ -31,10 +31,11 @@ export interface ChatResponse {
 }
 
 export interface ChatStreamEvent {
-  type: 'chunk' | 'tool-call' | 'done' | 'error' | 'interrupted';
+  type: 'thinking' | 'chunk' | 'tool-call' | 'done' | 'error' | 'interrupted';
   token?: string | null;
   reply?: string | null;
   conversationId: string;
+  intent?: string | null;
   messageCount?: number | null;
   timestamp?: string | null;
   toolCallId?: string | null;

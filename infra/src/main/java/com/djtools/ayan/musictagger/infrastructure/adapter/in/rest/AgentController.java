@@ -1,10 +1,13 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
 import com.djtools.ayan.musictagger.domain.model.OperatingMode;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisChatMemoryRepository;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
 import com.djtools.ayan.musictagger.infrastructure.service.ChatMessage;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessageType;
+import dev.langchain4j.data.message.UserMessage;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -19,11 +22,11 @@ import java.util.UUID;
 public class AgentController {
 
     private final AyanAgentService agentService;
-    private final ChatMemory chatMemory;
+    private final RedisChatMemoryRepository memoryStore;
 
-    public AgentController(AyanAgentService agentService, ChatMemory chatMemory) {
+    public AgentController(AyanAgentService agentService, RedisChatMemoryRepository memoryStore) {
         this.agentService = agentService;
-        this.chatMemory = chatMemory;
+        this.memoryStore = memoryStore;
     }
 
     @PostMapping("/chat")
@@ -31,15 +34,13 @@ public class AgentController {
         final var conversationId = request.conversationId() != null
                 ? request.conversationId()
                 : UUID.randomUUID().toString();
-
         final var mode = request.mode() != null ? request.mode() : OperatingMode.PLAN;
         final var result = agentService.chatWithToolCalls(
                 conversationId, request.message(), mode, request.filePaths(), request.currentDir());
-        final var messageCount = chatMemory.get(result.conversationId()).size();
+        final var messageCount = memoryStore.getMessages(result.conversationId()).size();
         final var toolCalls = result.toolCalls().stream()
                 .map(tc -> new ToolCallInfo(tc.id(), tc.name(), tc.argumentsJson()))
                 .toList();
-
         return new ChatResponse(result.reply(), result.conversationId(), messageCount, LocalDateTime.now(), toolCalls);
     }
 
@@ -53,14 +54,26 @@ public class AgentController {
 
     @GetMapping("/conversations/{id}/history")
     public List<ChatMessage> getHistory(@PathVariable String id) {
-        return chatMemory.get(id).stream()
-                .map(msg -> new ChatMessage(msg.getMessageType().getValue(), msg.getText(), null))
+        return memoryStore.getMessages(id).stream()
+                .map(msg -> new ChatMessage(role(msg), text(msg), null))
                 .toList();
     }
 
     @DeleteMapping("/conversations/{id}")
     public void clearConversation(@PathVariable String id) {
-        chatMemory.clear(id);
+        memoryStore.deleteMessages(id);
+    }
+
+    private static String role(dev.langchain4j.data.message.ChatMessage msg) {
+        return msg.type() == ChatMessageType.USER ? "user" : "assistant";
+    }
+
+    private static String text(dev.langchain4j.data.message.ChatMessage msg) {
+        return switch (msg) {
+            case UserMessage um -> um.singleText();
+            case AiMessage am -> am.text() != null ? am.text() : "";
+            default -> "";
+        };
     }
 
     public record ChatRequest(

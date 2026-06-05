@@ -14,17 +14,27 @@ import com.djtools.ayan.musictagger.infrastructure.service.MusicLookupResult;
 import com.djtools.ayan.musictagger.infrastructure.service.MusicLookupService;
 import com.djtools.ayan.musictagger.infrastructure.service.SongSearchService;
 import com.djtools.ayan.musictagger.infrastructure.service.TrackVectorizationService;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import dev.langchain4j.agent.tool.P;
+import dev.langchain4j.agent.tool.Tool;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Component
 public class AyanMusicTools {
+
+    private static final Logger log = LoggerFactory.getLogger(AyanMusicTools.class);
+
+    /** Tracks queries already executed within a single chatSync() call (same virtual thread). */
+    private static final ThreadLocal<Set<String>> SEEN_LOOKUP_QUERIES =
+            ThreadLocal.withInitial(HashSet::new);
 
     private static final Pattern ARTIST_TITLE_PATTERN = Pattern.compile(
             "^(.+?)\\s*[-–—]\\s*(.+?)\\.[a-zA-Z0-9]+$"
@@ -68,9 +78,10 @@ public class AyanMusicTools {
         this.musicLookupService = musicLookupService;
     }
 
-    @Tool(description = "Scanne un fichier audio et retourne ses tags actuels")
+    @Tool("Scanne un fichier audio et retourne ses tags actuels")
     public MusicFileInfo scanMusicFile(
-            @ToolParam(description = "Chemin absolu du fichier audio") String filepath) {
+            @P("Chemin absolu du fichier audio") String filepath) {
+        log.info("[tool] scanMusicFile filepath={}", filepath);
         var path = new Filepath(filepath);
         final var results = scanMusicUseCase.execute(List.of(path));
         if (results.isEmpty()) {
@@ -79,15 +90,17 @@ public class AyanMusicTools {
         return results.getFirst();
     }
 
-    @Tool(description = "Détecte les tags manquants d'un fichier audio")
+    @Tool("Détecte les tags manquants d'un fichier audio")
     public MissingTagsReport detectMissingTags(
-            @ToolParam(description = "Chemin absolu du fichier audio") String filepath) {
+            @P("Chemin absolu du fichier audio") String filepath) {
+        log.info("[tool] detectMissingTags filepath={}", filepath);
         return scanMusicUseCase.detectMissingTags(new Filepath(filepath));
     }
 
-    @Tool(description = "Suggère artiste et titre à partir du nom de fichier (format 'Artiste - Titre.ext')")
+    @Tool("Suggère artiste et titre à partir du nom de fichier (format 'Artiste - Titre.ext')")
     public TagSuggestion suggestTagsFromFilename(
-            @ToolParam(description = "Nom du fichier audio") String filename) {
+            @P("Nom du fichier audio") String filename) {
+        log.info("[tool] suggestTagsFromFilename filename={}", filename);
         final var matcher = ARTIST_TITLE_PATTERN.matcher(filename.trim());
         if (matcher.matches()) {
             return new TagSuggestion(matcher.group(1).trim(), matcher.group(2).trim());
@@ -104,10 +117,11 @@ public class AyanMusicTools {
      */
     record SpotifyEnrichmentResponse(String status, String message, EnrichedTrackMetadata metadata) {}
 
-    @Tool(description = "Enrichit les métadonnées via Spotify et analyse audio locale, puis indexe dans le vector store")
+    @Tool("Enrichit les métadonnées via Spotify et analyse audio locale, puis indexe dans le vector store")
     public SpotifyEnrichmentResponse enrichWithSpotify(
-            @ToolParam(description = "Nom de l'artiste") String artist,
-            @ToolParam(description = "Titre du morceau") String title) {
+            @P("Nom de l'artiste") String artist,
+            @P("Titre du morceau") String title) {
+        log.info("[tool] enrichWithSpotify artist='{}' title='{}'", artist, title);
         final var result = musicMetadataProvider.enrich(artist, title);
         if (result instanceof EnrichmentResult.Error err) {
             return new SpotifyEnrichmentResponse(
@@ -136,53 +150,60 @@ public class AyanMusicTools {
                 data);
     }
 
-    @Tool(description = "Recherche des morceaux similaires dans la collection vectorisée (RAG)")
+    @Tool("Recherche des morceaux similaires dans la collection vectorisée (RAG)")
     public List<SimilarTrackResult> findSimilarTracks(
-            @ToolParam(description = "Requête de recherche (artiste, genre, ambiance, etc.)") String query,
-            @ToolParam(description = "Nombre max de résultats") int limit) {
+            @P("Requête de recherche (artiste, genre, ambiance, etc.)") String query,
+            @P("Nombre max de résultats") int limit) {
+        log.info("[tool] findSimilarTracks query='{}' limit={}", query, limit);
         return vectorizationService.findSimilarTracks(query, limit);
     }
 
-    @Tool(description = "Suggestions intelligentes de tags basées sur Spotify + morceaux similaires (RAG)")
+    @Tool("Suggestions intelligentes de tags basées sur Spotify + morceaux similaires (RAG)")
     public SmartTagSuggestion smartSuggestTags(
-            @ToolParam(description = "Chemin absolu du fichier audio") String filepath) {
+            @P("Chemin absolu du fichier audio") String filepath) {
+        log.info("[tool] smartSuggestTags filepath={}", filepath);
         return vectorizationService.smartSuggestTags(filepath);
     }
 
-    @Tool(description = "Crée un plan de modifications de tags pour une liste de fichiers audio. " +
+    @Tool("Crée un plan de modifications de tags pour une liste de fichiers audio. " +
             "Scanne chaque fichier, détecte les tags manquants, enrichit via Spotify, " +
             "et retourne un plan avec toutes les modifications suggérées.")
     public TaggingPlan createPlanForFiles(
-            @ToolParam(description = "Liste des chemins absolus des fichiers audio") List<String> filePaths) {
+            @P("Liste des chemins absolus des fichiers audio") List<String> filePaths) {
+        log.info("[tool] createPlanForFiles files={}", filePaths.size());
         return planManagementService.createPlan(filePaths);
     }
 
-    @Tool(description = "Exécute un plan approuvé — écrit les tags dans les fichiers audio et retourne le résultat")
+    @Tool("Exécute un plan approuvé — écrit les tags dans les fichiers audio et retourne le résultat")
     public BatchApplyResult applyTagsPlan(
-            @ToolParam(description = "Identifiant du plan approuvé") String planId) {
+            @P("Identifiant du plan approuvé") String planId) {
+        log.info("[tool] applyTagsPlan planId={}", planId);
         return planManagementService.executePlan(planId);
     }
 
-    @Tool(description = "Prévisualise les modifications de tags avant application sur un fichier")
+    @Tool("Prévisualise les modifications de tags avant application sur un fichier")
     public TagPreview previewTagUpdate(
-            @ToolParam(description = "Chemin absolu du fichier audio") String filepath,
-            @ToolParam(description = "Tags à appliquer (clé: nom du tag, valeur: nouvelle valeur)") java.util.Map<String, String> tags) {
+            @P("Chemin absolu du fichier audio") String filepath,
+            @P("Tags à appliquer (clé: nom du tag, valeur: nouvelle valeur)") java.util.Map<String, String> tags) {
+        log.info("[tool] previewTagUpdate filepath={} tags={}", filepath, tags.keySet());
         return planManagementService.previewFile(filepath, tags);
     }
 
-    @Tool(description = "Traite le prochain fichier du plan en mode MANUAL — retourne l'operation courante")
+    @Tool("Traite le prochain fichier du plan en mode MANUAL — retourne l'operation courante")
     public TagOperation processNextFile(
-            @ToolParam(description = "Identifiant du plan en cours") String planId) {
+            @P("Identifiant du plan en cours") String planId) {
+        log.info("[tool] processNextFile planId={}", planId);
         return manualModeService.prepareNextFile(planId);
     }
 
-    @Tool(description = "Retourne l'historique des modifications de tags pour un plan donné")
+    @Tool("Retourne l'historique des modifications de tags pour un plan donné")
     public List<TaggingHistoryEntry> getTaggingHistory(
-            @ToolParam(description = "Identifiant du plan") String planId) {
+            @P("Identifiant du plan") String planId) {
+        log.info("[tool] getTaggingHistory planId={}", planId);
         return planManagementService.getPlanHistory(planId);
     }
 
-    @Tool(description = """
+    @Tool("""
             Parcourt un dossier et retourne ses fichiers audio et sous-dossiers, paginés.
             Les dossiers apparaissent en premier, triés alphabétiquement, puis les fichiers audio.
             Pour chaque fichier audio, retourne ses tags actuels (artiste, titre, album, genre).
@@ -190,51 +211,68 @@ public class AyanMusicTools {
             Utiliser pour explorer la bibliothèque musicale de l'utilisateur avant de créer un plan.
             """)
     public FileBrowserPage browseFiles(
-            @ToolParam(description = "Chemin absolu du dossier à parcourir") String directoryPath,
-            @ToolParam(description = "Numéro de page, commence à 0") int page,
-            @ToolParam(description = "Nombre d'entrées par page (1–50, recommandé : 20)") int pageSize) throws IOException {
+            @P("Chemin absolu du dossier à parcourir") String directoryPath,
+            @P("Numéro de page, commence à 0") int page,
+            @P("Nombre d'entrées par page (1–50, recommandé : 20)") int pageSize) throws IOException {
+        log.info("[tool] browseFiles dir='{}' page={} pageSize={}", directoryPath, page, pageSize);
         final var clampedSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
         final var clampedPage = Math.max(page, 0);
         return audioScannerService.browse(Path.of(directoryPath), clampedPage, clampedSize);
     }
 
-    @Tool(description = "Génère une playlist de loop mixing (technique 3/4) à partir de la collection : "
+    @Tool("Génère une playlist de loop mixing (technique 3/4) à partir de la collection : "
             + "morceaux dans une plage de BPM, sélectionnés par similarité sémantique (RAG) et danceability.")
     public Playlist generateLoopMixingPlaylist(
-            @ToolParam(description = "BPM minimum") int bpmMin,
-            @ToolParam(description = "BPM maximum") int bpmMax,
-            @ToolParam(description = "Genre principal (optionnel, peut être vide)") String genre) {
+            @P("BPM minimum") int bpmMin,
+            @P("BPM maximum") int bpmMax,
+            @P("Genre principal (optionnel, peut être vide)") String genre) {
+        log.info("[tool] generateLoopMixingPlaylist bpm={}-{} genre='{}'", bpmMin, bpmMax, genre);
         return playlistService.generateLoopMixingPlaylist(bpmMin, bpmMax, genre);
     }
 
-    @Tool(description = "Génère une playlist mixée harmoniquement via la roue de Camelot (« Mixed in Key ») : "
+    @Tool("Génère une playlist mixée harmoniquement via la roue de Camelot (« Mixed in Key ») : "
             + "chaque transition reste dans une tonalité compatible et privilégie un écart de ±6 BPM. "
             + "Retourne les morceaux ordonnés avec leur clé Camelot, le type de transition et des statistiques.")
     public HarmonicPlaylist generateHarmonicMixedPlaylist(
-            @ToolParam(description = "Genre principal (optionnel, peut être vide)") String genre,
-            @ToolParam(description = "BPM minimum") int minBpm,
-            @ToolParam(description = "BPM maximum") int maxBpm,
-            @ToolParam(description = "Énergie cible 0.0–1.0") double targetEnergy,
-            @ToolParam(description = "Nombre de morceaux souhaité") int count) {
+            @P("Genre principal (optionnel, peut être vide)") String genre,
+            @P("BPM minimum") int minBpm,
+            @P("BPM maximum") int maxBpm,
+            @P("Énergie cible 0.0–1.0") double targetEnergy,
+            @P("Nombre de morceaux souhaité") int count) {
+        log.info("[tool] generateHarmonicMixedPlaylist bpm={}-{} genre='{}' energy={} count={}", minBpm, maxBpm, genre, targetEnergy, count);
         return playlistService.generateHarmonicPlaylist(minBpm, maxBpm, genre, targetEnergy, count);
     }
 
-    @Tool(description = "Recherche des informations musicales sur un artiste, un album ou un morceau "
-            + "en interrogeant des sources externes dans l'ordre : Soundcharts → Internet → Spotify. "
-            + "À utiliser pour les questions de découverte externe (« qui est l'artiste X ? », "
-            + "« quels morceaux a sorti Y ? », « donne-moi des infos sur cet album »). "
-            + "Ne pas confondre avec searchSongs qui cherche dans la bibliothèque locale de l'utilisateur. "
-            + "Si rien n'est trouvé, répond simplement qu'aucun résultat n'a été trouvé. "
-            + "En cas d'erreur d'une source, passe silencieusement à la suivante.")
-    public MusicLookupResult lookupMusicInfo(
-            @ToolParam(description = "Requête libre : nom d'artiste, titre, album ou combinaison") String query,
-            @ToolParam(required = false, description = "Nom de l'artiste (si connu séparément de la requête)") String artist,
-            @ToolParam(required = false, description = "Titre du morceau (si connu séparément)") String song,
-            @ToolParam(required = false, description = "Nom de l'album (si connu séparément)") String album) {
-        return musicLookupService.lookup(buildLookupQuery(query, artist, song, album));
+    @Tool("Recherche des informations musicales sur un artiste, un album ou un morceau "
+            + "via Internet → Soundcharts → Spotify. "
+            + "Retourne un résumé textuel complet — ne pas appeler d'autres outils après. "
+            + "À utiliser pour les questions de découverte externe (« qui est X ? », « infos sur Y »).")
+    public String lookupMusicInfo(
+            @P("Requête libre : nom d'artiste, titre, album ou combinaison") String query,
+            @P("Nom de l'artiste si connu séparément — optionnel") String artist,
+            @P("Titre du morceau si connu séparément — optionnel") String song,
+            @P("Nom de l'album si connu séparément — optionnel") String album) {
+        final var effectiveQuery = buildLookupQuery(query, artist, song, album);
+        log.info("[tool] lookupMusicInfo query='{}'", effectiveQuery);
+
+        final var key = effectiveQuery.toLowerCase().strip();
+        if (!SEEN_LOOKUP_QUERIES.get().add(key)) {
+            log.warn("[tool] lookupMusicInfo duplicate call for '{}' — stopping loop", effectiveQuery);
+            return "Recherche déjà effectuée pour \"" + effectiveQuery
+                    + "\". Utilise les informations précédemment retournées pour formuler ta réponse directement.";
+        }
+
+        final var result = musicLookupService.lookup(effectiveQuery);
+        return formatLookupResult(result, effectiveQuery);
     }
 
-    private String buildLookupQuery(String query, String artist, String song, String album) {
+    private static String formatLookupResult(
+            com.djtools.ayan.musictagger.infrastructure.service.MusicLookupResult result,
+            String query) {
+        return result.toSummary();
+    }
+
+    private static String buildLookupQuery(String query, String artist, String song, String album) {
         if (query != null && !query.isBlank()) return query.trim();
         final var sb = new StringBuilder();
         if (artist != null && !artist.isBlank()) sb.append(artist.trim()).append(' ');
@@ -243,7 +281,7 @@ public class AyanMusicTools {
         return sb.toString().trim();
     }
 
-    @Tool(description = "Recherche des morceaux dans la collection à partir de critères donnés en langage naturel "
+    @Tool("Recherche des morceaux dans la collection à partir de critères donnés en langage naturel "
             + "(genre, plage de BPM, niveau d'énergie, plage d'années, ambiance). "
             + "Combine recherche sémantique (RAG) et filtrage par critères. "
             + "Retourne par défaut 10 morceaux classés par pertinence, avec la raison de chaque correspondance "
@@ -251,15 +289,17 @@ public class AyanMusicTools {
             + "À utiliser quand l'utilisateur demande des morceaux par critères plutôt que par fichier précis. "
             + "Tous les critères sont optionnels : ne renseigne que ceux mentionnés par l'utilisateur.")
     public SongSearchResult searchSongs(
-            @ToolParam(required = false, description = "Genre musical (ex: house, techno, afrobeats)") String genre,
-            @ToolParam(required = false, description = "Ambiance ou vibe en texte libre (ex: dark, festif, mélancolique)") String mood,
-            @ToolParam(required = false, description = "BPM minimum") Integer bpmMin,
-            @ToolParam(required = false, description = "BPM maximum") Integer bpmMax,
-            @ToolParam(required = false, description = "Énergie minimum, 0.0–1.0") Double energyMin,
-            @ToolParam(required = false, description = "Énergie maximum, 0.0–1.0") Double energyMax,
-            @ToolParam(required = false, description = "Année de sortie minimum") Integer yearMin,
-            @ToolParam(required = false, description = "Année de sortie maximum") Integer yearMax,
-            @ToolParam(required = false, description = "Nombre de morceaux souhaité (défaut 10, max 50)") Integer limit) {
+            @P("Genre musical (ex: house, techno, afrobeats)") String genre,
+            @P("Ambiance ou vibe en texte libre (ex: dark, festif, mélancolique)") String mood,
+            @P("BPM minimum") Integer bpmMin,
+            @P("BPM maximum") Integer bpmMax,
+            @P("Énergie minimum, 0.0–1.0") Double energyMin,
+            @P("Énergie maximum, 0.0–1.0") Double energyMax,
+            @P("Année de sortie minimum") Integer yearMin,
+            @P("Année de sortie maximum") Integer yearMax,
+            @P("Nombre de morceaux souhaité (défaut 10, max 50)") Integer limit) {
+        log.info("[tool] searchSongs genre='{}' mood='{}' bpm={}-{} energy={}-{} year={}-{} limit={}",
+                genre, mood, bpmMin, bpmMax, energyMin, energyMax, yearMin, yearMax, limit);
         final var criteria = new SongSearchCriteria(
                 genre, mood, bpmMin, bpmMax, energyMin, energyMax, yearMin, yearMax,
                 limit == null ? 10 : limit);

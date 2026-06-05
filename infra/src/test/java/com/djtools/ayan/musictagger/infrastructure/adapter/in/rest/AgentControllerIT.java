@@ -3,18 +3,11 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisChatMemoryRepository;
 import com.djtools.ayan.musictagger.infrastructure.config.RedisConfig;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaApiAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration;
-import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -48,8 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         },
         webEnvironment = SpringBootTest.WebEnvironment.MOCK
 )
-@EnableAutoConfiguration(exclude = {OllamaApiAutoConfiguration.class, OllamaChatAutoConfiguration.class,
-        OllamaEmbeddingAutoConfiguration.class, QdrantVectorStoreAutoConfiguration.class})
 @Testcontainers
 class AgentControllerIT {
 
@@ -67,18 +58,10 @@ class AgentControllerIT {
                             "Réponse d'Ayan !", inv.getArgument(0), List.of()));
             return mock;
         }
-
-        @Bean
-        ChatMemory chatMemory(RedisChatMemoryRepository repository) {
-            return MessageWindowChatMemory.builder()
-                    .chatMemoryRepository(repository)
-                    .maxMessages(100)
-                    .build();
-        }
     }
 
     @Autowired WebApplicationContext context;
-    @Autowired ChatMemory chatMemory;
+    @Autowired RedisChatMemoryRepository memoryStore;
     @Autowired RedisTemplate<String, Object> redisTemplate;
 
     MockMvc mockMvc;
@@ -119,9 +102,9 @@ class AgentControllerIT {
 
     @Test
     void getHistory_returnsStoredMessages() throws Exception {
-        chatMemory.add("it-rest-2", List.of(
-                new UserMessage("Test message"),
-                new AssistantMessage("Test reply")
+        memoryStore.updateMessages("it-rest-2", List.of(
+                UserMessage.from("Test message"),
+                AiMessage.from("Test reply")
         ));
 
         mockMvc.perform(get("/api/agent/conversations/it-rest-2/history"))
@@ -135,12 +118,12 @@ class AgentControllerIT {
 
     @Test
     void deleteConversation_clearsHistory() throws Exception {
-        chatMemory.add("it-rest-3", List.of(new UserMessage("To delete")));
+        memoryStore.updateMessages("it-rest-3", List.of(UserMessage.from("To delete")));
 
         mockMvc.perform(delete("/api/agent/conversations/it-rest-3"))
                 .andExpect(status().isOk());
 
-        assertThat(chatMemory.get("it-rest-3")).isEmpty();
+        assertThat(memoryStore.getMessages("it-rest-3")).isEmpty();
     }
 
     @Test

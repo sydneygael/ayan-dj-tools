@@ -3,33 +3,42 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.vectorstore;
 import com.djtools.ayan.musictagger.domain.model.AudioFeatures;
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
 import com.djtools.ayan.musictagger.domain.model.SimilarTrackResult;
+import dev.langchain4j.data.document.Metadata;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.store.embedding.EmbeddingMatch;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.EmbeddingSearchResult;
+import dev.langchain4j.store.embedding.EmbeddingStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class QdrantVectorStoreAdapterTest {
 
-    @Mock VectorStore vectorStore;
+    @Mock EmbeddingStore<TextSegment> embeddingStore;
+    @Mock EmbeddingModel embeddingModel;
 
     private QdrantVectorStoreAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new QdrantVectorStoreAdapter(vectorStore, 0.7);
+        adapter = new QdrantVectorStoreAdapter(embeddingStore, embeddingModel, 0.7);
+        when(embeddingModel.embed(anyString()))
+                .thenReturn(Response.from(Embedding.from(new float[768])));
     }
 
     private EnrichedTrackMetadata sampleTrack() {
@@ -42,21 +51,16 @@ class QdrantVectorStoreAdapterTest {
     }
 
     @Test
-    void store_shouldConvertToDocumentWithCorrectId() {
+    void store_shouldAddEmbeddingWithTextSegment() {
         adapter.store(sampleTrack());
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<Document>> captor = ArgumentCaptor.forClass(List.class);
-        verify(vectorStore).add(captor.capture());
-
-        List<Document> docs = captor.getValue();
-        assertThat(docs).hasSize(1);
-        String expectedUuid = java.util.UUID.nameUUIDFromBytes("sp123".getBytes()).toString();
-        assertThat(docs.getFirst().getId()).isEqualTo(expectedUuid);
+        String expectedId = UUID.nameUUIDFromBytes("sp123".getBytes()).toString();
+        verify(embeddingStore).remove(expectedId);
+        verify(embeddingStore).add(any(Embedding.class), any(TextSegment.class));
     }
 
     @Test
-    void store_shouldBuildRichEmbeddingText() {
+    void buildEmbeddingText_shouldContainTrackInfo() {
         String text = adapter.buildEmbeddingText(sampleTrack());
 
         assertThat(text).contains("Around The World");
@@ -67,7 +71,7 @@ class QdrantVectorStoreAdapterTest {
     }
 
     @Test
-    void store_shouldIncludeMetadataFields() {
+    void buildMetadata_shouldContainRequiredFields() {
         Map<String, Object> metadata = adapter.buildMetadata(sampleTrack());
 
         assertThat(metadata).containsEntry("sourceId", "sp123");
@@ -79,18 +83,17 @@ class QdrantVectorStoreAdapterTest {
     }
 
     @Test
-    void findSimilar_shouldMapDocumentsToResults() {
-        var doc = Document.builder()
-                .id("sp456")
-                .text("Track: Test")
-                .metadata(Map.of(
-                        "sourceId", "sp456", "artist", "Bicep", "title", "Glue",
-                        "genres", "Electronic", "releaseYear", 2017, "popularity", 75,
-                        "bpm", 130.0, "energy", 0.85
-                ))
-                .score(0.92)
-                .build();
-        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(doc));
+    @SuppressWarnings("unchecked")
+    void findSimilar_shouldMapMatchesToResults() {
+        var meta = Metadata.from(Map.of(
+                "sourceId", "sp456", "artist", "Bicep", "title", "Glue",
+                "genres", "Electronic", "releaseYear", "2017", "popularity", "75",
+                "bpm", "130.0", "energy", "0.85"
+        ));
+        var segment = TextSegment.from("Track: Glue by Bicep.", meta);
+        var match = new EmbeddingMatch<>(0.92, "sp456", Embedding.from(new float[768]), segment);
+        var searchResult = new EmbeddingSearchResult<>(List.of(match));
+        when(embeddingStore.search(any(EmbeddingSearchRequest.class))).thenReturn(searchResult);
 
         List<SimilarTrackResult> results = adapter.findSimilar("electronic dance", 5);
 

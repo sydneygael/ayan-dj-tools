@@ -1,8 +1,7 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp;
 
-import com.djtools.ayan.musictagger.infrastructure.service.MusicLookupResult;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
+import dev.langchain4j.agent.tool.P;
+import dev.langchain4j.agent.tool.Tool;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,14 +13,15 @@ public class DiscoveryTools {
         this.tools = tools;
     }
 
-    @Tool(description = "Recherche des informations musicales sur un artiste, un album ou un morceau "
-            + "en interrogeant des sources externes dans l'ordre : Soundcharts → Internet → Spotify. "
-            + "Si rien n'est trouvé, répond simplement qu'aucun résultat n'a été trouvé.")
-    public MusicLookupResult lookupMusicInfo(
-            @ToolParam(description = "Requête libre : nom d'artiste, titre, album ou combinaison") String query,
-            @ToolParam(required = false, description = "Nom de l'artiste (si connu séparément)") String artist,
-            @ToolParam(required = false, description = "Titre du morceau (si connu séparément)") String song,
-            @ToolParam(required = false, description = "Nom de l'album (si connu séparément)") String album) {
+    @Tool("Recherche des informations musicales sur un artiste, un album ou un morceau "
+            + "via Internet → Soundcharts → Spotify. "
+            + "Retourne un résumé textuel complet — ne pas appeler d'autres outils après. "
+            + "À utiliser pour les questions de découverte externe (« qui est X ? », « infos sur Y »).")
+    public String lookupMusicInfo(
+            @P("Requête libre : nom d'artiste, titre, album ou combinaison") String query,
+            @P("Nom de l'artiste si connu séparément — optionnel") String artist,
+            @P("Titre du morceau si connu séparément — optionnel") String song,
+            @P("Nom de l'album si connu séparément — optionnel") String album) {
         return tools.lookupMusicInfo(query, artist, song, album);
     }
 }

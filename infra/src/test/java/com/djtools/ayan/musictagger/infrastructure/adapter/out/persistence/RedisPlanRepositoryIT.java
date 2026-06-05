@@ -4,12 +4,7 @@ import com.djtools.ayan.musictagger.domain.model.*;
 import com.djtools.ayan.musictagger.infrastructure.config.RedisConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaApiAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration;
-import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,7 +20,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = {RedisPlanRepository.class, RedisConfig.class})
-@EnableAutoConfiguration(exclude = {OllamaApiAutoConfiguration.class, OllamaChatAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class, QdrantVectorStoreAutoConfiguration.class})
 @Testcontainers
 class RedisPlanRepositoryIT {
 

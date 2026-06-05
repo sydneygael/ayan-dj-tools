@@ -538,7 +538,9 @@ export class ChatPageComponent {
 
     this.api.chatStream(request).subscribe({
       next: (event) => {
-        if (event.type === 'chunk' && event.token) {
+        if (event.type === 'thinking' && !streamStarted) {
+          this.updateStatusMessage(statusIdx, 'Chat', 'Étape 2/3 · Ayan réfléchit…', 'running');
+        } else if (event.type === 'chunk' && event.token) {
           if (!streamStarted) {
             streamStarted = true;
             this.updateStatusMessage(statusIdx, 'Chat', 'Étape 2/3 · Réponse en cours de génération...', 'running');
@@ -566,6 +568,13 @@ export class ChatPageComponent {
         this.chatError.set(this.errorToMessage(err));
         this.lastFailedRequest.set(request);
         this.isSending.set(false);
+      },
+      complete: () => {
+        // safety net: stream closed without done/error event
+        if (this.isSending()) {
+          this.updateStatusMessage(statusIdx, 'Chat', 'Étape 3/3 · Réponse terminée.', 'done');
+          this.isSending.set(false);
+        }
       }
     });
   }

@@ -1,11 +1,13 @@
 package com.djtools.ayan.musictagger.infrastructure.service;
 
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
+import com.djtools.ayan.musictagger.domain.model.MusicFileInfo;
+import com.djtools.ayan.musictagger.domain.port.out.ScannedTrackRepository;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.SoundchartsMusicMetadataAdapter;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyApiClient;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyMapper;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyRateLimiter;
-import com.djtools.ayan.musictagger.infrastructure.adapter.out.web.DuckDuckGoSearchAdapter;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.web.TavilySearchAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,42 +21,76 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * External music lookup chain:
- * 1) Soundcharts
- * 2) DuckDuckGo + Spotify in parallel if Soundcharts is empty.
+ * 1) Internet / Tavily + local collection in parallel — if Tavily finds something, return immediately
+ * 2) Soundcharts
+ * 3) Spotify — last resort
  */
 @Service
 public class MusicLookupService {
 
     private static final Logger log = LoggerFactory.getLogger(MusicLookupService.class);
     private static final int SEARCH_LIMIT = 8;
+    private static final int LOCAL_TRACK_LIMIT = 20;
     private static final long SOUNDCHARTS_TIMEOUT_SECONDS = 8;
     private static final long WEB_TIMEOUT_SECONDS = 8;
     private static final long SPOTIFY_TIMEOUT_SECONDS = 12;
+    private static final long LOCAL_TIMEOUT_SECONDS = 3;
 
     private final SoundchartsMusicMetadataAdapter soundcharts;
-    private final DuckDuckGoSearchAdapter duckDuckGo;
+    private final TavilySearchAdapter tavily;
     private final SpotifyApiClient spotifyApiClient;
     private final SpotifyMapper spotifyMapper;
     private final SpotifyRateLimiter spotifyRateLimiter;
+    private final ScannedTrackRepository scannedTrackRepository;
 
     public MusicLookupService(SoundchartsMusicMetadataAdapter soundcharts,
-                              DuckDuckGoSearchAdapter duckDuckGo,
+                              TavilySearchAdapter tavily,
                               SpotifyApiClient spotifyApiClient,
                               SpotifyMapper spotifyMapper,
-                              SpotifyRateLimiter spotifyRateLimiter) {
+                              SpotifyRateLimiter spotifyRateLimiter,
+                              ScannedTrackRepository scannedTrackRepository) {
         this.soundcharts = soundcharts;
-        this.duckDuckGo = duckDuckGo;
+        this.tavily = tavily;
         this.spotifyApiClient = spotifyApiClient;
         this.spotifyMapper = spotifyMapper;
         this.spotifyRateLimiter = spotifyRateLimiter;
+        this.scannedTrackRepository = scannedTrackRepository;
     }
 
     public MusicLookupResult lookup(String query) {
         if (query == null || query.isBlank()) {
-            return new MusicLookupResult(false, "none", query, List.of(), null);
+            return new MusicLookupResult(false, "none", query, List.of(), null, List.of());
         }
         log.info("MusicLookup: '{}'", query);
 
+        // Phase 1: Internet (Tavily) + local in parallel — fastest sources
+        final Optional<String> webSummary;
+        final List<MusicFileInfo> localTracks;
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final var webFuture = CompletableFuture
+                    .supplyAsync(() -> searchWebSafely(query), executor)
+                    .completeOnTimeout(Optional.empty(), WEB_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .exceptionally(error -> {
+                        log.warn("Web lookup failed for '{}': {}", query, rootMessage(error));
+                        return Optional.empty();
+                    });
+            final var localFuture = CompletableFuture
+                    .supplyAsync(() -> scannedTrackRepository.findByArtist(query, LOCAL_TRACK_LIMIT), executor)
+                    .completeOnTimeout(List.of(), LOCAL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .exceptionally(error -> {
+                        log.warn("Local lookup failed for '{}': {}", query, rootMessage(error));
+                        return List.of();
+                    });
+            webSummary = webFuture.join();
+            localTracks = localFuture.join();
+        }
+
+        if (webSummary.isPresent()) {
+            log.info("MusicLookup: web result for '{}', {} local", query, localTracks.size());
+            return new MusicLookupResult(true, "web", query, List.of(), webSummary.get(), localTracks);
+        }
+
+        // Phase 2: Soundcharts
         final List<EnrichedTrackMetadata> soundchartsTracks;
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             soundchartsTracks = CompletableFuture
@@ -68,52 +104,42 @@ public class MusicLookupService {
         }
 
         if (!soundchartsTracks.isEmpty()) {
-            log.info("MusicLookup: {} track(s) via Soundcharts for '{}'", soundchartsTracks.size(), query);
-            return new MusicLookupResult(true, "soundcharts", query, soundchartsTracks, null);
+            log.info("MusicLookup: {} track(s) via Soundcharts for '{}', {} local", soundchartsTracks.size(), query, localTracks.size());
+            return new MusicLookupResult(true, "soundcharts", query, soundchartsTracks, null, localTracks);
         }
 
-        final Optional<String> webSummary;
+        // Phase 3: Spotify — last resort
         final List<EnrichedTrackMetadata> spotifyTracks;
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            final var webFuture = CompletableFuture
-                    .supplyAsync(() -> searchWebSafely(query), executor)
-                    .completeOnTimeout(Optional.empty(), WEB_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .exceptionally(error -> {
-                        log.warn("Web lookup failed for '{}': {}", query, rootMessage(error));
-                        return Optional.empty();
-                    });
-
-            final var spotifyFuture = CompletableFuture
+            spotifyTracks = CompletableFuture
                     .supplyAsync(() -> searchSpotify(query), executor)
                     .completeOnTimeout(List.of(), SPOTIFY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .exceptionally(error -> {
                         log.warn("Spotify lookup failed for '{}': {}", query, rootMessage(error));
                         return List.of();
-                    });
-
-            webSummary = webFuture.join();
-            spotifyTracks = spotifyFuture.join();
+                    })
+                    .join();
         }
 
         if (!spotifyTracks.isEmpty()) {
-            log.info("MusicLookup: {} track(s) via Spotify for '{}'", spotifyTracks.size(), query);
-            return new MusicLookupResult(true, "spotify", query, spotifyTracks, webSummary.orElse(null));
+            log.info("MusicLookup: {} track(s) via Spotify for '{}', {} local", spotifyTracks.size(), query, localTracks.size());
+            return new MusicLookupResult(true, "spotify", query, spotifyTracks, null, localTracks);
         }
 
-        if (webSummary.isPresent()) {
-            log.info("MusicLookup: web-only result for '{}'", query);
-            return new MusicLookupResult(true, "web", query, List.of(), webSummary.get());
+        if (!localTracks.isEmpty()) {
+            log.info("MusicLookup: local-only result for '{}', {} track(s)", query, localTracks.size());
+            return new MusicLookupResult(true, "local", query, List.of(), null, localTracks);
         }
 
         log.info("MusicLookup: nothing found for '{}'", query);
-        return new MusicLookupResult(false, "none", query, List.of(), null);
+        return new MusicLookupResult(false, "none", query, List.of(), null, List.of());
     }
 
     private Optional<String> searchWebSafely(String query) {
         try {
-            return duckDuckGo.search(query);
+            return tavily.search(query);
         } catch (Exception e) {
-            log.warn("DuckDuckGo search failed for '{}': {}", query, e.getMessage());
+            log.warn("Tavily search failed for '{}': {}", query, e.getMessage());
             return Optional.empty();
         }
     }

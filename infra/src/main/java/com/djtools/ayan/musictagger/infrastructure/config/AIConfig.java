@@ -1,168 +1,310 @@
 package com.djtools.ayan.musictagger.infrastructure.config;
 
+import com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp.DiscoveryTools;
+import com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp.FileOpsTools;
+import com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp.PlaylistTools;
+import com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp.PlanTools;
+import com.djtools.ayan.musictagger.infrastructure.adapter.in.mcp.SearchTools;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisChatMemoryRepository;
-import com.djtools.ayan.musictagger.infrastructure.service.AgentDispatcher;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.model.ChatModel;
+import com.djtools.ayan.musictagger.infrastructure.service.AyanAssistant;
+import com.djtools.ayan.musictagger.infrastructure.service.IntentType;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
+import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
+import java.util.Map;
 
 @Configuration
 public class AIConfig {
 
-    private static final String SYSTEM_PROMPT = """
-            Tu es Ayan, un assistant intelligent spécialisé dans la gestion de bibliothèques musicales pour DJs.
-            Tu parles en français avec un ton amical et professionnel.
+    private static final Logger log = LoggerFactory.getLogger(AIConfig.class);
 
-            Tes capacités :
-            – Scanner des fichiers audio pour lire leurs tags (artiste, titre, album, genre, BPM, tonalité)
-            – Détecter les tags manquants
-            – Suggérer artiste et titre à partir du nom de fichier
-            – Enrichir les métadonnées via Spotify et l'analyse audio locale
-            – Rechercher des informations sur le web (artiste, album, date de sortie, etc.)
-            – Créer un plan de modifications (scan + enrichissement + suggestions)
-            – Appliquer les tags d'un plan approuvé (avec backup et rollback)
-            – Prévisualiser les modifications avant application
-            – Consulter l'historique des modifications
-            – Chercher des morceaux similaires (RAG) et faire des suggestions intelligentes
-            – Rechercher des informations sur un artiste, un album ou un morceau en interrogeant Soundcharts, puis Internet (DuckDuckGo), puis Spotify en fallback
-            – Rechercher des morceaux par critères (genre, BPM, énergie, années, ambiance) et en proposer une sélection (par défaut 10)
-            – Générer des playlists : loop mixing (plage de BPM) ou mix harmonique via la roue de Camelot
+    // ── Classifier interface (inline, fast) ───────────────────────────────────
 
-            ═══════════════════════════════════════
-            FORMATAGE — RÈGLES ABSOLUES
-            ═══════════════════════════════════════
-            Le chat affiche du texte brut. N'utilise JAMAIS le markdown :
-            – Interdit : **gras**, *italique*, # titres, `code`, ```blocs```, | tableaux |
-            – Interdit : les tirets triples --- comme séparateur de tableau
+    interface IntentClassifier {
+        @SystemMessage("""
+                Tu es un classificateur d'intention. Réponds UNIQUEMENT avec un seul mot parmi :
+                FICHIERS, PLANIFICATION, RECHERCHE, PLAYLIST, DECOUVERTE, GENERAL
 
-            Formats autorisés :
-            – Titres de section : ligne en MAJUSCULES, ligne de tirets unicode (─) en dessous
-            – Séparation : une ligne vide entre les blocs
-            – Liste : tirets demi-cadratin (–) ou numérotation (1.  2.  3.)
-            – Données compactes sur une ligne :  Artiste : X  |  Titre : Y  |  BPM : 120
-            – Succès : ✓   Manquant/erreur : ✗   Avertissement : ⚠
+                FICHIERS       : scanner, analyser, lire tags, enrichir, BPM, tonalité, parcourir dossier
+                PLANIFICATION  : créer plan, appliquer plan, mode manuel, prévisualiser modifications
+                RECHERCHE      : chercher morceaux similaires, filtrer par genre/BPM/énergie/ambiance
+                PLAYLIST       : générer playlist, loop mixing, mix harmonique, roue de Camelot
+                DECOUVERTE     : qui est cet artiste, infos sur album, recherche externe
+                GENERAL        : bonjour, que peux-tu faire, aide, questions générales
 
-            Exemple de présentation d'un fichier :
-            ─────────────────────────────────────
-            Angélique Kidjo – Agolo.mp3
-            ─────────────────────────────────────
-            Artiste : Angélique Kidjo  |  Titre : Agolo  |  Album : ✗
-            Genre : Afro Pop  |  BPM : 120  |  Tonalité : Mi mineur
+                Réponds avec EXACTEMENT un mot, sans ponctuation, sans explication.
+                """)
+        String classify(@UserMessage String message);
+    }
 
-            Suggestions Spotify :
-            – Album → Oremi
-            – Genre → World Music, Afrobeats
+    // ── Prompts système par agent ─────────────────────────────────────────────
 
-            ═══════════════════════════════════════
-            MULTI-FICHIERS — SYNTHÈSE OBLIGATOIRE
-            ═══════════════════════════════════════
-            Quand tu traites plusieurs fichiers (> 1) :
-            1. Commence par une ligne de synthèse :
-               "J'ai analysé X fichiers. Y ont des tags manquants, Z sont déjà complets."
-            2. Liste UNIQUEMENT les fichiers avec des problèmes ou des suggestions.
-               Omets les fichiers déjà complets (sauf s'il y en a peu ou si l'utilisateur demande tout).
-            3. Par fichier avec problème : une section courte (nom + tags manquants + suggestions).
-            4. Termine par la prochaine action recommandée.
-            Ne détaille PAS chaque fichier complet — c'est verbeux et inutile.
-
-            ═══════════════════════════════════════
-            CONTEXTE INJECTÉ PAR L'INTERFACE
-            ═══════════════════════════════════════
-            Chaque message peut être préfixé par :
-            [Contexte: mode=X; filePaths=[...]; currentDir="..."]
-
-            – mode : mode opératoire (PLAN / MANUAL / APPLY)
-            – filePaths : fichiers sélectionnés. Transmets-les explicitement à l'agent appelé.
-            – currentDir : dossier courant. Utilise-le si l'utilisateur écrit "ce dossier" ou "ici".
-            – Si filePaths est vide et que la tâche nécessite des fichiers, signale-le en une phrase.
-            – Ne réaffiche JAMAIS le bloc [Contexte: ...] dans ta réponse.
-
-            ═══════════════════════════════════════
-            SALUTATION
-            ═══════════════════════════════════════
-            Quand l'utilisateur dit "hello", "bonjour", "salut", "hi" ou un équivalent, réponds EXACTEMENT ainsi (sans rien appeler) :
-
-            Bonjour ! Je suis Ayan, ton assistant IA pour la gestion de bibliothèques musicales pour DJs.
-
-            Je dispose de 5 agents spécialisés :
-
-            OPÉRATIONS FICHIERS
-            ───────────────────
-            Scanner, analyser et enrichir tes fichiers audio, détecter les tags manquants,
-            prévisualiser les modifications et suggérer des tags via Spotify.
-
-            PLANS DE TAGS
-            ─────────────
-            Créer un plan de modifications pour plusieurs fichiers, les appliquer en lot
-            ou fichier par fichier (mode manuel), consulter l'historique des changements.
-
-            RECHERCHE
-            ─────────
-            Trouver des morceaux similaires dans ta collection ou filtrer par genre,
-            BPM, énergie, années et ambiance.
-
-            PLAYLISTS
-            ─────────
-            Générer des playlists pour le mix : loop mixing par plage de BPM
-            ou mix harmonique via la roue de Camelot.
-
-            DÉCOUVERTE
-            ──────────
-            Rechercher des informations sur un artiste, un album ou un morceau
-            via Soundcharts, Internet et Spotify.
-
-            Comment puis-je t'aider ?
-
-            ═══════════════════════════════════════
-            DISPATCH AUX AGENTS SPÉCIALISÉS
-            ═══════════════════════════════════════
-            Tu dispatches chaque demande à l'agent spécialisé approprié.
-            Inclus TOUJOURS les chemins de fichiers et le mode dans ta demande à l'agent.
-
-            – fileOpsAgent   : scanner, analyser, enrichir, prévisualiser, suggestions de tags
-            – planAgent      : créer un plan, appliquer, mode MANUAL/APPLY, historique
-            – searchAgent    : chercher dans la collection (similarité, genre, BPM, énergie)
-            – playlistAgent  : générer playlists (loop mixing, harmonique Camelot)
-            – discoveryAgent : infos externes sur artiste/album/morceau (Soundcharts, Spotify)
-
-            ═══════════════════════════════════════
-            RÈGLES PAR MODE
-            ═══════════════════════════════════════
-            Mode PLAN :
-            – Délègue à planAgent pour créer le plan. Présente le résultat en texte lisible, PAS en tableau.
-            – Si confiance < 70% sur une suggestion, pose UNE seule question ciblée.
-            – Attends validation avant toute modification.
-            – Résumé final en une ligne : "X tags appliqués. Y erreurs."
-
-            Mode MANUAL :
-            – Délègue à planAgent → un fichier à la fois. Attends confirmation avant de passer au suivant.
-
-            Mode APPLY :
-            – Délègue à planAgent pour exécution automatique. Annonce en une phrase, résumé en 1-2 lignes.
-
-            En cas d'erreur :
-            – Explique l'erreur en une phrase simple (pas de stack trace).
-            – Propose à l'utilisateur de saisir manuellement les informations manquantes.
+    private static final String PROMPT_FICHIERS = """
+            Tu es un agent spécialisé dans les opérations sur fichiers audio pour DJs.
+            Tu peux scanner des fichiers, détecter les tags manquants, enrichir via Spotify et parcourir des dossiers.
+            Réponds en français, sans markdown. Format : Artiste : X  |  Titre : Y  |  BPM : Z
+            Symboles : ✓ succès  ✗ manquant  ⚠ avertissement
+            [Contexte: mode=#{mode}; filePaths=#{filePaths}; currentDir=#{currentDir}]
             """;
 
+    private static final String PROMPT_PLANIFICATION = """
+            Tu es un agent spécialisé dans les plans de modification de tags pour DJs.
+            Tu peux créer des plans, les appliquer, gérer le mode manuel (fichier par fichier) et prévisualiser les changements.
+            Réponds en français, sans markdown.
+            [Contexte: mode=#{mode}; filePaths=#{filePaths}; currentDir=#{currentDir}]
+            """;
+
+    private static final String PROMPT_RECHERCHE = """
+            Tu es un agent spécialisé dans la recherche musicale dans la collection locale.
+            Tu peux trouver des morceaux similaires (RAG), filtrer par critères (genre, BPM, énergie, ambiance, années)
+            et suggérer des tags intelligents basés sur des morceaux proches.
+            Réponds en français, sans markdown. Par résultat : Artiste | Titre | BPM | Tonalité
+            """;
+
+    private static final String PROMPT_PLAYLIST = """
+            Tu es un agent spécialisé dans la génération de playlists DJ.
+            Tu génères des playlists loop mixing (plage de BPM) ou harmoniques via la roue de Camelot.
+            Réponds en français, sans markdown. Numérote chaque morceau avec BPM et tonalité Camelot.
+            """;
+
+    private static final String PROMPT_DECOUVERTE = """
+            Tu es un agent spécialisé dans la découverte musicale via sources externes.
+            Tu peux chercher des informations sur des artistes, albums et morceaux via Soundcharts, Internet et Spotify.
+            Appelle lookupMusicInfo UNE SEULE FOIS puis formule la réponse directement.
+            Si localTracks est non vide, mentionne les morceaux que l'utilisateur possède déjà.
+            Réponds en français, sans markdown.
+            """;
+
+    private static final String PROMPT_GENERAL = """
+            Tu es Ayan, un assistant intelligent pour DJs spécialisé dans la gestion de bibliothèques musicales.
+            Tu parles en français avec un ton amical et professionnel.
+
+            Quand l'utilisateur dit "bonjour", "salut", "hello" ou équivalent, réponds EXACTEMENT :
+
+            Bonjour ! Je suis Ayan, ton assistant IA pour la gestion de bibliothèques musicales.
+
+            Je peux t'aider à :
+
+            FICHIERS — Scanner, analyser et enrichir tes fichiers audio
+            ───────────────────────────────────────────────────────────
+            Lire les tags actuels, détecter les manquants, enrichir via Spotify,
+            parcourir ta bibliothèque.
+
+            PLANS DE TAGS — Modifier les tags en toute sécurité
+            ────────────────────────────────────────────────────
+            Créer un plan de modifications, les appliquer en lot ou fichier par fichier,
+            prévisualiser avant d'appliquer.
+
+            RECHERCHE — Explorer ta collection
+            ──────────────────────────────────
+            Trouver des morceaux similaires, filtrer par genre, BPM, énergie ou ambiance.
+
+            PLAYLISTS — Préparer tes sets
+            ─────────────────────────────
+            Générer des playlists loop mixing ou harmoniques via la roue de Camelot.
+
+            DÉCOUVERTE — Informations externes
+            ───────────────────────────────────
+            Chercher des infos sur un artiste, album ou morceau via Soundcharts et Internet.
+
+            Comment puis-je t'aider ?
+            """;
+
+    // ── Language models ───────────────────────────────────────────────────────
+
     @Bean
-    ChatMemory chatMemory(RedisChatMemoryRepository repository) {
-        return MessageWindowChatMemory.builder()
-                .chatMemoryRepository(repository)
-                .maxMessages(20)
+    ChatLanguageModel chatLanguageModel(
+            @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
+            @Value("${ollama.chat.model:llama3.1:8b}") String model,
+            @Value("${ollama.chat.temperature:0.3}") Double temperature,
+            @Value("${ollama.chat.num-ctx:8192}") Integer numCtx) {
+        return OllamaChatModel.builder()
+                .baseUrl(baseUrl).modelName(model)
+                .temperature(temperature).numCtx(numCtx)
+                .timeout(Duration.ofSeconds(600))
                 .build();
     }
 
     @Bean
-    ChatClient chatClient(ChatModel chatModel, AgentDispatcher agentDispatcher, ChatMemory chatMemory) {
-        return ChatClient.builder(chatModel)
-                .defaultSystem(SYSTEM_PROMPT)
-                .defaultTools(agentDispatcher)
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    StreamingChatLanguageModel streamingChatLanguageModel(
+            @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
+            @Value("${ollama.chat.model:llama3.1:8b}") String model,
+            @Value("${ollama.chat.temperature:0.3}") Double temperature,
+            @Value("${ollama.chat.num-ctx:8192}") Integer numCtx) {
+        return OllamaStreamingChatModel.builder()
+                .baseUrl(baseUrl).modelName(model)
+                .temperature(temperature).numCtx(numCtx)
+                .timeout(Duration.ofSeconds(600))
                 .build();
+    }
+
+    /** Modèle rapide pour la classification d'intention : contexte minimal, sortie = 1 mot. */
+    @Bean("fastChatModel")
+    ChatLanguageModel fastChatModel(
+            @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
+            @Value("${ollama.chat.model:llama3.1:8b}") String model) {
+        return OllamaChatModel.builder()
+                .baseUrl(baseUrl).modelName(model)
+                .temperature(0.0).numCtx(512).numPredict(10)
+                .timeout(Duration.ofSeconds(30))
+                .build();
+    }
+
+    /** Modèle streaming léger pour les réponses générales (sans tools). */
+    @Bean("generalStreamingModel")
+    StreamingChatLanguageModel generalStreamingModel(
+            @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
+            @Value("${ollama.chat.model:llama3.1:8b}") String model,
+            @Value("${ollama.chat.temperature:0.3}") Double temperature,
+            @Value("${dj-tagger.chat.simple-timeout-seconds:60}") Integer simpleTimeoutSeconds) {
+        return OllamaStreamingChatModel.builder()
+                .baseUrl(baseUrl).modelName(model)
+                .temperature(temperature).numCtx(4096)
+                .timeout(Duration.ofSeconds(simpleTimeoutSeconds))
+                .build();
+    }
+
+    @Bean
+    EmbeddingModel embeddingModel(
+            @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
+            @Value("${ollama.embedding.model:nomic-embed-text}") String model) {
+        return OllamaEmbeddingModel.builder()
+                .baseUrl(baseUrl).modelName(model)
+                .build();
+    }
+
+    // ── Intent classifier ─────────────────────────────────────────────────────
+
+    @Bean
+    IntentClassifier intentClassifier(@Qualifier("fastChatModel") ChatLanguageModel fastModel) {
+        return AiServices.builder(IntentClassifier.class)
+                .chatLanguageModel(fastModel)
+                .build();
+    }
+
+    // ── Shared memory provider helper ─────────────────────────────────────────
+
+    private static dev.langchain4j.memory.ChatMemory memory(
+            Object convId, RedisChatMemoryRepository store) {
+        return MessageWindowChatMemory.builder()
+                .id(convId).maxMessages(20).chatMemoryStore(store)
+                .build();
+    }
+
+    // ── 6 specialized assistants — each with ≤4 tools ────────────────────────
+
+    @Bean("fichiersAssistant")
+    AyanAssistant fichiersAssistant(
+            @Qualifier("chatLanguageModel") ChatLanguageModel chatLM,
+            FileOpsTools fileOpsTools,
+            RedisChatMemoryRepository memoryStore) {
+        return AiServices.builder(AyanAssistant.class)
+                .systemMessageProvider(id -> PROMPT_FICHIERS)
+                .chatLanguageModel(chatLM)
+                .tools(fileOpsTools)
+                .chatMemoryProvider(id -> memory(id, memoryStore))
+                .build();
+    }
+
+    @Bean("planAssistant")
+    AyanAssistant planAssistant(
+            @Qualifier("chatLanguageModel") ChatLanguageModel chatLM,
+            PlanTools planTools,
+            RedisChatMemoryRepository memoryStore) {
+        return AiServices.builder(AyanAssistant.class)
+                .systemMessageProvider(id -> PROMPT_PLANIFICATION)
+                .chatLanguageModel(chatLM)
+                .tools(planTools)
+                .chatMemoryProvider(id -> memory(id, memoryStore))
+                .build();
+    }
+
+    @Bean("rechercheAssistant")
+    AyanAssistant rechercheAssistant(
+            @Qualifier("chatLanguageModel") ChatLanguageModel chatLM,
+            SearchTools searchTools,
+            RedisChatMemoryRepository memoryStore) {
+        return AiServices.builder(AyanAssistant.class)
+                .systemMessageProvider(id -> PROMPT_RECHERCHE)
+                .chatLanguageModel(chatLM)
+                .tools(searchTools)
+                .chatMemoryProvider(id -> memory(id, memoryStore))
+                .build();
+    }
+
+    @Bean("playlistAssistant")
+    AyanAssistant playlistAssistant(
+            @Qualifier("chatLanguageModel") ChatLanguageModel chatLM,
+            PlaylistTools playlistTools,
+            RedisChatMemoryRepository memoryStore) {
+        return AiServices.builder(AyanAssistant.class)
+                .systemMessageProvider(id -> PROMPT_PLAYLIST)
+                .chatLanguageModel(chatLM)
+                .tools(playlistTools)
+                .chatMemoryProvider(id -> memory(id, memoryStore))
+                .build();
+    }
+
+    @Bean("decouverteAssistant")
+    AyanAssistant decouverteAssistant(
+            @Qualifier("chatLanguageModel") ChatLanguageModel chatLM,
+            DiscoveryTools discoveryTools,
+            RedisChatMemoryRepository memoryStore) {
+        return AiServices.builder(AyanAssistant.class)
+                .systemMessageProvider(id -> PROMPT_DECOUVERTE)
+                .chatLanguageModel(chatLM)
+                .tools(discoveryTools)
+                .chatMemoryProvider(id -> memory(id, memoryStore))
+                .build();
+    }
+
+    @Bean("generalAssistant")
+    AyanAssistant generalAssistant(
+            @Qualifier("generalStreamingModel") StreamingChatLanguageModel generalStreamingLM,
+            @Qualifier("chatLanguageModel") ChatLanguageModel chatLM,
+            RedisChatMemoryRepository memoryStore) {
+        return AiServices.builder(AyanAssistant.class)
+                .systemMessageProvider(id -> PROMPT_GENERAL)
+                .chatLanguageModel(chatLM)
+                .streamingChatLanguageModel(generalStreamingLM)
+                // no tools — purely conversational
+                .chatMemoryProvider(id -> memory(id, memoryStore))
+                .build();
+    }
+
+    // ── Public classifier bean for AyanAgentService ───────────────────────────
+
+    /**
+     * Classifie l'intention d'un message utilisateur.
+     * Retourne GENERAL si la classification échoue (fallback garanti).
+     */
+    @Bean
+    java.util.function.Function<String, IntentType> intentClassifierFunction(IntentClassifier classifier) {
+        return message -> {
+            try {
+                final var raw = classifier.classify(message);
+                if (raw == null || raw.isBlank()) return IntentType.GENERAL;
+                return IntentType.valueOf(raw.strip().toUpperCase());
+            } catch (Exception e) {
+                log.warn("Intent classification failed for '{}': {} — fallback GENERAL",
+                        message.substring(0, Math.min(40, message.length())), e.getMessage());
+                return IntentType.GENERAL;
+            }
+        };
     }
 }

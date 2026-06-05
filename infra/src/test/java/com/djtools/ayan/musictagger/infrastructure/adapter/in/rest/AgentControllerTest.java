@@ -1,16 +1,16 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
 import com.djtools.ayan.musictagger.domain.model.OperatingMode;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence.RedisChatMemoryRepository;
 import com.djtools.ayan.musictagger.infrastructure.service.AyanAgentService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 class AgentControllerTest {
 
     @Mock AyanAgentService agentService;
-    @Mock ChatMemory chatMemory;
+    @Mock RedisChatMemoryRepository memoryStore;
     @InjectMocks AgentController controller;
 
     @Test
@@ -30,9 +30,9 @@ class AgentControllerTest {
         when(agentService.chatWithToolCalls(eq("conv-1"), eq("Analyse mon fichier"),
                 eq(OperatingMode.PLAN), any(), any()))
                 .thenReturn(new AyanAgentService.ChatResult("Voici l'analyse...", "conv-1", List.of()));
-        when(chatMemory.get("conv-1")).thenReturn(List.of(
-                new UserMessage("Analyse mon fichier"),
-                new AssistantMessage("Voici l'analyse...")
+        when(memoryStore.getMessages("conv-1")).thenReturn(List.of(
+                UserMessage.from("Analyse mon fichier"),
+                AiMessage.from("Voici l'analyse...")
         ));
 
         var response = controller.chat(new AgentController.ChatRequest(
@@ -50,7 +50,7 @@ class AgentControllerTest {
         when(agentService.chatWithToolCalls(anyString(), eq("Salut"),
                 eq(OperatingMode.PLAN), any(), any()))
                 .thenAnswer(inv -> new AyanAgentService.ChatResult("Bonjour !", inv.getArgument(0), List.of()));
-        when(chatMemory.get(anyString())).thenReturn(List.of());
+        when(memoryStore.getMessages(anyString())).thenReturn(List.of());
 
         var response = controller.chat(new AgentController.ChatRequest(
                 "Salut", null, null, null, null));
@@ -63,7 +63,7 @@ class AgentControllerTest {
     void chat_forwardsContextToAgent() {
         when(agentService.chatWithToolCalls(anyString(), anyString(), any(), any(), any()))
                 .thenReturn(new AyanAgentService.ChatResult("ok", "c1", List.of()));
-        when(chatMemory.get(anyString())).thenReturn(List.of());
+        when(memoryStore.getMessages(anyString())).thenReturn(List.of());
 
         controller.chat(new AgentController.ChatRequest(
                 "tag ça", "c1", OperatingMode.APPLY, List.of("C:/a.mp3", "C:/b.mp3"), "C:/music"));
@@ -76,10 +76,10 @@ class AgentControllerTest {
     }
 
     @Test
-    void getHistory_returnsMessagesFromChatMemory() {
-        when(chatMemory.get("conv-1")).thenReturn(List.of(
-                new UserMessage("Test"),
-                new AssistantMessage("Réponse")
+    void getHistory_returnsMessagesFromMemoryStore() {
+        when(memoryStore.getMessages("conv-1")).thenReturn(List.of(
+                UserMessage.from("Test"),
+                AiMessage.from("Réponse")
         ));
 
         var result = controller.getHistory("conv-1");
@@ -93,7 +93,7 @@ class AgentControllerTest {
 
     @Test
     void getHistory_returnsEmptyListWhenNoMessages() {
-        when(chatMemory.get("conv-empty")).thenReturn(List.of());
+        when(memoryStore.getMessages("conv-empty")).thenReturn(List.of());
 
         var result = controller.getHistory("conv-empty");
 
@@ -101,8 +101,8 @@ class AgentControllerTest {
     }
 
     @Test
-    void clearConversation_delegatesToChatMemory() {
+    void clearConversation_delegatesToMemoryStore() {
         controller.clearConversation("conv-1");
-        verify(chatMemory).clear("conv-1");
+        verify(memoryStore).deleteMessages("conv-1");
     }
 }

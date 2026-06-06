@@ -9,6 +9,12 @@ import com.djtools.ayan.musictagger.domain.port.in.AudioFileReader;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.usecase.ScanMusicUseCase;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.audio.AudioScannerService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,6 +40,7 @@ import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/files")
+@Tag(name = "Files", description = "Navigation système de fichiers, analyse et enrichissement de fichiers audio")
 class FileBrowserController {
 
     private static final Logger log = LoggerFactory.getLogger(FileBrowserController.class);
@@ -57,10 +64,21 @@ class FileBrowserController {
         this.musicMetadataProvider = musicMetadataProvider;
     }
 
+    @Operation(
+        summary = "Naviguer dans le système de fichiers",
+        description = "Parcourt un répertoire et retourne les fichiers audio (mp3, flac, wav, aiff, m4a, ogg) et sous-répertoires avec pagination. `path` doit être un chemin absolu accessible au processus serveur. Sans `path`, retourne le répertoire home de l'utilisateur courant."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Page de navigation avec fichiers et sous-répertoires"),
+        @ApiResponse(responseCode = "400", description = "Chemin invalide (contient '..') ou répertoire inaccessible")
+    })
     @GetMapping("/browse")
-    FileBrowserPage browse(@RequestParam(defaultValue = "") String path,
-                           @RequestParam(defaultValue = "0") int page,
-                           @RequestParam(defaultValue = "20") int size) throws IOException {
+    FileBrowserPage browse(
+            @Parameter(description = "Chemin absolu du répertoire à parcourir. Défaut : home de l'utilisateur.", example = "/home/user/music")
+            @RequestParam(defaultValue = "") String path,
+            @Parameter(description = "Numéro de page (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Taille de page (1–50, défaut 20)") @RequestParam(defaultValue = "20") int size)
+            throws IOException {
         final var resolvedPath = path.isBlank() ? System.getProperty("user.home") : path;
         if (resolvedPath.contains("..")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chemin invalide : '..' non autorise");
@@ -74,13 +92,26 @@ class FileBrowserController {
         }
     }
 
-    record AnalyzeRequest(List<String> filePaths) {}
+    @Schema(description = "Requête d'analyse de tags")
+    record AnalyzeRequest(
+            @Schema(description = "Chemins absolus des fichiers audio à analyser") List<String> filePaths
+    ) {}
 
-    record FileAnalysisItem(String filepath,
-                            String filename,
-                            Map<String, String> currentTags,
-                            List<String> missingTags) {}
+    @Schema(description = "Résultat d'analyse des tags d'un fichier")
+    record FileAnalysisItem(
+            @Schema(description = "Chemin absolu du fichier") String filepath,
+            @Schema(description = "Nom du fichier (sans chemin)") String filename,
+            @Schema(description = "Tags actuellement présents dans le fichier (clé → valeur)") Map<String, String> currentTags,
+            @Schema(description = "Liste des tags absents ou vides (artist, title, album, genre, bpm, key…)") List<String> missingTags
+    ) {}
 
+    @Operation(
+        summary = "Analyser les tags d'une liste de fichiers",
+        description = "Lit les tags ID3/Vorbis actuels de chaque fichier et détecte les champs manquants. Exécuté en parallèle (4 threads max). Les fichiers illisibles sont silencieusement ignorés."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Liste des analyses — un item par fichier lisible")
+    })
     @PostMapping("/analyze")
     List<FileAnalysisItem> analyze(@RequestBody AnalyzeRequest request) {
         if (request.filePaths() == null || request.filePaths().isEmpty()) {
@@ -92,14 +123,28 @@ class FileBrowserController {
                 .toList();
     }
 
-    record EnrichRequest(List<String> filePaths) {}
+    @Schema(description = "Requête d'enrichissement via Soundcharts")
+    record EnrichRequest(
+            @Schema(description = "Chemins absolus des fichiers audio à enrichir") List<String> filePaths
+    ) {}
 
-    record FileEnrichItem(String filepath,
-                          String filename,
-                          String status,
-                          String message,
-                          EnrichedTrackMetadata metadata) {}
+    @Schema(description = "Résultat d'enrichissement d'un fichier")
+    record FileEnrichItem(
+            @Schema(description = "Chemin absolu du fichier") String filepath,
+            @Schema(description = "Nom du fichier (sans chemin)") String filename,
+            @Schema(description = "Statut de l'enrichissement : SUCCESS, NOT_FOUND, ERROR") String status,
+            @Schema(description = "Message d'erreur si status ≠ SUCCESS", nullable = true) String message,
+            @Schema(description = "Métadonnées enrichies depuis Soundcharts (null si status ≠ SUCCESS)", nullable = true)
+            EnrichedTrackMetadata metadata
+    ) {}
 
+    @Operation(
+        summary = "Enrichir les métadonnées via Soundcharts",
+        description = "Interroge l'API Soundcharts pour chaque fichier et retourne les métadonnées disponibles (genres, BPM, tonalité, label, pays, popularité, ISRC…). L'artiste et le titre sont extraits des tags ID3 existants, ou déduits du nom de fichier ('Artiste - Titre.ext'). Exécuté en parallèle (4 threads max)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Liste des résultats — status SUCCESS / NOT_FOUND / ERROR par fichier")
+    })
     @PostMapping("/enrich")
     List<FileEnrichItem> enrich(@RequestBody EnrichRequest request) {
         if (request.filePaths() == null || request.filePaths().isEmpty()) {

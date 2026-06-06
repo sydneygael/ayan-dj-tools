@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ayan DJ Tools — API Reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Open Sans', system-ui, sans-serif; }
+
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: 52px;
+      background: #6db33f;
+      display: flex; align-items: center;
+      padding: 0 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+    .top-bar .brand { font-weight: 700; font-size: 15px; color: #fff; }
+    .top-bar .sep   { color: rgba(255,255,255,.4); margin: 0 12px; }
+    .top-bar .page  { color: rgba(255,255,255,.85); font-size: 14px; }
+    .top-bar nav    { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+    .top-bar nav a  {
+      color: rgba(255,255,255,.85); text-decoration: none;
+      font-size: 13px; padding: 6px 12px; border-radius: 4px;
+      transition: background .15s;
+    }
+    .top-bar nav a:hover { background: rgba(255,255,255,.15); color: #fff; }
+    .top-bar nav a.btn-outline { border: 1px solid rgba(255,255,255,.5); }
+
+    #redoc-container { margin-top: 52px; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="brand">Ayan DJ Tools</span>
+  <span class="sep">/</span>
+  <span class="page">API Reference</span>
+  <nav>
+    <a href="/docs/index.html">← Documentation</a>
+    <a href="/swagger-ui" class="btn-outline">Swagger UI</a>
+    <a href="/api-docs">OpenAPI JSON</a>
+  </nav>
+</div>
+
+<div id="redoc-container"></div>
+
+<script>
+  // Redoc theme matching the Spring-green design system
+  const theme = {
+    colors: {
+      primary:       { main: '#6db33f' },
+      success:       { main: '#6db33f' },
+      warning:       { main: '#ffc107' },
+      error:         { main: '#e91e63' },
+      http: {
+        get:    '#2e7d32',
+        post:   '#bf360c',
+        put:    '#1565c0',
+        delete: '#880e4f',
+        patch:  '#4a148c',
+      },
+    },
+    sidebar: {
+      width:            '270px',
+      backgroundColor:  '#1e2433',
+      textColor:        '#c5cad7',
+      activeTextColor:  '#6db33f',
+      groupItems: { activeBackgroundColor: 'rgba(109,179,63,0.1)' },
+    },
+    rightPanel: {
+      backgroundColor: '#1e2433',
+      textColor:       '#cdd6f4',
+    },
+    codeBlock: {
+      backgroundColor: '#161b27',
+    },
+    typography: {
+      fontSize:          '14px',
+      lineHeight:        '1.65',
+      fontWeightRegular: '400',
+      fontWeightBold:    '700',
+      fontFamily:        '"Open Sans", system-ui, sans-serif',
+      headings: {
+        fontFamily: '"Open Sans", system-ui, sans-serif',
+        fontWeight: '700',
+      },
+      code: {
+        fontFamily:  '"Fira Code", "Cascadia Code", monospace',
+        fontSize:    '13px',
+        lineHeight:  '1.6',
+        color:       '#cdd6f4',
+        backgroundColor: '#161b27',
+        wrap:        true,
+      },
+      links: { color: '#6db33f' },
+    },
+    schema: {
+      requirePropsFirst: true,
+      defaultDetailsWidth: '75%',
+      typeNameColor:  '#6db33f',
+      typeTitleColor: '#6db33f',
+      nestingSpacing: '1rem',
+      labelsTextSize: '0.85em',
+    },
+    logo: { gutter: '12px' },
+    fab: { backgroundColor: '#6db33f', color: '#fff' },
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    Redoc.init(
+      '/api-docs',
+      {
+        theme,
+        expandResponses:      '200,201',
+        requiredPropsFirst:   true,
+        sortPropsAlphabetically: false,
+        hideDownloadButton:   false,
+        disableSearch:        false,
+        showExtensions:       false,
+        noAutoAuth:           false,
+        pathInMiddlePanel:    false,
+        scrollYOffset:        52,   // compense la top-bar fixe
+        nativeScrollbars:     false,
+        untrustedSpec:        false,
+      },
+      document.getElementById('redoc-container')
+    );
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js"></script>
+
+</body>
+</html>

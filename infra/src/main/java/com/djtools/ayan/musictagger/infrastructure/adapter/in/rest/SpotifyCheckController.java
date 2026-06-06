@@ -2,6 +2,10 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.in.rest;
 
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyApiClient;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify.SpotifyTokenService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/spotify")
-@Tag(name = "Spotify", description = "Diagnostic de l'intégration Spotify")
+@Tag(name = "Spotify", description = "Diagnostic de connectivité et quota de l'API Spotify")
 class SpotifyCheckController {
 
     private static final Logger log = LoggerFactory.getLogger(SpotifyCheckController.class);
@@ -33,22 +37,36 @@ class SpotifyCheckController {
         this.apiClient    = apiClient;
     }
 
-    record EndpointStatus(String endpoint, boolean ok, String detail) {}
-
-    record SpotifyCheckReport(
-            boolean tokenOk,
-            String  tokenDetail,
-            EndpointStatus search,
-            EndpointStatus audioFeatures,
-            EndpointStatus artist,
-            String  summary
+    @Schema(description = "Résultat de test d'un endpoint Spotify")
+    record EndpointStatus(
+            @Schema(description = "Endpoint testé", example = "GET /search") String endpoint,
+            @Schema(description = "true si l'appel a réussi (HTTP 2xx)") boolean ok,
+            @Schema(description = "Détail du résultat ou message d'erreur") String detail
     ) {}
 
+    @Schema(description = "Rapport de santé de l'intégration Spotify")
+    record SpotifyCheckReport(
+            @Schema(description = "true si un token OAuth2 a pu être obtenu") boolean tokenOk,
+            @Schema(description = "Détail de l'obtention du token") String tokenDetail,
+            @Schema(description = "Statut de l'endpoint GET /search") EndpointStatus search,
+            @Schema(description = "Statut de GET /audio-features/{id} (peut être 403 sans Extended Quota Mode depuis nov. 2024)")
+            EndpointStatus audioFeatures,
+            @Schema(description = "Statut de l'endpoint GET /artists/{id}") EndpointStatus artist,
+            @Schema(description = "Résumé lisible de la santé globale de l'intégration") String summary
+    ) {}
+
+    @Operation(
+        summary = "Diagnostic de connectivité Spotify",
+        description = "Teste séquentiellement : (1) obtention du token OAuth2 client-credentials, (2) endpoint `/search`, (3) `/audio-features/{id}`, (4) `/artists/{id}`. L'endpoint `audio-features` peut retourner 403 pour les apps sans Extended Quota Mode (comportement normal depuis novembre 2024 — BPM/clé non disponibles via Spotify dans ce cas)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Rapport de santé complet — tokenOk + statut de chaque endpoint")
+    })
     @GetMapping("/check")
     SpotifyCheckReport check() {
         log.info("Running Spotify API connectivity check…");
 
-        // ── Token ───────────────────────────────��────────────────────────────
+        // ── Token ────────────────────────────────────────────────────────────
         boolean tokenOk;
         String  tokenDetail;
         try {

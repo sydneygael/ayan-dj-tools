@@ -105,6 +105,11 @@ public class OpenApiConfig {
                 .addTagsItem(new Tag().name("Plan").description("Gestion des plans de tagging (PLAN / MANUEL / AUTO)"))
                 .addTagsItem(new Tag().name("Tags").description("Application directe de tags sur fichiers audio"))
                 .addTagsItem(new Tag().name("RAG").description("Recherche sémantique par similarité (Vector Store Qdrant)"))
-                .addTagsItem(new Tag().name("Stats").description("Statistiques de la collection et de l'activité"));
+                .addTagsItem(new Tag().name("Stats").description("Statistiques de la collection et de l'activité"))
+                .addTagsItem(new Tag().name("Library").description("Bibliothèque des fichiers audio scannés (persistance PostgreSQL)"))
+                .addTagsItem(new Tag().name("Files").description("Navigation système de fichiers, analyse et enrichissement de fichiers audio"))
+                .addTagsItem(new Tag().name("Playlist").description("Génération de playlists (loop-mixing, harmonique Camelot, thématique) et export M3U"))
+                .addTagsItem(new Tag().name("Settings").description("Configuration des clés API tierces (Soundcharts, Spotify, Tavily)"))
+                .addTagsItem(new Tag().name("Spotify").description("Diagnostic de connectivité et quota de l'API Spotify"));
     }
 }

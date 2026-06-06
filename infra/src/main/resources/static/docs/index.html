@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ayan DJ Tools — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --green:        #6db33f;
+      --green-dark:   #5a9432;
+      --green-light:  #f0f7e9;
+      --sidebar-bg:   #1e2433;
+      --sidebar-text: #c5cad7;
+      --header-h:     52px;
+      --sidebar-w:    255px;
+      --text:         #2c2c2c;
+      --text-muted:   #5a5a5a;
+      --border:       #e4e7ed;
+      --code-bg:      #1e2433;
+      --inline-bg:    #f0f4f8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Open Sans', system-ui, sans-serif;
+      color: var(--text);
+      background: #fff;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    .site-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: var(--header-h);
+      background: var(--green);
+      display: flex; align-items: center;
+      padding: 0 20px 0 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+    .site-header .logo-block {
+      width: var(--sidebar-w);
+      padding: 0 20px;
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+      border-right: 1px solid rgba(255,255,255,.2);
+      height: 100%;
+    }
+    .site-header .logo-block svg { flex-shrink: 0; }
+    .site-header .logo-text { font-weight: 700; font-size: 15px; color: #fff; line-height: 1.2; }
+    .site-header .logo-text small { display: block; font-weight: 400; font-size: 11px; opacity: .75; }
+    .site-header nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+    .site-header nav a {
+      color: rgba(255,255,255,.85); text-decoration: none;
+      font-size: 13px; padding: 6px 12px; border-radius: 4px;
+      transition: background .15s, color .15s;
+    }
+    .site-header nav a:hover { background: rgba(255,255,255,.15); color: #fff; }
+    .site-header nav a.btn-outline {
+      border: 1px solid rgba(255,255,255,.5);
+      margin-left: 4px;
+    }
+
+    /* ── Layout ──────────────────────────────── */
+    .layout {
+      display: flex;
+      margin-top: var(--header-h);
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    /* ── Sidebar ─────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 0 40px;
+      scrollbar-width: thin;
+      scrollbar-color: #3a4455 transparent;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #3a4455; border-radius: 2px; }
+
+    .nav-group { margin-bottom: 6px; }
+    .nav-label {
+      color: #6b7685;
+      font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 12px 18px 4px;
+    }
+    .sidebar a {
+      display: block;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 5px 18px 5px 22px;
+      border-left: 3px solid transparent;
+      transition: all .12s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sidebar a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .sidebar a.active {
+      color: var(--green);
+      border-left-color: var(--green);
+      background: rgba(109,179,63,.1);
+    }
+    .sidebar .nav-sep {
+      margin: 10px 18px;
+      border: none; border-top: 1px solid #2e3647;
+    }
+    .sidebar a.ext::after { content: " ↗"; font-size: 10px; opacity: .5; }
+
+    /* ── Content ─────────────────────────────── */
+    .content {
+      flex: 1;
+      min-width: 0;
+      padding: 52px 64px 80px;
+      max-width: 860px;
+    }
+
+    /* ── Typography ──────────────────────────── */
+    h1 {
+      font-size: 34px; font-weight: 700; line-height: 1.2;
+      color: #1a1f2e; margin-bottom: 14px;
+    }
+    h2 {
+      font-size: 22px; font-weight: 700; color: #1a1f2e;
+      margin: 52px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--green);
+    }
+    h3 {
+      font-size: 16px; font-weight: 700; color: #1a1f2e;
+      margin: 28px 0 10px;
+    }
+    p { margin-bottom: 14px; color: var(--text-muted); }
+    p strong, li strong { color: var(--text); }
+    ul, ol { padding-left: 22px; margin-bottom: 14px; }
+    li { margin-bottom: 4px; color: var(--text-muted); }
+    section { margin-bottom: 20px; }
+
+    /* ── Code ────────────────────────────────── */
+    pre {
+      background: var(--code-bg);
+      border-radius: 6px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 14px 0;
+      border-left: 3px solid var(--green);
+    }
+    pre code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 13px; line-height: 1.65;
+      color: #cdd6f4;
+      background: none; padding: 0; border-radius: 0;
+    }
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      background: var(--inline-bg);
+      color: #c0392b;
+      padding: 1px 5px; border-radius: 3px;
+    }
+    /* syntax colouring in pre blocks */
+    .kw  { color: #cba6f7; }
+    .str { color: #a6e3a1; }
+    .cmt { color: #585b70; font-style: italic; }
+    .num { color: #fab387; }
+    .hl  { color: #6db33f; font-weight: 600; }
+
+    /* ── Tables ──────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 14px 0 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      background: #f5f7fb; color: #1a1f2e;
+      font-weight: 700; font-size: 12px; text-transform: uppercase;
+      letter-spacing: .5px; padding: 9px 14px; text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+
+    /* ── Badges ──────────────────────────────── */
+    .badge {
+      display: inline-block; padding: 2px 7px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: .3px;
+    }
+    .get    { background: #e8f5e9; color: #2e7d32; }
+    .post   { background: #fff3e0; color: #bf360c; }
+    .put    { background: #e3f2fd; color: #1565c0; }
+    .delete { background: #fce4ec; color: #880e4f; }
+    .mode-plan   { background: #e3f2fd; color: #1565c0; }
+    .mode-manual { background: #fff3e0; color: #e65100; }
+    .mode-apply  { background: #e8f5e9; color: #2e7d32; }
+
+    /* ── Callouts ────────────────────────────── */
+    .callout {
+      display: flex; gap: 12px;
+      padding: 14px 18px; border-radius: 6px;
+      margin: 16px 0; font-size: 13.5px;
+    }
+    .callout-icon { flex-shrink: 0; margin-top: 1px; font-size: 16px; }
+    .callout.tip    { background: var(--green-light);  border-left: 4px solid var(--green);  }
+    .callout.info   { background: #e3f2fd; border-left: 4px solid #2196f3; }
+    .callout.warn   { background: #fff8e1; border-left: 4px solid #ffc107; }
+    .callout.danger { background: #fce4ec; border-left: 4px solid #e91e63; }
+    .callout p { margin: 0; color: var(--text); }
+    .callout p + p { margin-top: 6px; }
+
+    /* ── CTA buttons ─────────────────────────── */
+    .cta-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 24px 0; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 22px; border-radius: 5px;
+      font-weight: 600; font-size: 13.5px; text-decoration: none;
+      transition: all .15s;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: var(--green-dark); }
+    .btn-outline { background: #fff; color: var(--green); border: 2px solid var(--green); }
+    .btn-outline:hover { background: var(--green-light); }
+    .btn-ghost  { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); }
+
+    /* ── Feature grid ────────────────────────── */
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px; margin: 16px 0;
+    }
+    .feature-card {
+      border: 1px solid var(--border); border-radius: 8px; padding: 18px;
+      border-top: 3px solid var(--green);
+    }
+    .feature-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p  { font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.5; }
+
+    /* ── Architecture diagram ────────────────── */
+    .arch {
+      background: var(--code-bg); border-radius: 8px;
+      padding: 22px 24px; overflow-x: auto;
+      font-family: 'Fira Code', monospace; font-size: 12.5px;
+      line-height: 2; color: #a0aec0;
+    }
+
+    /* ── Env var key ─────────────────────────── */
+    .env { font-family: 'Fira Code', monospace; font-size: 12px; color: var(--green); font-weight: 600; }
+
+    /* ── Status state pill ───────────────────── */
+    .state { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+    .s-pending  { background: #fff8e1; color: #f57f17; }
+    .s-approved { background: #e3f2fd; color: #1565c0; }
+    .s-applied  { background: #e8f5e9; color: #2e7d32; }
+    .s-rejected { background: #fce4ec; color: #880e4f; }
+    .s-error    { background: #fbe9e7; color: #bf360c; }
+
+    /* ── Mermaid diagrams ────────────────────── */
+    .mermaid-wrap {
+      background: #f8fafc; border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px 16px;
+      margin: 16px 0; overflow-x: auto;
+      display: flex; justify-content: center;
+    }
+    .mermaid-wrap .mermaid { max-width: 100%; }
+    /* override Mermaid's default white svg bg */
+    .mermaid svg { border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════════ -->
+<header class="site-header">
+  <div class="logo-block">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="14" fill="rgba(255,255,255,0.15)"/>
+      <path d="M9 20 L14 8 L19 20" stroke="white" stroke-width="2" stroke-linejoin="round" fill="none"/>
+      <path d="M10.5 16.5 L17.5 16.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="14" cy="14" r="2.5" fill="white" opacity="0.6"/>
+    </svg>
+    <div class="logo-text">Ayan DJ Tools<small>Developer Documentation</small></div>
+  </div>
+  <nav>
+    <a href="/docs/index.html">Overview</a>
+    <a href="/docs/api-reference.html">API Reference</a>
+    <a href="/swagger-ui" class="btn-outline">Swagger UI ↗</a>
+  </nav>
+</header>
+
+<!-- ═══════════════════════════ LAYOUT ═══════════════════════════════ -->
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="nav-group">
+      <div class="nav-label">Introduction</div>
+      <a href="#overview" class="active">Vue d'ensemble</a>
+      <a href="#features">Fonctionnalités</a>
+      <a href="#architecture">Architecture</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Démarrage</div>
+      <a href="#prerequisites">Prérequis</a>
+      <a href="#quickstart">Démarrage rapide</a>
+      <a href="#modes">Modes d'opération</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">API — Modules</div>
+      <a href="#agent">Agent IA</a>
+      <a href="#plan">Plans de tagging</a>
+      <a href="#tags">Tags directs</a>
+      <a href="#library">Bibliothèque</a>
+      <a href="#files">Fichiers</a>
+      <a href="#playlist">Playlists</a>
+      <a href="#rag">RAG / Similarité</a>
+      <a href="#stats">Statistiques</a>
+      <a href="#settings">Clés API</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Référence</div>
+      <a href="#env">Variables d'env.</a>
+      <a href="#ai-stack">Stack IA</a>
+      <a href="#security">Sécurité</a>
+    </div>
+    <hr class="nav-sep"/>
+    <div class="nav-group">
+      <a href="/docs/api-reference.html" class="ext">API Reference (Redoc)</a>
+      <a href="/swagger-ui" class="ext">Swagger UI</a>
+      <a href="/api-docs" class="ext">OpenAPI JSON</a>
+    </div>
+  </nav>
+
+  <!-- ── Main content ── -->
+  <main class="content">
+
+    <!-- ════════════ OVERVIEW ════════════ -->
+    <section id="overview">
+      <h1>Ayan DJ Tools</h1>
+      <p>
+        <strong>Agent IA d'enrichissement de tags audio pour DJs.</strong>
+        Ayan scanne vos fichiers audio, détecte les tags manquants, et les enrichit
+        automatiquement via <strong>Soundcharts</strong>, <strong>Spotify</strong>
+        et un modèle de langage local via <strong>Ollama</strong> (<code>llama3.1:8b</code> par défaut).
+        Aucune donnée ne quitte votre machine.
+      </p>
+
+      <div class="cta-row">
+        <a href="/docs/api-reference.html" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8 12h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+          API Reference
+        </a>
+        <a href="/swagger-ui" class="btn btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 14H5V7h14v11z"/></svg>
+          Tester avec Swagger UI
+        </a>
+        <a href="/api-docs" class="btn btn-outline">OpenAPI JSON</a>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <p>Le serveur tourne sur le port <code>8000</code> par défaut. Tous les endpoints sont préfixés <code>/api</code>.
+        La documentation interactive est disponible sur <a href="/swagger-ui">/swagger-ui</a>.</p>
+      </div>
+    </section>
+
+    <!-- ════════════ FEATURES ════════════ -->
+    <section id="features">
+      <h2>Fonctionnalités</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>🎵 Scan &amp; Analyse</h4>
+          <p>Lecture des tags ID3v2.4, Vorbis (FLAC/OGG), AIFF, M4A. Détection automatique des champs manquants.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📡 Enrichissement API</h4>
+          <p>Soundcharts (source primaire) + Spotify fallback. Genres, BPM, tonalité, ISRC, label, popularité.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🤖 Agent IA local</h4>
+          <p>LangChain4j 0.36.0 + Ollama (<code>llama3.1:8b</code> par défaut). 6 assistants spécialisés. Mémoire Redis (TTL 24h).</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔍 RAG / Similarité</h4>
+          <p>Vector store Qdrant. Embeddings <code>nomic-embed-text</code>. Recherche cosinus (seuil 0.7).</p>
+        </div>
+        <div class="feature-card">
+          <h4>🎧 Génération de playlists</h4>
+          <p>Loop-mixing, harmonique (Camelot Wheel), thématique (arc narratif RAG). Export M3U8.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔒 100 % local &amp; privé</h4>
+          <p>Aucune donnée transmise au cloud. Fonctionne hors-ligne (sauf enrichissement API tiers).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════ ARCHITECTURE ════════════ -->
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p>
+        Architecture <strong>hexagonale (Ports &amp; Adapters) + DDD</strong>, structurée en
+        <strong>2 modules Gradle</strong> pour enforcer la règle de dépendance à la compilation :
+        <code>infra</code> → <code>domain</code>. Le module <code>domain</code> est un pur
+        <code>java-library</code> sans aucune dépendance Spring ou framework.
+      </p>
+
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart LR
+    subgraph EXT["Services externes"]
+        SC("🎵 Soundcharts API")
+        SPO("🎧 Spotify API")
+        OLL("🤖 Ollama\nllama3.1:8b · nomic-embed-text")
+        QDR("🔍 Qdrant\nvector store")
+        RED("💾 Redis\nconversations · plans")
+        PGS("🗄️ PostgreSQL\nlibrary · metadata cache")
+    end
+
+    subgraph DOMAIN["domain — java-library  ❌ zéro Spring"]
+        direction TB
+        UC["Use Cases\nScanMusic · CreatePlan\nExecutePlan"]
+        PORTS["Ports\nAudioFileReader · AudioFileWriter\nMusicMetadataProvider · VectorStorePort\nPlanRepository · ScannedTrackRepository"]
+        MODEL["Domain Model\nTaggingPlan · TagOperation\nMusicFileInfo · EnrichedTrackMetadata\nAudioFeatures · SimilarTrackResult"]
+        UC --> PORTS
+        UC --> MODEL
+    end
+
+    subgraph INFRA["infra — Spring Boot 4.0.6"]
+        direction TB
+        REST["11 @RestController"]
+        MCP["6 fichiers @Tool\n(FileOps·Plan·Search·Playlist\nDiscovery·AyanMusicTools)"]
+        ADPOUT["Adapters OUT\nJAudioTaggerAdapter\nSpotifyApiClient\nQdrantVectorStoreAdapter\nRedis / PostgreSQL repos"]
+    end
+
+    REST --> UC
+    MCP --> UC
+    PORTS --> ADPOUT
+    ADPOUT --> SC
+    ADPOUT --> SPO
+    ADPOUT --> OLL
+    ADPOUT --> QDR
+    ADPOUT --> RED
+    ADPOUT --> PGS
+        </pre>
+      </div>
+
+      <h3>Stack technique</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Couche</th><th>Technologie</th><th>Version</th></tr></thead>
+          <tbody>
+            <tr><td>Langage / Runtime</td><td>Java</td><td>25</td></tr>
+            <tr><td>Framework</td><td>Spring Boot</td><td>4.0.6</td></tr>
+            <tr><td>Build</td><td>Gradle Kotlin DSL</td><td>9.2</td></tr>
+            <tr><td>IA Agent</td><td>LangChain4j + Ollama</td><td>LangChain4j 0.36.0, modèle <code>llama3.1:8b</code> par défaut</td></tr>
+            <tr><td>Embeddings</td><td>nomic-embed-text (Ollama)</td><td>768 dimensions</td></tr>
+            <tr><td>Vector Store</td><td>Qdrant</td><td>collection <code>dj-tracks</code>, gRPC 6334</td></tr>
+            <tr><td>Audio tags</td><td>JAudiotagger</td><td>3.0.1 — MP3 · FLAC · WAV · AIFF · M4A · OGG</td></tr>
+            <tr><td>Base de données</td><td>PostgreSQL</td><td>16-alpine — <code>scanned_tracks</code>, <code>enriched_track_metadata</code></td></tr>
+            <tr><td>Cache &amp; mémoire</td><td>Redis</td><td>7-alpine — conversations · plans · historique</td></tr>
+            <tr><td>API metadata</td><td>Soundcharts + Spotify</td><td><code>@HttpExchange</code> déclaratif</td></tr>
+            <tr><td>Documentation API</td><td>SpringDoc OpenAPI</td><td>2.8.9</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════ PREREQUISITES ════════════ -->
+    <section id="prerequisites">
+      <h2>Prérequis</h2>
+      <ul>
+        <li><strong>Java 25+</strong> — <code>java -version</code></li>
+        <li><strong>Docker &amp; Docker Compose</strong> — PostgreSQL, Redis, Qdrant, Ollama</li>
+        <li><strong>Flutter 3.22+</strong> — optionnel, pour le frontend desktop</li>
+        <li><strong>~4 Go de RAM libre</strong> — pour le modèle Ollama (<code>llama3.1:8b</code>)</li>
+      </ul>
+    </section>
+
+    <!-- ════════════ QUICKSTART ════════════ -->
+    <section id="quickstart">
+      <h2>Démarrage rapide</h2>
+
+      <h3>1 — Lancer les services</h3>
+      <pre><code>docker-compose up -d</code></pre>
+
+      <h3>2 — Télécharger les modèles Ollama</h3>
+      <pre><code><span class="cmt"># Modèle de chat</span>
+docker exec -it dj-tagger-ollama ollama pull llama3.1:8b
+
+<span class="cmt"># Modèle d'embeddings (RAG)</span>
+docker exec -it dj-tagger-ollama ollama pull nomic-embed-text</code></pre>
+
+      <h3>3 — Lancer le backend</h3>
+      <pre><code>./gradlew infra:bootRun</code></pre>
+
+      <p>Le serveur démarre sur <strong>http://localhost:8000</strong>.</p>
+
+      <h3>4 — Vérifier</h3>
+      <pre><code><span class="cmt"># Santé de l'application</span>
+curl http://localhost:8000/actuator/health
+
+<span class="cmt"># Test de la connectivité Spotify</span>
+curl http://localhost:8000/api/spotify/check</code></pre>
+
+      <h3>Tests</h3>
+      <pre><code><span class="cmt"># Tous les tests</span>
+./gradlew test
+
+<span class="cmt"># Module domain uniquement (Java pur, rapide)</span>
+./gradlew domain:test
+
+<span class="cmt"># Tests d'intégration infra (Testcontainers : Redis, PostgreSQL, Qdrant)</span>
+./gradlew infra:test</code></pre>
+
+      <h3>Frontend Flutter (optionnel)</h3>
+      <pre><code>cd ayan_dj_tools_flutter
+flutter pub get
+flutter run -d windows</code></pre>
+    </section>
+
+    <!-- ════════════ MODES ════════════ -->
+    <section id="modes">
+      <h2>Modes d'opération</h2>
+      <p>Chaque plan de tagging est créé dans un mode qui détermine le comportement d'exécution.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mode</th><th>Comportement</th><th>Cas d'usage</th><th>Endpoint clé</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge mode-plan">PLAN</span></td>
+              <td>Review batch — l'agent propose toutes les opérations, l'utilisateur approuve globalement puis exécute</td>
+              <td>Import massif d'une nouvelle bibliothèque</td>
+              <td><code>POST /api/plan/{id}/execute</code></td>
+            </tr>
+            <tr>
+              <td><span class="badge mode-manual">MANUAL</span></td>
+              <td>Fichier par fichier — confirmation explicite à chaque étape. Le tag n'est écrit qu'après confirmation.</td>
+              <td>Curation fine d'une sélection de tracks</td>
+              <td><code>POST /api/plan/{id}/operations/{i}/confirm</code></td>
+            </tr>
+            <tr>
+              <td><span class="badge mode-apply">APPLY</span></td>
+              <td>Automatique — toutes les opérations s'exécutent en arrière-plan sans intervention. HTTP 202 immédiat.</td>
+              <td>Enrichissement non-critique en batch</td>
+              <td><code>POST /api/plan/{id}/auto-execute</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════ AGENT ════════════ -->
+    <section id="agent">
+      <h2>Agent IA — <code>/api/agent</code></h2>
+      <p>
+        Agent conversationnel propulsé par <strong>LangChain4j 0.36.0</strong> + Ollama (<code>llama3.1:8b</code> par défaut, configurable).
+        L'architecture utilise <strong>6 assistants spécialisés</strong> : un classificateur d'intention rapide route chaque message vers l'assistant approprié (FICHIERS · PLANIFICATION · RECHERCHE · PLAYLIST · DECOUVERTE · GENERAL), chacun avec son jeu de tools.
+        La mémoire est gérée via <code>MessageWindowChatMemory</code> stocké dans Redis (TTL 24h, fenêtre 20 messages).
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge post">POST</span></td>
+              <td><code>/api/agent/chat</code></td>
+              <td>Chat synchrone — réponse complète + liste des @Tool calls déclenchés</td>
+            </tr>
+            <tr>
+              <td><span class="badge post">POST</span></td>
+              <td><code>/api/agent/chat/stream</code></td>
+              <td>Chat SSE (<code>text/event-stream</code>) — fragments en temps réel</td>
+            </tr>
+            <tr>
+              <td><span class="badge get">GET</span></td>
+              <td><code>/api/agent/conversations/{id}/history</code></td>
+              <td>Historique Redis d'une conversation (user + assistant)</td>
+            </tr>
+            <tr>
+              <td><span class="badge delete">DELETE</span></td>
+              <td><code>/api/agent/conversations/{id}</code></td>
+              <td>Effacer l'historique d'une conversation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Flux d'un appel avec tool calls</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+sequenceDiagram
+    actor U as Utilisateur
+    participant API as REST API
+    participant A as Agent LangChain4j
+    participant T as @Tool Functions
+    participant SC as Soundcharts
+    participant Q as Qdrant
+    participant R as Redis
+
+    U->>API: POST /api/agent/chat
+    API->>R: charger historique (conversationId)
+    API->>A: chatWithToolCalls(message, history)
+
+    A->>T: enrichWithSpotify("Daft Punk", "Around the World")
+    T->>SC: GET /song/search/{term}
+    SC-->>T: metadata (BPM, key, genres, ISRC…)
+    T->>Q: storeVector(track embedding)
+    T-->>A: EnrichedTrackMetadata
+
+    A->>T: createPlanForFiles(["/music/track.mp3"])
+    T-->>A: TaggingPlan { id, operations[] }
+
+    A-->>API: reply + toolCalls[]
+    API->>R: sauvegarder historique (TTL 24h)
+    API-->>U: ChatResponse { reply, conversationId, toolCalls }
+        </pre>
+      </div>
+
+      <h3>Exemple — chat avec tool calls</h3>
+      <pre><code><span class="kw">POST</span> /api/agent/chat
+Content-Type: application/json
+
+{
+  <span class="str">"message"</span>:        <span class="str">"Enrichis ce fichier et génère un plan de tagging"</span>,
+  <span class="str">"conversationId"</span>: <span class="str">"550e8400-e29b-41d4-a716-446655440000"</span>,  <span class="cmt">// omis = nouveau</span>
+  <span class="str">"mode"</span>:           <span class="str">"PLAN"</span>,
+  <span class="str">"filePaths"</span>:      [<span class="str">"/music/Daft Punk - Around the World.mp3"</span>],
+  <span class="str">"currentDir"</span>:     <span class="str">"/music"</span>
+}</code></pre>
+
+      <h3>@Tool functions disponibles</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fonction</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>scanMusicFile</code></td><td>Lit les tags ID3/Vorbis d'un fichier</td></tr>
+            <tr><td><code>detectMissingTags</code></td><td>Retourne la liste des champs absents</td></tr>
+            <tr><td><code>enrichWithSpotify</code></td><td>Enrichissement Soundcharts + auto-vectorisation dans Qdrant</td></tr>
+            <tr><td><code>suggestTagsFromFilename</code></td><td>Déduit artiste/titre depuis le nom de fichier <code>Artiste - Titre.ext</code></td></tr>
+            <tr><td><code>createPlanForFiles</code></td><td>Construit un <code>TaggingPlan</code> complet</td></tr>
+            <tr><td><code>applyTagsPlan</code></td><td>Exécute un plan approuvé</td></tr>
+            <tr><td><code>previewTagUpdate</code></td><td>Diff avant/après sans écriture fichier</td></tr>
+            <tr><td><code>getTaggingHistory</code></td><td>Historique des tags appliqués (Redis, TTL 7j)</td></tr>
+            <tr><td><code>findSimilarTracks</code></td><td>Recherche sémantique Qdrant</td></tr>
+            <tr><td><code>smartSuggestTags</code></td><td>Suggestions combinées Soundcharts + RAG</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <p>Le <code>conversationId</code> (UUID) est généré côté serveur si absent de la requête.
+        Le retourner dans chaque requête suivante maintient le contexte de la conversation.
+        Chaque conversation expire après <strong>24h d'inactivité</strong>.</p>
+      </div>
+    </section>
+
+    <!-- ════════════ PLAN ════════════ -->
+    <section id="plan">
+      <h2>Plans de tagging — <code>/api/plan</code></h2>
+      <p>
+        Un <code>TaggingPlan</code> regroupe N <code>TagOperation</code> (une par fichier audio).
+        Chaque opération suit un cycle de statut.
+      </p>
+
+      <h3>Cycle de vie d'une opération</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+stateDiagram-v2
+    direction LR
+    [*] --> PENDING : opération créée
+    PENDING --> APPROVED : approvePlan\nou confirm approved=true
+    PENDING --> REJECTED : confirm approved=false\n(mode MANUAL)
+    APPROVED --> APPLIED : écriture fichier OK\n(backup → write → commit)
+    APPROVED --> ERROR : erreur I/O\n→ rollback automatique
+    APPLIED --> [*]
+    REJECTED --> [*]
+    ERROR --> [*]
+        </pre>
+      </div>
+
+      <h3>Cycle de vie d'un plan (mode PLAN)</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+sequenceDiagram
+    actor U as Client
+    participant API as POST /api/plan/create
+    participant SVC as PlanManagementService
+    participant SC as Soundcharts API
+    participant REDIS as Redis
+
+    U->>API: { filePaths, mode: PLAN }
+    API->>SVC: createPlan(filePaths)
+    loop pour chaque fichier
+        SVC->>SC: enrich(artist, title)
+        SC-->>SVC: EnrichedTrackMetadata
+    end
+    SVC->>REDIS: save TaggingPlan (TTL 48h)
+    SVC-->>U: TaggingPlan { status: CREATED }
+
+    U->>API: PUT /{id}/approve
+    API-->>U: TaggingPlan { status: READY_FOR_REVIEW }
+
+    U->>API: POST /{id}/execute
+    loop pour chaque opération APPROVED
+        Note over API: backup → writeTags → commit
+    end
+    API-->>U: BatchApplyResult { applied, errors, durationMs }
+        </pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/plan/create</code></td><td>Créer un plan (scan + enrich + build)</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/plan/{id}</code></td><td>Récupérer un plan</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/plan/{id}/progress</code></td><td>Compteurs par statut (PENDING / APPROVED / APPLIED…)</td></tr>
+            <tr><td><span class="badge put">PUT</span></td><td><code>/api/plan/{id}/approve</code></td><td>Approuver toutes les opérations PENDING</td></tr>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/plan/{id}/execute</code></td><td>Exécuter le plan (mode PLAN)</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/plan/{id}/preview</code></td><td>Diff avant/après — lecture seule</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/plan/{id}/history</code></td><td>Historique d'exécution</td></tr>
+            <tr><td><span class="badge delete">DELETE</span></td><td><code>/api/plan/{id}</code></td><td>Supprimer le plan de Redis</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/plan/{id}/current</code></td><td>Opération courante (mode MANUAL)</td></tr>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/plan/{id}/operations/{i}/confirm?approved=true</code></td><td>Confirmer/rejeter (mode MANUAL)</td></tr>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/plan/{id}/auto-execute</code></td><td>Lancer en async — HTTP 202 (mode APPLY)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <p>Les plans sont stockés dans Redis avec un <strong>TTL de 48h</strong>. Passé ce délai, l'identifiant retourne HTTP 404.</p>
+      </div>
+    </section>
+
+    <!-- ════════════ TAGS ════════════ -->
+    <section id="tags">
+      <h2>Tags directs — <code>/api/tags</code></h2>
+      <p>Écriture de tags sur un fichier sans créer de plan. Backup automatique avant chaque écriture, rollback automatique en cas d'erreur.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/tags/apply</code></td><td>Écrire les tags sur le fichier (avec backup)</td></tr>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/tags/preview</code></td><td>Diff avant/après — sans modifier le fichier</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Tags reconnus</h3>
+      <p>
+        <code>artist</code> · <code>title</code> · <code>album</code> · <code>genre</code> ·
+        <code>bpm</code> · <code>key</code> · <code>year</code> · <code>comment</code> ·
+        <code>label</code> · <code>isrc</code>
+      </p>
+
+      <pre><code><span class="kw">POST</span> /api/tags/apply
+{
+  <span class="str">"filepath"</span>: <span class="str">"/music/Daft Punk - Around the World.mp3"</span>,
+  <span class="str">"tags"</span>: {
+    <span class="str">"artist"</span>: <span class="str">"Daft Punk"</span>,
+    <span class="str">"bpm"</span>:    <span class="str">"121"</span>,
+    <span class="str">"key"</span>:    <span class="str">"Am"</span>
+  }
+}</code></pre>
+    </section>
+
+    <!-- ════════════ LIBRARY ════════════ -->
+    <section id="library">
+      <h2>Bibliothèque — <code>/api/library</code></h2>
+      <p>Accès à la table <code>scanned_tracks</code> (PostgreSQL) — index des fichiers audio traités.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/library</code></td><td>Lister tous les fichiers scannés</td></tr>
+            <tr><td><span class="badge delete">DELETE</span></td><td><code>/api/library?filepath=…</code></td><td>Retirer un fichier de l'index (le fichier disque n'est pas touché)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════ FILES ════════════ -->
+    <section id="files">
+      <h2>Navigation fichiers — <code>/api/files</code></h2>
+      <p>Navigation dans le système de fichiers du serveur, analyse de tags, enrichissement batch.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/files/browse?path=&amp;page=0&amp;size=20</code></td><td>Navigation paginée dans un répertoire (max 50/page)</td></tr>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/files/analyze</code></td><td>Tags actuels + tags manquants — 4 threads en parallèle</td></tr>
+            <tr><td><span class="badge post">POST</span></td><td><code>/api/files/enrich</code></td><td>Enrichissement Soundcharts batch — 4 threads en parallèle</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Flux d'enrichissement d'un fichier</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+    START([🎵 Fichier audio]) --> READ["Lire tags ID3 / Vorbis\nJAudioTaggerAdapter"]
+    READ --> MISSING{"Tags\nmanquants ?"}
+    MISSING -->|Non| DONE(["✅ Tags complets"])
+    MISSING -->|Oui| INFER["Déduire artiste + titre\ndepuis le nom de fichier\n'Artiste - Titre.ext'"]
+    INFER --> SEARCH["Soundcharts API\nGET /song/search/{term}"]
+    SEARCH -->|Trouvé| META["EnrichedTrackMetadata\ngenres · BPM · tonalité\nISRC · label · popularité"]
+    SEARCH -->|Introuvable| SPOTIFY["Spotify fallback\naudio-features + search"]
+    SPOTIFY --> META
+    SEARCH -->|Erreur| ERR(["❌ NOT_FOUND / ERROR"])
+    META --> CACHE["Cache PostgreSQL\nenriched_track_metadata"]
+    META --> VEC["Qdrant vector store\nauto-vectorisation"]
+    META --> PLAN["TaggingPlan\nopérations prêtes"]
+        </pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">🔒</span>
+        <p><strong>Sécurité —</strong> Les chemins contenant <code>..</code> sont rejetés (HTTP 400). Seuls les fichiers explicitement fournis par le client sont traités. Aucun scan récursif autonome côté serveur.</p>
+      </div>
+    </section>
+
+    <!-- ════════════ PLAYLIST ════════════ -->
+    <section id="playlist">
+      <h2>Playlists — <code>/api/playlist</code></h2>
+      <p>Génération intelligente de playlists depuis la bibliothèque vectorisée.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Algorithme</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge post">POST</span></td>
+              <td><code>/api/playlist/generate</code></td>
+              <td>Loop-mixing — technique 3/4, paliers de BPM progressifs</td>
+            </tr>
+            <tr>
+              <td><span class="badge post">POST</span></td>
+              <td><code>/api/playlist/generate-harmonic</code></td>
+              <td>Camelot Wheel — transitions entre tonalités adjacentes compatibles</td>
+            </tr>
+            <tr>
+              <td><span class="badge post">POST</span></td>
+              <td><code>/api/playlist/generate-thematic</code></td>
+              <td>Thème textuel libre → RAG → arc narratif 5 phases (intro · montée · peak · descente · outro)</td>
+            </tr>
+            <tr>
+              <td><span class="badge post">POST</span></td>
+              <td><code>/api/playlist/export-m3u</code></td>
+              <td>Export M3U8 téléchargeable (<code>#EXTM3U</code> + <code>#EXTINF</code>)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Algorithmes de génération</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart LR
+    LIB[("Bibliothèque\nvectorisée\nQdrant")] --> FILTER
+
+    subgraph LOOP["generate — Loop Mixing"]
+        FILTER["Filtre BPM + genre"] --> ORDER["Ordonnancement\ntechnique 3/4\n(paliers progressifs)"]
+    end
+
+    subgraph HARM["generate-harmonic — Camelot Wheel"]
+        FILTER2["Filtre BPM + énergie"] --> CAM["Roue de Camelot\ntonalités adjacentes\ncompatibles"]
+    end
+
+    subgraph THEM["generate-thematic — RAG"]
+        EMBED["Embedding du thème\nnomic-embed-text"] --> SIM["Similarité cosinus\nQdrant top-N"]
+        SIM --> ARC["Arc narratif\nintro → montée → peak\n→ descente → outro"]
+    end
+
+    LIB --> FILTER2
+    LIB --> EMBED
+    ORDER --> M3U["Export M3U8\n#EXTM3U + #EXTINF"]
+    CAM --> M3U
+    ARC --> M3U
+        </pre>
+      </div>
+
+      <h3>Exemple — playlist thématique</h3>
+      <pre><code><span class="kw">POST</span> /api/playlist/generate-thematic
+{
+  <span class="str">"theme"</span>:  <span class="str">"dark industrial techno Berlin underground"</span>,
+  <span class="str">"bpmMin"</span>: <span class="num">130</span>,
+  <span class="str">"bpmMax"</span>: <span class="num">155</span>,
+  <span class="str">"count"</span>:  <span class="num">12</span>
+}</code></pre>
+    </section>
+
+    <!-- ════════════ RAG ════════════ -->
+    <section id="rag">
+      <h2>Recherche sémantique — <code>/api/rag</code></h2>
+      <p>
+        Interrogation du vector store <strong>Qdrant</strong> via embeddings
+        <code>nomic-embed-text</code> (Ollama, 768 dimensions).
+        Similarité cosinus, seuil configurable (défaut <code>0.7</code>).
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge get">GET</span></td>
+              <td><code>/api/rag/similar?query=…&amp;limit=5</code></td>
+              <td>N tracks les plus similaires à la requête libre, triées par score décroissant</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><code><span class="kw">GET</span> /api/rag/similar?query=dark+techno+135bpm+minor+energetic&amp;limit=10</code></pre>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <p>Les tracks sont vectorisées automatiquement lors de l'enrichissement Soundcharts (<code>enrichWithSpotify</code> @Tool).
+        La collection Qdrant doit contenir au moins quelques entrées pour retourner des résultats.</p>
+      </div>
+    </section>
+
+    <!-- ════════════ STATS ════════════ -->
+    <section id="stats">
+      <h2>Statistiques — <code>/api/stats</code></h2>
+      <p>Rapport d'état depuis PostgreSQL (<code>enriched_track_metadata</code>) et Redis (<code>tagging-history:</code>, TTL 7j).</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/stats</code></td><td>Rapport complet</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/stats/collection</code></td><td>Profil : genres, BPM moyen, tonalités dominantes</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/stats/enrichment</code></td><td>Taux de remplissage par champ de tag</td></tr>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/stats/activity?period=month</code></td><td>Timeline d'activité (<code>day</code> · <code>week</code> · <code>month</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════ SETTINGS ════════════ -->
+    <section id="settings">
+      <h2>Clés API — <code>/api/settings/keys</code></h2>
+      <p>
+        Lecture et mise à jour à chaud des credentials tiers, persistés dans Redis (sans TTL).
+        Les champs <code>null</code> ou vides sont ignorés — les clés existantes sont conservées.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Chemin</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge get">GET</span></td><td><code>/api/settings/keys</code></td><td>Statut masqué des clés (4 premiers chars + <code>****</code>). Jamais la valeur en clair.</td></tr>
+            <tr><td><span class="badge put">PUT</span></td><td><code>/api/settings/keys</code></td><td>Mettre à jour — HTTP 204. Invalidate le token Spotify si credentials modifiés.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><code><span class="kw">PUT</span> /api/settings/keys
+{
+  <span class="str">"soundchartsAppId"</span>:  <span class="str">"SA34-API_XXXXXXXX"</span>,
+  <span class="str">"soundchartsApiKey"</span>: <span class="str">"ecdb29da90754c5a"</span>
+}
+<span class="cmt">→ HTTP 204 No Content</span></code></pre>
+    </section>
+
+    <!-- ════════════ ENV VARS ════════════ -->
+    <section id="env">
+      <h2>Variables d'environnement</h2>
+      <p>Toutes les variables ont une valeur par défaut pour le développement local.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Défaut dev</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="env">SOUNDCHARTS_APP_ID</span></td><td><code>SA34-API_EA6FB274</code></td><td>App ID Soundcharts</td></tr>
+            <tr><td><span class="env">SOUNDCHARTS_API_KEY</span></td><td><code>ecdb29da90754c5a</code></td><td>Clé API Soundcharts</td></tr>
+            <tr><td><span class="env">SPOTIFY_CLIENT_ID</span></td><td><em>valeur dev</em></td><td>Client ID OAuth2 Spotify</td></tr>
+            <tr><td><span class="env">SPOTIFY_CLIENT_SECRET</span></td><td><em>valeur dev</em></td><td>Client Secret OAuth2 Spotify</td></tr>
+            <tr><td><span class="env">TAVILY_API_KEY</span></td><td><em>valeur dev</em></td><td>Clé Tavily pour la recherche web de l'agent</td></tr>
+            <tr><td><span class="env">POSTGRES_HOST</span></td><td><code>localhost</code></td><td>Hôte PostgreSQL</td></tr>
+            <tr><td><span class="env">POSTGRES_PORT</span></td><td><code>5432</code></td><td>Port PostgreSQL</td></tr>
+            <tr><td><span class="env">POSTGRES_DB</span></td><td><code>ayan</code></td><td>Nom de la base de données</td></tr>
+            <tr><td><span class="env">POSTGRES_USER</span></td><td><code>ayan</code></td><td>Utilisateur PostgreSQL</td></tr>
+            <tr><td><span class="env">POSTGRES_PASSWORD</span></td><td><code>ayan</code></td><td>Mot de passe PostgreSQL</td></tr>
+            <tr><td><span class="env">OLLAMA_BASE_URL</span></td><td><code>http://localhost:11434</code></td><td>URL du serveur Ollama</td></tr>
+            <tr><td><span class="env">OLLAMA_CHAT_MODEL</span></td><td><code>llama3.1:8b</code></td><td>Modèle de chat (mistral, phi4, gemma3…)</td></tr>
+            <tr><td><span class="env">OLLAMA_EMBEDDING_MODEL</span></td><td><code>nomic-embed-text</code></td><td>Modèle d'embeddings (768 dim)</td></tr>
+            <tr><td><span class="env">QDRANT_HOST</span></td><td><code>localhost</code></td><td>Hôte Qdrant</td></tr>
+            <tr><td><span class="env">QDRANT_PORT</span></td><td><code>6334</code></td><td>Port gRPC Qdrant</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════ AI STACK ════════════ -->
+    <section id="ai-stack">
+      <h2>Stack IA</h2>
+      <p>
+        Tout le traitement IA s'exécute <strong>localement</strong> via Ollama.
+        Aucune donnée (fichiers, tags, chemins) n'est transmise à un service cloud.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Composant</th><th>Modèle</th><th>Rôle</th></tr></thead>
+          <tbody>
+            <tr><td>Agent conversationnel</td><td>LangChain4j 0.36.0 + Ollama (<code>llama3.1:8b</code>)</td><td>6 assistants spécialisés, classification d'intention, orchestration tools</td></tr>
+            <tr><td>Embeddings RAG</td><td><code>nomic-embed-text</code> (Ollama)</td><td>Vectorisation des tracks pour Qdrant (768 dim)</td></tr>
+            <tr><td>Vector Store</td><td>Qdrant</td><td>Recherche sémantique, Camelot Wheel, similarité</td></tr>
+            <tr><td>Enrichissement primaire</td><td>Soundcharts API</td><td>Genres, BPM, tonalité, ISRC, label, popularité officielle</td></tr>
+            <tr><td>Enrichissement secondaire</td><td>Spotify API</td><td>Audio features (si <em>Extended Quota Mode</em> actif)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Changer de modèle Ollama</h3>
+      <pre><code><span class="cmt"># Télécharger un autre modèle</span>
+docker exec -it dj-tagger-ollama ollama pull llama3.2
+
+<span class="cmt"># Via variable d'environnement</span>
+OLLAMA_CHAT_MODEL=llama3.2 ./gradlew infra:bootRun</code></pre>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <p><strong>Streaming SSE —</strong> L'endpoint <code>/api/agent/chat/stream</code> retourne des événements JSON :
+        <code>{"type":"thinking"}</code> (heartbeat) · <code>{"type":"chunk","token":"..."}</code> (fragments, <em>generalAssistant</em> uniquement) ·
+        <code>{"type":"done","reply":"...","intent":"FICHIERS"}</code> · <code>{"type":"error"}</code>.
+        Les assistants avec tools utilisent un virtual thread synchrone avec heartbeats — OllamaStreamingChatModel ne supporte pas les tools en LangChain4j 0.36.</p>
+      </div>
+    </section>
+
+    <!-- ════════════ SECURITY ════════════ -->
+    <section id="security">
+      <h2>Sécurité</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Aspect</th><th>Détail</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Accès fichiers</strong></td>
+              <td>Seuls les chemins fournis explicitement par le client sont traités. Les chemins contenant <code>..</code> sont rejetés (HTTP 400). Aucun scan récursif autonome.</td>
+            </tr>
+            <tr>
+              <td><strong>CORS</strong></td>
+              <td>Toutes origines autorisées (<code>*</code>), <code>allowCredentials: false</code>. Application desktop uniquement — pas d'exposition publique prévue.</td>
+            </tr>
+            <tr>
+              <td><strong>Credentials API</strong></td>
+              <td>Injectés via variables d'environnement ou <code>PUT /api/settings/keys</code>. Jamais retournés en clair dans les réponses API.</td>
+            </tr>
+            <tr>
+              <td><strong>Auth HTTP</strong></td>
+              <td>Aucune — l'application tourne en local uniquement. Aucun token requis pour les endpoints REST.</td>
+            </tr>
+            <tr>
+              <td><strong>Données personnelles</strong></td>
+              <td>Chemins de fichiers et tags traités 100 % localement. Seuls les requêtes vers Soundcharts/Spotify transmettent artiste + titre.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor:        '#e8f5e9',
+      primaryTextColor:    '#1a1f2e',
+      primaryBorderColor:  '#6db33f',
+      lineColor:           '#6db33f',
+      secondaryColor:      '#f5f8ff',
+      tertiaryColor:       '#eef2ff',
+      background:          '#f8fafc',
+      mainBkg:             '#e8f5e9',
+      nodeBorder:          '#6db33f',
+      clusterBkg:          '#f0f4f8',
+      clusterBorder:       '#c5d5e8',
+      titleColor:          '#1a1f2e',
+      edgeLabelBackground: '#ffffff',
+      // sequence diagram
+      actorBkg:            '#e8f5e9',
+      actorBorder:         '#6db33f',
+      actorTextColor:      '#1a1f2e',
+      actorLineColor:      '#6db33f',
+      signalColor:         '#5a9432',
+      signalTextColor:     '#1a1f2e',
+      activationBkgColor:  '#d4edda',
+      activationBorderColor: '#6db33f',
+      noteBkgColor:        '#fff8e1',
+      noteBorderColor:     '#ffc107',
+      noteTextColor:       '#5d4037',
+      // state diagram
+      stateBkg:            '#e8f5e9',
+      stateBorder:         '#6db33f',
+      labelBackgroundColor:'#ffffff',
+      altBackground:       '#f5f8ff',
+    },
+    flowchart:   { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 15 },
+    sequence:    { useMaxWidth: true, mirrorActors: false, boxMargin: 10, messageMargin: 40 },
+    stateDiagram:{ useMaxWidth: true },
+    fontFamily:  '"Open Sans", system-ui, sans-serif',
+    fontSize:    14,
+  });
+</script>
+<script>
+  // Highlight active sidebar link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const links    = document.querySelectorAll('.sidebar a[href^="#"]');
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => {
+          l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+
+  sections.forEach(s => io.observe(s));
+</script>
+</body>
+</html>

@@ -125,35 +125,50 @@ public class AyanMusicTools {
         final var result = musicMetadataProvider.enrich(artist, title);
         if (result instanceof EnrichmentResult.Error err) {
             log.warn("[tool] enrichWithSoundcharts ERROR '{}' – '{}': {}", artist, title, err.message());
-            return new EnrichmentResponse(
-                    "ERROR",
-                    "Erreur lors de l'enrichissement pour « %s – %s » : %s".formatted(artist, title, err.message()),
-                    null);
+            return enrichmentError(artist, title, err.message());
         }
         if (result instanceof EnrichmentResult.NotFound) {
             log.info("[tool] enrichWithSoundcharts NOT_FOUND '{}' – '{}'", artist, title);
-            return new EnrichmentResponse(
-                    "NOT_FOUND",
-                    "Aucun résultat trouvé sur Soundcharts pour « %s – %s ».".formatted(artist, title),
-                    null);
+            return enrichmentNotFound(artist, title);
         }
         final var data = result.data();
+        indexEnrichedTrack(data);
+        log.info("[tool] enrichWithSoundcharts OK '{}' – '{}' | album='{}' genres={} BPM={} key={}",
+                data.artist(), data.title(), data.album(), data.genres(), bpmOf(data), keyOf(data));
+        return enrichmentSuccess(data);
+    }
+
+    /** Indexe le track enrichi dans le vector store et met en cache ses features audio. */
+    private void indexEnrichedTrack(EnrichedTrackMetadata data) {
         vectorizationService.store(data);
         if (data.audioFeatures() != null) {
             audioFeaturesCache.save(data.artist() + " - " + data.title(), data.audioFeatures());
         }
-        log.info("[tool] enrichWithSoundcharts OK '{}' – '{}' | album='{}' genres={} BPM={} key={}",
-                data.artist(), data.title(), data.album(), data.genres(),
-                data.audioFeatures() != null ? data.audioFeatures().bpm() : "—",
-                data.audioFeatures() != null ? data.audioFeatures().fullKey() : "—");
-        return new EnrichmentResponse(
-                "SUCCESS",
-                "Enrichissement réussi : album=%s, genres=%s, BPM=%s, tonalité=%s".formatted(
-                        data.album(),
-                        data.genres(),
-                        data.audioFeatures() != null ? data.audioFeatures().bpm() : "—",
-                        data.audioFeatures() != null ? data.audioFeatures().fullKey() : "—"),
+    }
+
+    private static EnrichmentResponse enrichmentError(String artist, String title, String cause) {
+        return new EnrichmentResponse("ERROR",
+                "Erreur lors de l'enrichissement pour « %s – %s » : %s".formatted(artist, title, cause), null);
+    }
+
+    private static EnrichmentResponse enrichmentNotFound(String artist, String title) {
+        return new EnrichmentResponse("NOT_FOUND",
+                "Aucun résultat trouvé sur Soundcharts pour « %s – %s ».".formatted(artist, title), null);
+    }
+
+    private static EnrichmentResponse enrichmentSuccess(EnrichedTrackMetadata data) {
+        return new EnrichmentResponse("SUCCESS",
+                "Enrichissement réussi : album=%s, genres=%s, BPM=%s, tonalité=%s"
+                        .formatted(data.album(), data.genres(), bpmOf(data), keyOf(data)),
                 data);
+    }
+
+    private static Object bpmOf(EnrichedTrackMetadata data) {
+        return data.audioFeatures() != null ? data.audioFeatures().bpm() : "—";
+    }
+
+    private static Object keyOf(EnrichedTrackMetadata data) {
+        return data.audioFeatures() != null ? data.audioFeatures().fullKey() : "—";
     }
 
     @Tool("Recherche des morceaux similaires dans la collection vectorisée (RAG)")
@@ -220,10 +235,10 @@ public class AyanMusicTools {
             @P("Chemin absolu du dossier à parcourir") String directoryPath,
             @P("Numéro de page, commence à 0") int page,
             @P("Nombre d'entrées par page (1–50, recommandé : 20)") int pageSize) throws IOException {
-        log.info("[tool] browseFiles dir='{}' page={} pageSize={}", directoryPath, page, pageSize);
-        final var clampedSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
-        final var clampedPage = Math.max(page, 0);
-        return audioScannerService.browse(Path.of(directoryPath), clampedPage, clampedSize);
+        final var safePage = Math.max(page, 0);
+        final var safeSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
+        log.info("[tool] browseFiles dir='{}' page={} pageSize={}", directoryPath, safePage, safeSize);
+        return audioScannerService.browse(Path.of(directoryPath), safePage, safeSize);
     }
 
     @Tool("Génère une playlist de loop mixing (technique 3/4) à partir de la collection : "
@@ -249,6 +264,20 @@ public class AyanMusicTools {
         return playlistService.generateHarmonicPlaylist(minBpm, maxBpm, genre, targetEnergy, count);
     }
 
+    @Tool("Génère une playlist structurée en arc narratif (intro → montée → peak → outro) "
+            + "à partir d'un thème lyrical ou d'une ambiance en mots-clés. "
+            + "Exploite les paroles analysées (topics, mood, sentiment) indexées dans la collection. "
+            + "Exemples de thèmes : 'liberté danse africa', 'mélancolie nostalgie pluie', 'été festif soleil'. "
+            + "Utiliser quand l'utilisateur veut un set sur une ambiance ou des paroles précises.")
+    public Playlist createThematicPlaylist(
+            @P("Thème ou ambiance : mots-clés décrivant l'univers lyrical ou émotionnel souhaité") String theme,
+            @P("BPM minimum (0 pour ignorer)") int bpmMin,
+            @P("BPM maximum (300 pour ignorer)") int bpmMax,
+            @P("Nombre de morceaux souhaité (4–50)") int count) {
+        log.info("[tool] createThematicPlaylist theme='{}' bpm={}-{} count={}", theme, bpmMin, bpmMax, count);
+        return playlistService.generateThematicPlaylist(theme, bpmMin, bpmMax, count);
+    }
+
     @Tool("Recherche des informations musicales sur un artiste, un album ou un morceau "
             + "via Internet → Soundcharts → Spotify. "
             + "Retourne un résumé textuel complet — ne pas appeler d'autres outils après. "
@@ -261,29 +290,28 @@ public class AyanMusicTools {
         final var effectiveQuery = buildLookupQuery(query, artist, song, album);
         log.info("[tool] lookupMusicInfo query='{}'", effectiveQuery);
 
-        final var key = effectiveQuery.toLowerCase().strip();
-        if (!SEEN_LOOKUP_QUERIES.get().add(key)) {
+        if (isAlreadyLookedUp(effectiveQuery)) {
             log.warn("[tool] lookupMusicInfo duplicate call for '{}' — stopping loop", effectiveQuery);
             return "Recherche déjà effectuée pour \"" + effectiveQuery
                     + "\". Utilise les informations précédemment retournées pour formuler ta réponse directement.";
         }
 
-        final var result = musicLookupService.lookup(effectiveQuery);
-        return formatLookupResult(result, effectiveQuery);
+        return musicLookupService.lookup(effectiveQuery).toSummary();
     }
 
-    private static String formatLookupResult(
-            com.djtools.ayan.musictagger.infrastructure.service.MusicLookupResult result,
-            String query) {
-        return result.toSummary();
+    /** Retourne true si la requête a déjà été exécutée dans ce call (protection anti-boucle LLM). */
+    private static boolean isAlreadyLookedUp(String query) {
+        final var key = query.toLowerCase().strip();
+        return !SEEN_LOOKUP_QUERIES.get().add(key);
     }
 
+    /** Construit la requête effective en fusionnant les champs séparés si la requête libre est vide. */
     private static String buildLookupQuery(String query, String artist, String song, String album) {
         if (query != null && !query.isBlank()) return query.trim();
         final var sb = new StringBuilder();
         if (artist != null && !artist.isBlank()) sb.append(artist.trim()).append(' ');
-        if (song != null && !song.isBlank()) sb.append(song.trim()).append(' ');
-        if (album != null && !album.isBlank()) sb.append(album.trim()).append(' ');
+        if (song   != null && !song.isBlank())   sb.append(song.trim()).append(' ');
+        if (album  != null && !album.isBlank())  sb.append(album.trim()).append(' ');
         return sb.toString().trim();
     }
 

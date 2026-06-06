@@ -13,6 +13,7 @@ import {
   ChatStreamEvent,
   CollectionProfile,
   EnrichmentStats,
+  ExportTrack,
   FileAnalysisItem,
   FileBrowserPage,
   FileEnrichItem,
@@ -166,6 +167,16 @@ export class ApiService {
       targetEnergy,
       count
     });
+  }
+
+  generateThematicPlaylist(theme: string, bpmMin: number, bpmMax: number, count: number): Observable<Playlist> {
+    return this.http.post<Playlist>(this.url('/api/playlist/generate-thematic'), { theme, bpmMin, bpmMax, count });
+  }
+
+  exportPlaylistM3u(playlistName: string, tracks: ExportTrack[]): Observable<string> {
+    return this.http.post(this.url('/api/playlist/export-m3u'),
+      { playlistName, tracks },
+      { responseType: 'text' });
   }
 
   findSimilarTracks(query: string, limit = 5): Observable<SimilarTrackResult[]> {

@@ -11,5 +11,6 @@ public interface ScannedTrackRepository {
     Optional<MusicFileInfo> findByFilepath(String filepath);
     List<MusicFileInfo> findAll();
     List<MusicFileInfo> findByArtist(String artist, int limit);
+    Optional<MusicFileInfo> findByArtistAndTitle(String artist, String title);
     void delete(String filepath);
 }

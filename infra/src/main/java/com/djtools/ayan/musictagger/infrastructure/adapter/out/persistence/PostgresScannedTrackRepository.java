@@ -85,12 +85,26 @@ public class PostgresScannedTrackRepository implements ScannedTrackRepository {
     }
 
     @Override
+    public Optional<MusicFileInfo> findByArtistAndTitle(String artist, String title) {
+        return jdbcClient.sql("""
+                SELECT * FROM scanned_tracks
+                WHERE artist ILIKE :artist AND title ILIKE :title
+                ORDER BY scanned_at DESC LIMIT 1
+                """)
+                .param("artist", artist)
+                .param("title", title)
+                .query((rs, rowNum) -> mapRow(rs))
+                .optional();
+    }
+
+    @Override
     public void delete(String filepath) {
         jdbcClient.sql("DELETE FROM scanned_tracks WHERE filepath = :filepath")
                 .param("filepath", filepath)
                 .update();
     }
 
+    /** Mappe une ligne SQL vers un MusicFileInfo (toutes les colonnes de scanned_tracks). */
     private static MusicFileInfo mapRow(java.sql.ResultSet rs) throws java.sql.SQLException {
         return new MusicFileInfo(
                 new Filepath(rs.getString("filepath")),

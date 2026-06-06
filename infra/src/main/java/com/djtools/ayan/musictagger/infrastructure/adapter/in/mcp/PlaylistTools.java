@@ -32,4 +32,13 @@ public class PlaylistTools {
             @P("Nombre de morceaux souhaité") int count) {
         return tools.generateHarmonicMixedPlaylist(genre, minBpm, maxBpm, targetEnergy, count);
     }
+
+    @Tool("Génère une playlist en arc narratif (intro → montée → peak → outro) sur un thème lyrical ou une ambiance")
+    public com.djtools.ayan.musictagger.domain.model.Playlist createThematicPlaylist(
+            @P("Thème ou ambiance en mots-clés (ex: 'liberté danse africa', 'été festif soleil')") String theme,
+            @P("BPM minimum (0 pour ignorer)") int bpmMin,
+            @P("BPM maximum (300 pour ignorer)") int bpmMax,
+            @P("Nombre de morceaux (4–50)") int count) {
+        return tools.createThematicPlaylist(theme, bpmMin, bpmMax, count);
+    }
 }

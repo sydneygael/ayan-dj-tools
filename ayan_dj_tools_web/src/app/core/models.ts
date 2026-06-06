@@ -195,6 +195,17 @@ export interface HarmonicPlaylist {
   createdAt: string;
 }
 
+export interface ExportTrack {
+  artist?: string | null;
+  title?: string | null;
+  durationMs?: number | null;
+}
+
+export interface PlaylistExportRequest {
+  playlistName: string;
+  tracks: ExportTrack[];
+}
+
 export interface StatsReport {
   totalPlansCreated: number;
   totalTagsApplied: number;

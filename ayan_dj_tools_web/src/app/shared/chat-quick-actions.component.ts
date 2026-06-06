@@ -23,7 +23,7 @@ const ACTIONS: QuickAction[] = [
     label: 'Enrichir via Soundcharts',
     message: 'Enrichis les fichiers sélectionnés via Soundcharts et résume les correspondances trouvées.',
     needsFiles: true,
-    hint: 'enrichWithSpotify',
+    hint: 'enrichWithSoundcharts',
     direct: 'enrich'
   },
   {

@@ -121,7 +121,7 @@ class AyanMusicToolsTest {
     }
 
     @Test
-    void enrichWithSpotify_delegatesToProvider() {
+    void enrichWithSoundcharts_delegatesToProvider() {
         var metadata = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
@@ -130,7 +130,7 @@ class AyanMusicToolsTest {
         when(musicMetadataProvider.enrich("Artist", "Title"))
                 .thenReturn(EnrichmentResult.success(metadata));
 
-        AyanMusicTools.SpotifyEnrichmentResponse result = tools.enrichWithSpotify("Artist", "Title");
+        AyanMusicTools.EnrichmentResponse result = tools.enrichWithSoundcharts("Artist", "Title");
 
         assertThat(result.status()).isEqualTo("SUCCESS");
         assertThat(result.metadata().artist()).isEqualTo("Artist");
@@ -183,7 +183,7 @@ class AyanMusicToolsTest {
     }
 
     @Test
-    void enrichWithSpotify_triggersVectorization() {
+    void enrichWithSoundcharts_triggersVectorization() {
         var metadata = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
@@ -192,7 +192,7 @@ class AyanMusicToolsTest {
         when(musicMetadataProvider.enrich("Artist", "Title"))
                 .thenReturn(EnrichmentResult.success(metadata));
 
-        tools.enrichWithSpotify("Artist", "Title");
+        tools.enrichWithSoundcharts("Artist", "Title");
 
         verify(vectorizationService).store(metadata);
     }

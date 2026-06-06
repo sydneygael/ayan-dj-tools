@@ -150,7 +150,7 @@ class FileBrowserController {
                         new FileEnrichItem(path, info.filename(), "SUCCESS", null, success.metadata());
                 case EnrichmentResult.NotFound ignored ->
                         new FileEnrichItem(path, info.filename(), "NOT_FOUND",
-                                "Introuvable sur Spotify : " + artist + " - " + title, null);
+                                "Introuvable sur Soundcharts : " + artist + " - " + title, null);
                 case EnrichmentResult.Error error ->
                         new FileEnrichItem(path, info.filename(), "ERROR", error.message(), null);
             };

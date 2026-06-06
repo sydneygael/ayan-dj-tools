@@ -715,7 +715,7 @@ export class ChatPageComponent {
     const ok  = items.filter((i) => i.status === 'SUCCESS').length;
     const nf  = items.filter((i) => i.status === 'NOT_FOUND').length;
     const err = items.filter((i) => i.status === 'ERROR').length;
-    let out = `ENRICHISSEMENT SPOTIFY — ${items.length} fichier(s)\n`;
+    let out = `ENRICHISSEMENT SOUNDCHARTS — ${items.length} fichier(s)\n`;
     out += `─────────────────────────────────────\n`;
     out += `✓ ${ok} trouvé(s)   ✗ ${nf} introuvable(s)   ⚠ ${err} erreur(s)\n\n`;
     for (const item of items) {

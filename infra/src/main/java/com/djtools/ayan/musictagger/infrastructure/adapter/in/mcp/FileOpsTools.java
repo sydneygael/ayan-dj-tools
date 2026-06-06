@@ -28,10 +28,10 @@ public class FileOpsTools {
     }
 
     @Tool("Enrichit les métadonnées via Soundcharts (album, genres, BPM, tonalité, popularité) et indexe dans la collection")
-    public AyanMusicTools.SpotifyEnrichmentResponse enrichWithSpotify(
+    public AyanMusicTools.EnrichmentResponse enrichWithSoundcharts(
             @P("Nom de l'artiste") String artist,
             @P("Titre du morceau") String title) {
-        return tools.enrichWithSpotify(artist, title);
+        return tools.enrichWithSoundcharts(artist, title);
     }
 
     @Tool("Parcourt un dossier et retourne ses fichiers audio et sous-dossiers, paginés. Commencer avec page=0.")

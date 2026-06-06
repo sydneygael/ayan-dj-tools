@@ -115,24 +115,24 @@ public class AyanMusicTools {
      * Résultat d'un enrichissement retourné au LLM.
      * Status explicite pour que l'agent puisse toujours formuler une réponse claire à l'utilisateur.
      */
-    record SpotifyEnrichmentResponse(String status, String message, EnrichedTrackMetadata metadata) {}
+    record EnrichmentResponse(String status, String message, EnrichedTrackMetadata metadata) {}
 
     @Tool("Enrichit les métadonnées via Soundcharts et analyse audio locale, puis indexe dans le vector store")
-    public SpotifyEnrichmentResponse enrichWithSpotify(
+    public EnrichmentResponse enrichWithSoundcharts(
             @P("Nom de l'artiste") String artist,
             @P("Titre du morceau") String title) {
-        log.info("[tool] enrichWithSpotify artist='{}' title='{}'", artist, title);
+        log.info("[tool] enrichWithSoundcharts artist='{}' title='{}'", artist, title);
         final var result = musicMetadataProvider.enrich(artist, title);
         if (result instanceof EnrichmentResult.Error err) {
-            log.warn("[tool] enrichWithSpotify ERROR '{}' – '{}': {}", artist, title, err.message());
-            return new SpotifyEnrichmentResponse(
+            log.warn("[tool] enrichWithSoundcharts ERROR '{}' – '{}': {}", artist, title, err.message());
+            return new EnrichmentResponse(
                     "ERROR",
                     "Erreur lors de l'enrichissement pour « %s – %s » : %s".formatted(artist, title, err.message()),
                     null);
         }
         if (result instanceof EnrichmentResult.NotFound) {
-            log.info("[tool] enrichWithSpotify NOT_FOUND '{}' – '{}'", artist, title);
-            return new SpotifyEnrichmentResponse(
+            log.info("[tool] enrichWithSoundcharts NOT_FOUND '{}' – '{}'", artist, title);
+            return new EnrichmentResponse(
                     "NOT_FOUND",
                     "Aucun résultat trouvé sur Soundcharts pour « %s – %s ».".formatted(artist, title),
                     null);
@@ -142,11 +142,11 @@ public class AyanMusicTools {
         if (data.audioFeatures() != null) {
             audioFeaturesCache.save(data.artist() + " - " + data.title(), data.audioFeatures());
         }
-        log.info("[tool] enrichWithSpotify OK '{}' – '{}' | album='{}' genres={} BPM={} key={}",
+        log.info("[tool] enrichWithSoundcharts OK '{}' – '{}' | album='{}' genres={} BPM={} key={}",
                 data.artist(), data.title(), data.album(), data.genres(),
                 data.audioFeatures() != null ? data.audioFeatures().bpm() : "—",
                 data.audioFeatures() != null ? data.audioFeatures().fullKey() : "—");
-        return new SpotifyEnrichmentResponse(
+        return new EnrichmentResponse(
                 "SUCCESS",
                 "Enrichissement réussi : album=%s, genres=%s, BPM=%s, tonalité=%s".formatted(
                         data.album(),

@@ -3,6 +3,9 @@ REM Lance tous les composants pour usage navigateur :
 REM 1) Services Docker, 2) Backend Spring Boot, 3) Frontend Angular.
 REM Usage : scripts\start-all.bat
 
+REM Charger .env avant setlocal
+call "%~dp0load-env.bat"
+
 setlocal
 set "ROOT_DIR=%~dp0.."
 

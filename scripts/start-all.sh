@@ -7,6 +7,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Charger les variables d'environnement depuis .env
+# shellcheck source=scripts/load-env.sh
+source "$SCRIPT_DIR/load-env.sh"
+
 echo "[all] Etape 1/3 - Demarrage des services externes..."
 "$ROOT_DIR/scripts/start-services.sh"
 

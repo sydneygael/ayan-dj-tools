@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.persistence;
 
 import com.djtools.ayan.musictagger.domain.model.AudioFeatures;
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
+import com.djtools.ayan.musictagger.domain.model.TrackThemes;
 import com.djtools.ayan.musictagger.domain.port.out.EnrichedMetadataCacheRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +48,11 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                 INSERT INTO enriched_track_metadata
                     (artist_key, title_key, source_id, artist, title, album, genres, styles,
                      label, country, isrc, tags, release_year, popularity, duration_ms, audio_features,
-                     language_code, explicit, fetched_at)
+                     language_code, explicit, themes, fetched_at)
                 VALUES
                     (:artistKey, :titleKey, :sourceId, :artist, :title, :album, :genres, :styles,
                      :label, :country, :isrc, :tags, :releaseYear, :popularity, :durationMs, :audioFeatures,
-                     :languageCode, :explicit, CURRENT_TIMESTAMP)
+                     :languageCode, :explicit, :themes, CURRENT_TIMESTAMP)
                 ON CONFLICT (artist_key, title_key) DO UPDATE SET
                     source_id      = EXCLUDED.source_id,
                     artist         = EXCLUDED.artist,
@@ -69,6 +70,7 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                     audio_features = EXCLUDED.audio_features,
                     language_code  = EXCLUDED.language_code,
                     explicit       = EXCLUDED.explicit,
+                    themes         = EXCLUDED.themes,
                     fetched_at     = CURRENT_TIMESTAMP
                 """)
                 .param("artistKey", normalize(artist))
@@ -89,6 +91,7 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                 .param("audioFeatures", toJson(metadata.audioFeatures()))
                 .param("languageCode", metadata.languageCode())
                 .param("explicit", metadata.explicit())
+                .param("themes", toJson(metadata.themes()))
                 .update();
         log.debug("Persisted enriched metadata for '{} – {}'", artist, title);
     }
@@ -110,7 +113,8 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                 (Long) rs.getObject("duration_ms"),
                 fromJsonAudioFeatures(rs.getString("audio_features")),
                 rs.getString("language_code"),
-                rs.getObject("explicit", Boolean.class)
+                rs.getObject("explicit", Boolean.class),
+                fromJsonThemes(rs.getString("themes"))
         );
     }
 
@@ -135,6 +139,16 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
         } catch (Exception e) {
             log.warn("Failed to deserialize list from '{}': {}", json, e.getMessage());
             return List.of();
+        }
+    }
+
+    private TrackThemes fromJsonThemes(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return objectMapper.readValue(json, TrackThemes.class);
+        } catch (Exception e) {
+            log.warn("Failed to deserialize themes from '{}': {}", json, e.getMessage());
+            return null;
         }
     }
 

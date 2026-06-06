@@ -19,7 +19,7 @@ public record SoundchartsTrack(
         SoundchartsAudio audio,
         SoundchartsExternalIds externalIds,
         @JsonProperty("languageCode") String languageCode,
-        boolean explicit
+        Boolean explicit
 ) {
     /** Extrait l'année depuis releaseDate. */
     public Integer releaseYear() {

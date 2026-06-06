@@ -125,7 +125,7 @@ class AyanMusicToolsTest {
         var metadata = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
-                "ISRC123", List.of(), 2024, 80, 210000L, null, null, null
+                "ISRC123", List.of(), 2024, 80, 210000L, null, null, null, null
         );
         when(musicMetadataProvider.enrich("Artist", "Title"))
                 .thenReturn(EnrichmentResult.success(metadata));
@@ -187,7 +187,7 @@ class AyanMusicToolsTest {
         var metadata = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), "Label", "FR",
-                "ISRC123", List.of(), 2024, 80, 210000L, null, null, null
+                "ISRC123", List.of(), 2024, 80, 210000L, null, null, null, null
         );
         when(musicMetadataProvider.enrich("Artist", "Title"))
                 .thenReturn(EnrichmentResult.success(metadata));
@@ -202,7 +202,7 @@ class AyanMusicToolsTest {
         var track = new EnrichedTrackMetadata(
                 "sp123", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), null, null,
-                null, List.of(), 2024, 80, 210000L, null, null, null
+                null, List.of(), 2024, 80, 210000L, null, null, null, null
         );
         when(vectorizationService.findSimilarTracks("electronic", 3))
                 .thenReturn(List.of(new SimilarTrackResult(track, 0.9)));
@@ -268,7 +268,7 @@ class AyanMusicToolsTest {
     @Test
     void lookupMusicInfo_delegatesQueryToService() {
         var track = new EnrichedTrackMetadata("sc-1", "Dua Lipa", "Levitating", null,
-                List.of(), List.of(), null, null, null, List.of("soundcharts"), 2020, null, null, null, null, null);
+                List.of(), List.of(), null, null, null, List.of("soundcharts"), 2020, null, null, null, null, null, null);
         var result = new MusicLookupResult(true, "soundcharts", "dua lipa levitating", List.of(track), null, List.of());
         when(musicLookupService.lookup("dua lipa levitating")).thenReturn(result);
 
@@ -280,12 +280,12 @@ class AyanMusicToolsTest {
 
     @Test
     void lookupMusicInfo_buildsQueryFromPartsWhenQueryIsBlank() {
-        when(musicLookupService.lookup(eq("Dua Lipa Levitating")))
-                .thenReturn(new MusicLookupResult(false, "none", "Dua Lipa Levitating", List.of(), null, List.of()));
+        when(musicLookupService.lookup(eq("Beyonce Crazy in Love")))
+                .thenReturn(new MusicLookupResult(false, "none", "Beyonce Crazy in Love", List.of(), null, List.of()));
 
-        tools.lookupMusicInfo(null, "Dua Lipa", "Levitating", null);
+        tools.lookupMusicInfo(null, "Beyonce", "Crazy in Love", null);
 
-        verify(musicLookupService).lookup("Dua Lipa Levitating");
+        verify(musicLookupService).lookup("Beyonce Crazy in Love");
     }
 
     @Test

@@ -66,7 +66,7 @@ class QdrantVectorStoreAdapterIT {
                 genres, List.of(), null, null,
                 null, List.of(), 2024, 80, 210000L,
                 new AudioFeatures(0.8, 0.9, 0.7, null, null, null, 128.0, "Am", "minor", null, null, null),
-                null, null
+                null, null, null
         );
     }
 

@@ -3,9 +3,11 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts;
 import com.djtools.ayan.musictagger.domain.model.AudioFeatures;
 import com.djtools.ayan.musictagger.domain.model.EnrichedTrackMetadata;
 import com.djtools.ayan.musictagger.domain.model.EnrichmentResult;
+import com.djtools.ayan.musictagger.domain.model.TrackThemes;
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsAudio;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsGenreRef;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsLyricsAnalysis;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
@@ -64,7 +67,8 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
 
             final var bestMatch = selectBestMatch(items, normalizedArtist, normalizedTitle);
             final var details = fetchDetails(bestMatch.uuid()).orElse(bestMatch);
-            final var metadata = map(details, normalizedArtist, normalizedTitle);
+            final var themes = fetchLyricsThemes(details.uuid());
+            final var metadata = map(details, normalizedArtist, normalizedTitle, themes);
 
             log.info("Soundcharts enrichment OK for '{} - {}': id={}, genres={}",
                     normalizedArtist, normalizedTitle, metadata.sourceId(), metadata.genres());
@@ -95,7 +99,7 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
                         .toList();
                 return futures.stream()
                         .map(CompletableFuture::join)
-                        .map(t -> map(t, t.primaryArtist(), t.name()))
+                        .map(t -> map(t, t.primaryArtist(), t.name(), fetchLyricsThemes(t.uuid())))
                         .toList();
             }
         } catch (Exception e) {
@@ -104,7 +108,23 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
         }
     }
 
-    private java.util.Optional<SoundchartsTrack> fetchDetails(String uuid) {
+    private TrackThemes fetchLyricsThemes(String uuid) {
+        if (uuid == null || uuid.isBlank()) return null;
+        try {
+            final var response = apiClient.getLyricsAnalysis(uuid);
+            if (response == null || response.object() == null || response.object().isEmpty()) return null;
+            final var l = response.object();
+            return new TrackThemes(l.topics(), l.themes(), l.mood(), l.sentiment());
+        } catch (HttpClientErrorException.NotFound | HttpClientErrorException.Forbidden e) {
+            log.debug("Lyrics analysis unavailable for uuid={}: {}", uuid, e.getStatusCode());
+            return null;
+        } catch (Exception e) {
+            log.warn("Lyrics analysis fetch failed for uuid={}: {}", uuid, e.getMessage());
+            return null;
+        }
+    }
+
+    private Optional<SoundchartsTrack> fetchDetails(String uuid) {
         if (uuid == null || uuid.isBlank()) {
             return java.util.Optional.empty();
         }
@@ -151,7 +171,8 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
         return score;
     }
 
-    private EnrichedTrackMetadata map(SoundchartsTrack track, String fallbackArtist, String fallbackTitle) {
+    private EnrichedTrackMetadata map(SoundchartsTrack track, String fallbackArtist, String fallbackTitle,
+                                       TrackThemes themes) {
         return new EnrichedTrackMetadata(
                 track.uuid(),
                 firstNonBlank(track.primaryArtist(), fallbackArtist),
@@ -168,7 +189,8 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
                 track.durationMs(),
                 toAudioFeatures(track.audio()),
                 track.languageCode(),
-                track.explicit()
+                track.explicit(),
+                themes
         );
     }
 

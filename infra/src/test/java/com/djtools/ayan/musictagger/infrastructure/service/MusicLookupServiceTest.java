@@ -55,7 +55,7 @@ class MusicLookupServiceTest {
 
     private EnrichedTrackMetadata track(String id, String artist, String title) {
         return new EnrichedTrackMetadata(id, artist, title, null,
-                List.of(), List.of(), null, null, null, List.of("soundcharts"), null, null, null, null, null, null);
+                List.of(), List.of(), null, null, null, List.of("soundcharts"), null, null, null, null, null, null, null);
     }
 
     @Test

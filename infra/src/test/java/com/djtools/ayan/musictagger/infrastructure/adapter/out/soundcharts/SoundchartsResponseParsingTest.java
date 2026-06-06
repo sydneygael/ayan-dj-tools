@@ -1,6 +1,7 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts;
 
 import com.djtools.ayan.musictagger.domain.model.EnrichmentResult;
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsLyricsResponse;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsSearchResponse;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsSongResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,9 +89,23 @@ class SoundchartsResponseParsingTest {
     }
 
     @Test
+    void shouldDeserializeLyricsAnalysis() throws IOException {
+        var response = mapper.readValue(
+                resource("soundcharts/song-lyrics-agolo.json"), SoundchartsLyricsResponse.class);
+
+        assertThat(response.object()).isNotNull();
+        assertThat(response.object().topics()).containsExactly("africa", "dance", "joy");
+        assertThat(response.object().mood()).isEqualTo("uplifting");
+        assertThat(response.object().sentiment()).isEqualTo("positive");
+        assertThat(response.object().allThemes())
+                .containsExactlyInAnyOrder("africa", "dance", "joy", "celebration", "cultural identity");
+    }
+
+    @Test
     void shouldEnrichEndToEndFromRealPayloads() {
         when(apiClient.searchSongByName(anyString(), anyInt(), anyInt())).thenReturn(search);
         when(apiClient.getSongMetadata(eq("11e8262e-eab0-1e12-b8ac-aa1c026db3d8"))).thenReturn(metadata);
+        when(apiClient.getLyricsAnalysis(anyString())).thenReturn(null);
 
         var result = adapter.enrich("Angelique Kidjo", "Agolo");
 

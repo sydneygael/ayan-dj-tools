@@ -81,6 +81,13 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
             if (af.musicalKey() != null) sb.append(" Key: ").append(af.fullKey()).append(".");
         }
         if (track.popularity() > 0) sb.append(" Popularity: ").append(track.popularity()).append(".");
+        final var th = track.themes();
+        if (th != null && !th.isEmpty()) {
+            final var terms = th.allTerms();
+            if (!terms.isEmpty()) sb.append(" Themes: ").append(String.join(", ", terms)).append(".");
+            if (th.mood() != null && !th.mood().isBlank()) sb.append(" Mood: ").append(th.mood()).append(".");
+            if (th.sentiment() != null && !th.sentiment().isBlank()) sb.append(" Sentiment: ").append(th.sentiment()).append(".");
+        }
         return sb.toString();
     }
 
@@ -115,7 +122,7 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
         return new EnrichedTrackMetadata(
                 metadata.get("sourceId"), metadata.get("artist"), metadata.get("title"),
                 metadata.get("album"), genres, List.of(), null, null, null, List.of(),
-                toInt(metadata.get("releaseYear")), toInt(metadata.get("popularity")), 0L, audioFeatures, null, null);
+                toInt(metadata.get("releaseYear")), toInt(metadata.get("popularity")), 0L, audioFeatures, null, null, null);
     }
 
     private static Map<String, String> toStringMap(Map<String, Object> map) {

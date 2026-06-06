@@ -26,6 +26,7 @@ public class SpotifyMapper {
                 track.duration_ms(),
                 mapAudioFeatures(audioFeatures),
                 null,
+                null,
                 null
         );
     }

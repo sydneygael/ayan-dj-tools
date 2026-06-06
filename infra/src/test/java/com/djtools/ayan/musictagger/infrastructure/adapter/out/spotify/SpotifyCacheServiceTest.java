@@ -40,7 +40,7 @@ class SpotifyCacheServiceTest {
         return new EnrichedTrackMetadata(
                 "id1", "Artist", "Title", "Album",
                 List.of("Electronic"), List.of(), null, null, null, List.of(),
-                2024, 80, 210000L, null, null, null
+                2024, 80, 210000L, null, null, null, null
         );
     }
 }

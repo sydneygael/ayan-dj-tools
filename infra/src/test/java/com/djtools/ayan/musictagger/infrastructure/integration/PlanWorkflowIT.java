@@ -75,7 +75,7 @@ class PlanWorkflowIT {
                             List.of("Electronic"), List.of(), null, null, null, List.of(),
                             2024, 80, 210000L,
                             new AudioFeatures(0.8, 0.7, 0.6, 0.1, 0.0, 0.05, 128.0, "A", "minor", 4, null, null),
-                            null, null
+                            null, null, null
                     ))
             );
             return mock;

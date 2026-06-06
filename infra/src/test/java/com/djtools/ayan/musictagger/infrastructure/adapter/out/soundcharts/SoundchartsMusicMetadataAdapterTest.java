@@ -11,6 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,10 +62,11 @@ class SoundchartsMusicMetadataAdapterTest {
                 false
         );
 
-        when(apiClient.searchSongByName(eq("Deadmau5 Strobe"), eq(0), eq(5)))
-                .thenReturn(new SoundchartsSearchResponse(List.of(searchTrack), new SoundchartsSearchPage(0, 5, 1)));
+        when(apiClient.searchSongByName(eq("Strobe"), eq(0), eq(10)))
+                .thenReturn(new SoundchartsSearchResponse(List.of(searchTrack), new SoundchartsSearchPage(0, 10, 1)));
         when(apiClient.getSongMetadata("song-123"))
                 .thenReturn(new SoundchartsSongResponse(detailTrack));
+        when(apiClient.getLyricsAnalysis(anyString())).thenReturn(null);
 
         var result = adapter.enrich("Deadmau5", "Strobe");
 
@@ -82,14 +85,14 @@ class SoundchartsMusicMetadataAdapterTest {
         assertThat(result.data().audioFeatures().bpm()).isEqualTo(128.0);
         assertThat(result.data().audioFeatures().musicalKey()).isEqualTo("G");
         assertThat(result.data().audioFeatures().mode()).isEqualTo("minor");
-        verify(apiClient).searchSongByName(eq("Deadmau5 Strobe"), eq(0), eq(5));
+        verify(apiClient).searchSongByName(eq("Strobe"), eq(0), eq(10));
         verify(apiClient).getSongMetadata("song-123");
     }
 
     @Test
     void shouldReturnNotFoundWhenSearchHasNoItems() {
-        when(apiClient.searchSongByName(eq("Unknown Song"), eq(0), eq(5)))
-                .thenReturn(new SoundchartsSearchResponse(List.of(), new SoundchartsSearchPage(0, 5, 0)));
+        when(apiClient.searchSongByName(eq("Song"), eq(0), eq(10)))
+                .thenReturn(new SoundchartsSearchResponse(List.of(), new SoundchartsSearchPage(0, 10, 0)));
 
         var result = adapter.enrich("Unknown", "Song");
 

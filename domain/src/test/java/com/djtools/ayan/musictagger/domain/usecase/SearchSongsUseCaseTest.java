@@ -19,13 +19,13 @@ class SearchSongsUseCaseTest {
                 id, "Artist " + id, "Title " + id, "Album",
                 genres, List.of(), null, null, null, List.of(), year, 50, 200000L,
                 new AudioFeatures(0.8, energy, 0.5, null, null, null, bpm, "A", "minor", 4, null, null),
-                null, null);
+                null, null, null);
     }
 
     private EnrichedTrackMetadata trackNoFeatures(String id, List<String> genres) {
         return new EnrichedTrackMetadata(
                 id, "Artist " + id, "Title " + id, "Album",
-                genres, List.of(), null, null, null, List.of(), null, 50, 200000L, null, null, null);
+                genres, List.of(), null, null, null, List.of(), null, 50, 200000L, null, null, null, null);
     }
 
     private SongSearchCriteria criteria(String genre, Integer bpmMin, Integer bpmMax, int limit) {

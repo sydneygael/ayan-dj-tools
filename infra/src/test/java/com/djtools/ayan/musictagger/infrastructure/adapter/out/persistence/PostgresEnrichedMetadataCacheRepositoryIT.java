@@ -66,7 +66,7 @@ class PostgresEnrichedMetadataCacheRepositoryIT {
                 "Virgin", "FR", "GBDUW0000059", List.of("soundcharts"),
                 2001, 85, 320357L,
                 new AudioFeatures(0.8, 0.9, 0.7, 0.1, 0.0, 0.05, 123.0, "F#", "minor", 4, null, null),
-                null, null);
+                null, null, null);
 
         repository.put("Daft Punk", "One More Time", metadata);
         var found = repository.get("Daft Punk", "One More Time");
@@ -96,12 +96,12 @@ class PostgresEnrichedMetadataCacheRepositoryIT {
     void shouldMatchCaseInsensitivelyAndUpsert() {
         var first = new EnrichedTrackMetadata(
                 "id1", "Artist", "Title", null, List.of("Pop"), List.of(),
-                null, null, null, List.of(), null, null, null, null, null, null);
+                null, null, null, List.of(), null, null, null, null, null, null, null);
         repository.put("Artist", "Title", first);
 
         var updated = new EnrichedTrackMetadata(
                 "id2", "Artist", "Title", "New Album", List.of("Rock"), List.of(),
-                "Label", null, null, List.of(), 2020, null, null, null, null, null);
+                "Label", null, null, List.of(), 2020, null, null, null, null, null, null);
         repository.put("  ARTIST  ", "title", updated);
 
         var found = repository.get("artist", "TITLE");
@@ -115,7 +115,7 @@ class PostgresEnrichedMetadataCacheRepositoryIT {
     void shouldHandleNullAudioFeaturesAndEmptyLists() {
         var metadata = new EnrichedTrackMetadata(
                 "id", "Solo", "Song", null, null, null,
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         repository.put("Solo", "Song", metadata);
 
         var found = repository.get("Solo", "Song");

@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS enriched_track_metadata (
 -- Migrations pour tables existantes
 ALTER TABLE enriched_track_metadata ADD COLUMN IF NOT EXISTS language_code VARCHAR(10);
 ALTER TABLE enriched_track_metadata ADD COLUMN IF NOT EXISTS explicit BOOLEAN;
+ALTER TABLE enriched_track_metadata ADD COLUMN IF NOT EXISTS themes TEXT;
 
 CREATE TABLE IF NOT EXISTS app_settings (
     key   VARCHAR(100) PRIMARY KEY,

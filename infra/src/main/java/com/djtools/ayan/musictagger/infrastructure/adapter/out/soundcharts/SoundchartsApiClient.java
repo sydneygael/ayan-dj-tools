@@ -1,5 +1,6 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts;
 
+import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsLyricsResponse;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsSearchResponse;
 import com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts.dto.SoundchartsSongResponse;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,4 +18,7 @@ public interface SoundchartsApiClient {
 
     @GetExchange("/api/v2.25/song/{uuid}")
     SoundchartsSongResponse getSongMetadata(@PathVariable("uuid") String uuid);
+
+    @GetExchange("/api/v2/song/{uuid}/lyrics-analysis")
+    SoundchartsLyricsResponse getLyricsAnalysis(@PathVariable("uuid") String uuid);
 }

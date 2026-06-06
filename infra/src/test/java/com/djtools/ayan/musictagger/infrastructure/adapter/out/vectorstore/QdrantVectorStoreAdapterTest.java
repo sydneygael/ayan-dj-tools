@@ -37,8 +37,6 @@ class QdrantVectorStoreAdapterTest {
     @BeforeEach
     void setUp() {
         adapter = new QdrantVectorStoreAdapter(embeddingStore, embeddingModel, 0.7);
-        when(embeddingModel.embed(anyString()))
-                .thenReturn(Response.from(Embedding.from(new float[768])));
     }
 
     private EnrichedTrackMetadata sampleTrack() {
@@ -47,12 +45,14 @@ class QdrantVectorStoreAdapterTest {
                 List.of("Electronic", "House"), List.of("French House"), "Virgin", "FR",
                 "ISRC123", List.of(), 1997, 82, 420000L,
                 new AudioFeatures(0.8, 0.9, 0.7, null, null, null, 121.0, "Am", "minor", null, null, null),
-                null, null
+                null, null, null
         );
     }
 
     @Test
     void store_shouldAddEmbeddingWithTextSegment() {
+        when(embeddingModel.embed(anyString()))
+                .thenReturn(Response.from(Embedding.from(new float[768])));
         adapter.store(sampleTrack());
 
         String expectedId = UUID.nameUUIDFromBytes("sp123".getBytes()).toString();
@@ -95,6 +95,9 @@ class QdrantVectorStoreAdapterTest {
         var match = new EmbeddingMatch<>(0.92, "sp456", Embedding.from(new float[768]), segment);
         var searchResult = new EmbeddingSearchResult<>(List.of(match));
         when(embeddingStore.search(any(EmbeddingSearchRequest.class))).thenReturn(searchResult);
+
+        when(embeddingModel.embed(anyString()))
+                .thenReturn(Response.from(Embedding.from(new float[768])));
 
         List<SimilarTrackResult> results = adapter.findSimilar("electronic dance", 5);
 

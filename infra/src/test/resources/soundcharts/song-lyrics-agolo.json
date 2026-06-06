@@ -1,0 +1,10 @@
+{
+  "type": "lyricsAnalysis",
+  "object": {
+    "topics": ["africa", "dance", "joy"],
+    "mood": "uplifting",
+    "themes": ["celebration", "cultural identity"],
+    "sentiment": "positive"
+  },
+  "errors": []
+}

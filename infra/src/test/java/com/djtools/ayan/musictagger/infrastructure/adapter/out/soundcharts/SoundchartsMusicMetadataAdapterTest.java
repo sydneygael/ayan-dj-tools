@@ -40,7 +40,9 @@ class SoundchartsMusicMetadataAdapterTest {
                 new SoundchartsIsrc("USUS10900862", "US", "United States"),
                 634L,
                 null,
-                new SoundchartsExternalIds("spotify:track:xyz", null, null, null)
+                new SoundchartsExternalIds("spotify:track:xyz", null, null, null),
+                null,
+                false
         );
         var detailTrack = new SoundchartsTrack(
                 "song-123",
@@ -53,7 +55,9 @@ class SoundchartsMusicMetadataAdapterTest {
                 new SoundchartsIsrc("USUS10900862", "US", "United States"),
                 634L,
                 new SoundchartsAudio(0.02, 0.5, 0.8, 0.9, 7, 0.1, -7.0, 0, 0.03, 128.0, 4, 0.3),
-                new SoundchartsExternalIds("spotify:track:xyz", null, null, null)
+                new SoundchartsExternalIds("spotify:track:xyz", null, null, null),
+                null,
+                false
         );
 
         when(apiClient.searchSongByName(eq("Deadmau5 Strobe"), eq(0), eq(5)))

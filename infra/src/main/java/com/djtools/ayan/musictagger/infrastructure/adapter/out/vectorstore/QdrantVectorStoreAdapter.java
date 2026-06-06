@@ -111,11 +111,11 @@ public class QdrantVectorStoreAdapter implements VectorStorePort {
         final var audioFeatures = new AudioFeatures(
                 toDouble(metadata.get("danceability")), toDouble(metadata.get("energy")),
                 toDouble(metadata.get("valence")), null, null, null,
-                toDouble(metadata.get("bpm")), metadata.get("musicalKey"), metadata.get("mode"), null);
+                toDouble(metadata.get("bpm")), metadata.get("musicalKey"), metadata.get("mode"), null, null, null);
         return new EnrichedTrackMetadata(
                 metadata.get("sourceId"), metadata.get("artist"), metadata.get("title"),
                 metadata.get("album"), genres, List.of(), null, null, null, List.of(),
-                toInt(metadata.get("releaseYear")), toInt(metadata.get("popularity")), 0L, audioFeatures);
+                toInt(metadata.get("releaseYear")), toInt(metadata.get("popularity")), 0L, audioFeatures, null, null);
     }
 
     private static Map<String, String> toStringMap(Map<String, Object> map) {

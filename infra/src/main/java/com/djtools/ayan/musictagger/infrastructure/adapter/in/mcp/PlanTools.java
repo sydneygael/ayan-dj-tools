@@ -18,7 +18,7 @@ public class PlanTools {
         this.tools = tools;
     }
 
-    @Tool("Crée un plan de modifications de tags pour une liste de fichiers : scanne, détecte les manquants, enrichit via Spotify")
+    @Tool("Crée un plan de modifications de tags pour une liste de fichiers : scanne, détecte les manquants, enrichit via Soundcharts")
     public TaggingPlan createPlanForFiles(@P("Liste des chemins absolus des fichiers audio") List<String> filePaths) {
         return tools.createPlanForFiles(filePaths);
     }

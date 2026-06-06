@@ -69,7 +69,7 @@ import { ApiService } from '../core/api.service';
       <p class="hint">Chargement enrichissement...</p>
     } @else if (enrichmentResource.hasValue()) {
       <section class="panel">
-        <h2>Enrichissement Spotify</h2>
+        <h2>Enrichissement Soundcharts</h2>
         <div class="kv">
           <span>Taux de correspondance</span><span>{{ enrichmentResource.value()!.spotifyMatchRate | number:'1.0-1' }}%</span>
           <span>Taux d'erreur</span><span>{{ enrichmentResource.value()!.errorRate | number:'1.0-1' }}%</span>

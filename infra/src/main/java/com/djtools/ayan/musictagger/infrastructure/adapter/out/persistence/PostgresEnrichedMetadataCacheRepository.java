@@ -46,10 +46,12 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
         jdbcClient.sql("""
                 INSERT INTO enriched_track_metadata
                     (artist_key, title_key, source_id, artist, title, album, genres, styles,
-                     label, country, isrc, tags, release_year, popularity, duration_ms, audio_features, fetched_at)
+                     label, country, isrc, tags, release_year, popularity, duration_ms, audio_features,
+                     language_code, explicit, fetched_at)
                 VALUES
                     (:artistKey, :titleKey, :sourceId, :artist, :title, :album, :genres, :styles,
-                     :label, :country, :isrc, :tags, :releaseYear, :popularity, :durationMs, :audioFeatures, CURRENT_TIMESTAMP)
+                     :label, :country, :isrc, :tags, :releaseYear, :popularity, :durationMs, :audioFeatures,
+                     :languageCode, :explicit, CURRENT_TIMESTAMP)
                 ON CONFLICT (artist_key, title_key) DO UPDATE SET
                     source_id      = EXCLUDED.source_id,
                     artist         = EXCLUDED.artist,
@@ -65,6 +67,8 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                     popularity     = EXCLUDED.popularity,
                     duration_ms    = EXCLUDED.duration_ms,
                     audio_features = EXCLUDED.audio_features,
+                    language_code  = EXCLUDED.language_code,
+                    explicit       = EXCLUDED.explicit,
                     fetched_at     = CURRENT_TIMESTAMP
                 """)
                 .param("artistKey", normalize(artist))
@@ -83,6 +87,8 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                 .param("popularity", metadata.popularity())
                 .param("durationMs", metadata.durationMs())
                 .param("audioFeatures", toJson(metadata.audioFeatures()))
+                .param("languageCode", metadata.languageCode())
+                .param("explicit", metadata.explicit())
                 .update();
         log.debug("Persisted enriched metadata for '{} – {}'", artist, title);
     }
@@ -102,7 +108,9 @@ public class PostgresEnrichedMetadataCacheRepository implements EnrichedMetadata
                 (Integer) rs.getObject("release_year"),
                 (Integer) rs.getObject("popularity"),
                 (Long) rs.getObject("duration_ms"),
-                fromJsonAudioFeatures(rs.getString("audio_features"))
+                fromJsonAudioFeatures(rs.getString("audio_features")),
+                rs.getString("language_code"),
+                rs.getObject("explicit", Boolean.class)
         );
     }
 

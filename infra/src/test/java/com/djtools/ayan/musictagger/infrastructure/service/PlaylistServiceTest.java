@@ -35,7 +35,8 @@ class PlaylistServiceTest {
         return new EnrichedTrackMetadata(
                 id, "Artist " + id, "Title " + id, "Album",
                 List.of(), List.of(), null, null, null, List.of(), 2020, 50, 200000L,
-                new AudioFeatures(0.8, 0.6, 0.5, null, null, null, bpm, key, mode, 4));
+                new AudioFeatures(0.8, 0.6, 0.5, null, null, null, bpm, key, mode, 4, null, null),
+                null, null);
     }
 
     @Test

@@ -56,7 +56,7 @@ public class AIConfig {
 
     private static final String PROMPT_FICHIERS = """
             Tu es un agent spécialisé dans les opérations sur fichiers audio pour DJs.
-            Tu peux scanner des fichiers, détecter les tags manquants, enrichir via Spotify et parcourir des dossiers.
+            Tu peux scanner des fichiers, détecter les tags manquants, enrichir via Soundcharts et parcourir des dossiers.
             Réponds en français, sans markdown. Format : Artiste : X  |  Titre : Y  |  BPM : Z
             Symboles : ✓ succès  ✗ manquant  ⚠ avertissement
             [Contexte: mode=#{mode}; filePaths=#{filePaths}; currentDir=#{currentDir}]
@@ -102,7 +102,7 @@ public class AIConfig {
 
             FICHIERS — Scanner, analyser et enrichir tes fichiers audio
             ───────────────────────────────────────────────────────────
-            Lire les tags actuels, détecter les manquants, enrichir via Spotify,
+            Lire les tags actuels, détecter les manquants, enrichir via Soundcharts,
             parcourir ta bibliothèque.
 
             PLANS DE TAGS — Modifier les tags en toute sécurité

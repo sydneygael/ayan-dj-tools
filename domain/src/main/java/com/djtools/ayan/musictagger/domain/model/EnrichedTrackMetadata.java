@@ -2,7 +2,7 @@ package com.djtools.ayan.musictagger.domain.model;
 
 import java.util.List;
 
-/** Métadonnées enrichies d'un morceau (source : Spotify). Copie défensive des listes. */
+/** Métadonnées enrichies d'un morceau (source externe (Soundcharts, Spotify)). Copie défensive des listes. */
 public record EnrichedTrackMetadata(
         String sourceId,
         String artist,
@@ -17,7 +17,9 @@ public record EnrichedTrackMetadata(
         Integer releaseYear,
         Integer popularity,
         Long durationMs,
-        AudioFeatures audioFeatures
+        AudioFeatures audioFeatures,
+        String languageCode,
+        Boolean explicit
 ) {
 
     public EnrichedTrackMetadata {

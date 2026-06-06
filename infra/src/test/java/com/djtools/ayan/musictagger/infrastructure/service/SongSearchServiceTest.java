@@ -38,7 +38,8 @@ class SongSearchServiceTest {
         return new EnrichedTrackMetadata(
                 id, "Artist " + id, "Title " + id, "Album",
                 genres, List.of(), null, null, null, List.of(), 2020, 50, 200000L,
-                new AudioFeatures(0.8, 0.7, 0.5, null, null, null, bpm, "A", "minor", 4));
+                new AudioFeatures(0.8, 0.7, 0.5, null, null, null, bpm, "A", "minor", 4, null, null),
+                null, null);
     }
 
     @Test

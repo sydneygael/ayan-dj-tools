@@ -40,7 +40,7 @@ public class SearchTools {
         return tools.searchSongs(genre, mood, bpmMin, bpmMax, energyMin, energyMax, yearMin, yearMax, limit);
     }
 
-    @Tool("Suggestions intelligentes de tags pour un fichier : combine enrichissement Spotify et morceaux similaires (RAG)")
+    @Tool("Suggestions intelligentes de tags pour un fichier : combine enrichissement Soundcharts et morceaux similaires (RAG)")
     public SmartTagSuggestion smartSuggestTags(@P("Chemin absolu du fichier audio") String filepath) {
         return tools.smartSuggestTags(filepath);
     }

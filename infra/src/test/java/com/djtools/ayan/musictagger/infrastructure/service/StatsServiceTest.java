@@ -122,8 +122,8 @@ class StatsServiceTest {
     @Test
     void computeCollectionProfile_averageAudioFeatures() {
         when(historyRepository.findAll()).thenReturn(List.of());
-        var f1 = new AudioFeatures(0.8, 0.9, 0.7, 0.1, 0.0, null, 128.0, "Am", "minor", 4);
-        var f2 = new AudioFeatures(0.6, 0.7, 0.5, 0.3, 0.2, null, 130.0, "Cm", "minor", 4);
+        var f1 = new AudioFeatures(0.8, 0.9, 0.7, 0.1, 0.0, null, 128.0, "Am", "minor", 4, null, null);
+        var f2 = new AudioFeatures(0.6, 0.7, 0.5, 0.3, 0.2, null, 130.0, "Cm", "minor", 4, null, null);
         when(audioFeaturesCache.findAll()).thenReturn(List.of(f1, f2));
 
         CollectionProfile profile = service.computeCollectionProfile();

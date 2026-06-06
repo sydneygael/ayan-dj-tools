@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,18 +40,22 @@ class MusicLookupServiceTest {
     @Mock SpotifyApiClient spotifyApiClient;
     @Mock SpotifyRateLimiter spotifyRateLimiter;
     @Mock ScannedTrackRepository scannedTrackRepository;
+    @Mock StringRedisTemplate stringRedis;
+    @Mock ValueOperations<String, String> valueOps;
 
     private MusicLookupService service;
 
     @BeforeEach
     void setUp() {
         when(scannedTrackRepository.findByArtist(anyString(), anyInt())).thenReturn(List.of());
-        service = new MusicLookupService(soundcharts, tavily, spotifyApiClient, new SpotifyMapper(), spotifyRateLimiter, scannedTrackRepository);
+        when(stringRedis.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get(anyString())).thenReturn(null);
+        service = new MusicLookupService(soundcharts, tavily, spotifyApiClient, new SpotifyMapper(), spotifyRateLimiter, scannedTrackRepository, stringRedis);
     }
 
     private EnrichedTrackMetadata track(String id, String artist, String title) {
         return new EnrichedTrackMetadata(id, artist, title, null,
-                List.of(), List.of(), null, null, null, List.of("soundcharts"), null, null, null, null);
+                List.of(), List.of(), null, null, null, List.of("soundcharts"), null, null, null, null, null, null);
     }
 
     @Test

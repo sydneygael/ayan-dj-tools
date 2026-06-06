@@ -23,6 +23,7 @@ class AyanAgentServiceTest {
     @Mock AyanAssistant playlistAssistant;
     @Mock AyanAssistant decouverteAssistant;
     @Mock AyanAssistant generalAssistant;
+    @Mock MusicLookupService musicLookupService;
 
     AyanAgentService service;
 
@@ -47,7 +48,7 @@ class AyanAgentServiceTest {
         service = new AyanAgentService(
                 fichiersAssistant, planAssistant, rechercheAssistant,
                 playlistAssistant, decouverteAssistant, generalAssistant,
-                testClassifier, 600, 60);
+                testClassifier, musicLookupService, 600, 60);
     }
 
     @Test

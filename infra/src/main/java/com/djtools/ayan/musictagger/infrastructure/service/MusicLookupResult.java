@@ -18,6 +18,10 @@ public record MusicLookupResult(
         localTracks = localTracks != null ? List.copyOf(localTracks) : List.of();
     }
 
+    public static MusicLookupResult fromCache(String query, String summary) {
+        return new MusicLookupResult(true, "cache", query, List.of(), summary, List.of());
+    }
+
     public String toSummary() {
         if (!found) {
             return "Aucun résultat trouvé pour \"" + query + "\".";

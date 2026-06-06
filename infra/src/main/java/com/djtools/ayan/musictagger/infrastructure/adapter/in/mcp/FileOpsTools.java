@@ -27,7 +27,7 @@ public class FileOpsTools {
         return tools.detectMissingTags(filepath);
     }
 
-    @Tool("Enrichit les métadonnées via Spotify (album, genres, BPM, tonalité, popularité) et indexe dans la collection")
+    @Tool("Enrichit les métadonnées via Soundcharts (album, genres, BPM, tonalité, popularité) et indexe dans la collection")
     public AyanMusicTools.SpotifyEnrichmentResponse enrichWithSpotify(
             @P("Nom de l'artiste") String artist,
             @P("Titre du morceau") String title) {

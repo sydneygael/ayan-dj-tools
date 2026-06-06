@@ -17,7 +17,9 @@ public record SoundchartsTrack(
         SoundchartsIsrc isrc,
         Long duration,                                            // durée en SECONDES, nullable
         SoundchartsAudio audio,
-        SoundchartsExternalIds externalIds
+        SoundchartsExternalIds externalIds,
+        @JsonProperty("languageCode") String languageCode,
+        boolean explicit
 ) {
     /** Extrait l'année depuis releaseDate. */
     public Integer releaseYear() {

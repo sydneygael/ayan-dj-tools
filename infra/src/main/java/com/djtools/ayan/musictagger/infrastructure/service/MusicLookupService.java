@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,31 +38,48 @@ public class MusicLookupService {
     private static final long SPOTIFY_TIMEOUT_SECONDS = 12;
     private static final long LOCAL_TIMEOUT_SECONDS = 3;
 
+    private static final long CACHE_TTL_HOURS = 24;
+
     private final SoundchartsMusicMetadataAdapter soundcharts;
     private final TavilySearchAdapter tavily;
     private final SpotifyApiClient spotifyApiClient;
     private final SpotifyMapper spotifyMapper;
     private final SpotifyRateLimiter spotifyRateLimiter;
     private final ScannedTrackRepository scannedTrackRepository;
+    private final StringRedisTemplate stringRedis;
 
     public MusicLookupService(SoundchartsMusicMetadataAdapter soundcharts,
                               TavilySearchAdapter tavily,
                               SpotifyApiClient spotifyApiClient,
                               SpotifyMapper spotifyMapper,
                               SpotifyRateLimiter spotifyRateLimiter,
-                              ScannedTrackRepository scannedTrackRepository) {
+                              ScannedTrackRepository scannedTrackRepository,
+                              StringRedisTemplate stringRedis) {
         this.soundcharts = soundcharts;
         this.tavily = tavily;
         this.spotifyApiClient = spotifyApiClient;
         this.spotifyMapper = spotifyMapper;
         this.spotifyRateLimiter = spotifyRateLimiter;
         this.scannedTrackRepository = scannedTrackRepository;
+        this.stringRedis = stringRedis;
     }
 
     public MusicLookupResult lookup(String query) {
         if (query == null || query.isBlank()) {
             return new MusicLookupResult(false, "none", query, List.of(), null, List.of());
         }
+
+        final var cacheKey = "lookup:" + query.toLowerCase().strip();
+        try {
+            final var cached = stringRedis.opsForValue().get(cacheKey);
+            if (cached != null) {
+                log.info("MusicLookup: cache hit for '{}'", query);
+                return MusicLookupResult.fromCache(query, cached);
+            }
+        } catch (Exception e) {
+            log.warn("MusicLookup: cache read failed — proceeding without cache: {}", e.getMessage());
+        }
+
         log.info("MusicLookup: '{}'", query);
 
         // Phase 1: Internet (Tavily) + local in parallel — fastest sources
@@ -87,7 +106,7 @@ public class MusicLookupService {
 
         if (webSummary.isPresent()) {
             log.info("MusicLookup: web result for '{}', {} local", query, localTracks.size());
-            return new MusicLookupResult(true, "web", query, List.of(), webSummary.get(), localTracks);
+            return cacheAndReturn(new MusicLookupResult(true, "web", query, List.of(), webSummary.get(), localTracks), cacheKey);
         }
 
         // Phase 2: Soundcharts
@@ -100,12 +119,23 @@ public class MusicLookupService {
                         log.warn("Soundcharts lookup failed for '{}': {}", query, rootMessage(error));
                         return List.of();
                     })
-                    .join();
+                    .join()
+                    .stream()
+                    .peek(t -> log.info(
+                            "  → Soundcharts: '{}' – '{}' | album='{}' genres={} BPM={} key={} country={}",
+                            t.artist(), t.title(),
+                            t.album() != null ? t.album() : "—",
+                            t.genres() != null && !t.genres().isEmpty() ? t.genres() : "[]",
+                            t.audioFeatures() != null && t.audioFeatures().bpm() != null
+                                    ? t.audioFeatures().bpm().intValue() : "—",
+                            t.audioFeatures() != null ? t.audioFeatures().fullKey() : "—",
+                            t.country() != null ? t.country() : "—"))
+                    .toList();
         }
 
         if (!soundchartsTracks.isEmpty()) {
             log.info("MusicLookup: {} track(s) via Soundcharts for '{}', {} local", soundchartsTracks.size(), query, localTracks.size());
-            return new MusicLookupResult(true, "soundcharts", query, soundchartsTracks, null, localTracks);
+            return cacheAndReturn(new MusicLookupResult(true, "soundcharts", query, soundchartsTracks, null, localTracks), cacheKey);
         }
 
         // Phase 3: Spotify — last resort
@@ -123,7 +153,7 @@ public class MusicLookupService {
 
         if (!spotifyTracks.isEmpty()) {
             log.info("MusicLookup: {} track(s) via Spotify for '{}', {} local", spotifyTracks.size(), query, localTracks.size());
-            return new MusicLookupResult(true, "spotify", query, spotifyTracks, null, localTracks);
+            return cacheAndReturn(new MusicLookupResult(true, "spotify", query, spotifyTracks, null, localTracks), cacheKey);
         }
 
         if (!localTracks.isEmpty()) {
@@ -133,6 +163,15 @@ public class MusicLookupService {
 
         log.info("MusicLookup: nothing found for '{}'", query);
         return new MusicLookupResult(false, "none", query, List.of(), null, List.of());
+    }
+
+    private MusicLookupResult cacheAndReturn(MusicLookupResult result, String cacheKey) {
+        try {
+            stringRedis.opsForValue().set(cacheKey, result.toSummary(), CACHE_TTL_HOURS, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("MusicLookup: cache write failed: {}", e.getMessage());
+        }
+        return result;
     }
 
     private Optional<String> searchWebSafely(String query) {

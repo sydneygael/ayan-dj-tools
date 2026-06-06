@@ -25,7 +25,7 @@ class SoundchartsFirstMetadataProviderTest {
     @Test
     void shouldReturnSoundchartsWhenSuccessful() {
         var data = new EnrichedTrackMetadata("id", "Artist", "Title", null, List.of(), List.of(),
-                null, null, null, List.of(), null, null, null, null);
+                null, null, null, List.of(), null, null, null, null, null, null);
         when(soundcharts.enrich("Artist", "Title")).thenReturn(EnrichmentResult.success(data));
 
         var provider = new SoundchartsFirstMetadataProvider(cache, soundcharts, fallback);

@@ -47,7 +47,7 @@ class CamelotKeyTest {
 
     @Test
     void fromAudioFeatures_derivesKey() {
-        var af = new AudioFeatures(null, null, null, null, null, null, 128.0, "A", "minor", 4);
+        var af = new AudioFeatures(null, null, null, null, null, null, 128.0, "A", "minor", 4, null, null);
         assertThat(CamelotKey.fromAudioFeatures(af)).hasValueSatisfying(k -> assertThat(k.code()).isEqualTo("8A"));
         assertThat(CamelotKey.fromAudioFeatures(null)).isEmpty();
     }

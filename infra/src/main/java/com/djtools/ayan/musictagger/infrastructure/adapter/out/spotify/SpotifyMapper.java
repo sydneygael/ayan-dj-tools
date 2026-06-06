@@ -24,7 +24,9 @@ public class SpotifyMapper {
                 track.album() != null ? track.album().releaseYear() : null,
                 track.popularity(),
                 track.duration_ms(),
-                mapAudioFeatures(audioFeatures)
+                mapAudioFeatures(audioFeatures),
+                null,
+                null
         );
     }
 
@@ -42,7 +44,9 @@ public class SpotifyMapper {
                 src.bpm(),
                 src.musicalKey(),
                 src.musicalMode(),
-                src.time_signature()
+                src.time_signature(),
+                null,
+                null
         );
     }
 }

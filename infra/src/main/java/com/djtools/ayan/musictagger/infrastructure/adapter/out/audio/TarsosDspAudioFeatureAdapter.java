@@ -53,6 +53,8 @@ public class TarsosDspAudioFeatureAdapter implements AudioFeatureExtractor {
                     bpm,
                     keyResult != null ? keyResult.key : null,
                     keyResult != null ? keyResult.mode : null,
+                    null,
+                    null,
                     null
             ));
         } catch (Exception e) {

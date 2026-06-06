@@ -32,6 +32,12 @@ CREATE TABLE IF NOT EXISTS enriched_track_metadata (
     popularity     INTEGER,
     duration_ms    BIGINT,
     audio_features TEXT,
+    language_code  VARCHAR(10),
+    explicit       BOOLEAN,
     fetched_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (artist_key, title_key)
 );
+
+-- Migrations pour tables existantes
+ALTER TABLE enriched_track_metadata ADD COLUMN IF NOT EXISTS language_code VARCHAR(10);
+ALTER TABLE enriched_track_metadata ADD COLUMN IF NOT EXISTS explicit BOOLEAN;

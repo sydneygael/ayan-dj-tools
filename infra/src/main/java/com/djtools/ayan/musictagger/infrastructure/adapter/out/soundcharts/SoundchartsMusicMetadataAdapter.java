@@ -15,6 +15,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 
 public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
 
@@ -32,18 +34,32 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
     public EnrichmentResult enrich(String artist, String title) {
         final var normalizedArtist = safeTrim(artist);
         final var normalizedTitle = safeTrim(title);
-        final var term = (normalizedArtist + " " + normalizedTitle).trim();
-        if (term.isBlank()) {
+        if (normalizedTitle.isBlank() && normalizedArtist.isBlank()) {
             return EnrichmentResult.notFound();
         }
 
+        // L'API /song/search/{term} est une recherche par titre — on n'utilise que le titre.
+        // Si le titre est absent on replie sur l'artiste.
+        final var searchTerm = sanitizeForSearch(normalizedTitle.isBlank() ? normalizedArtist : normalizedTitle);
+
         try {
-            log.info("Soundcharts enrich -> term='{}'", term);
-            final var search = apiClient.searchSongByName(term, 0, searchLimit);
-            final var items = search != null && search.items() != null ? search.items() : List.<SoundchartsTrack>of();
+            log.info("Soundcharts enrich -> title='{}' artist='{}'", normalizedTitle, normalizedArtist);
+            final var search = apiClient.searchSongByName(searchTerm, 0, searchLimit * 2);
+            var items = search != null && search.items() != null ? search.items() : List.<SoundchartsTrack>of();
             if (items.isEmpty()) {
                 log.info("Soundcharts NOT_FOUND for '{} - {}'", normalizedArtist, normalizedTitle);
                 return EnrichmentResult.notFound();
+            }
+
+            // Filtre par artiste (contains, case-insensitive). Si le filtre vide la liste, on garde tout.
+            if (!normalizedArtist.isBlank()) {
+                final var filtered = filterByArtist(items, normalizedArtist);
+                if (!filtered.isEmpty()) {
+                    items = filtered;
+                    log.debug("Soundcharts: {} résultat(s) après filtre artiste '{}'", filtered.size(), normalizedArtist);
+                } else {
+                    log.debug("Soundcharts: filtre artiste '{}' vide — fallback sur {} résultat(s)", normalizedArtist, items.size());
+                }
             }
 
             final var bestMatch = selectBestMatch(items, normalizedArtist, normalizedTitle);
@@ -62,30 +78,26 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
         }
     }
 
-    /** Recherche libre par terme — retourne les morceaux trouvés sans appel de détail supplémentaire. */
+    /** Recherche libre par terme — enrichit chaque résultat via /song/{uuid} pour avoir les audio features et genres. */
     public List<EnrichedTrackMetadata> searchByTerm(String term, int limit) {
         if (term == null || term.isBlank()) return List.of();
         try {
             final var response = apiClient.searchSongByName(term.trim(), 0, Math.max(1, limit));
             if (response == null || response.items() == null) return List.of();
-            return response.items().stream()
-                    .filter(Objects::nonNull)
-                    .map(t -> new EnrichedTrackMetadata(
-                            t.uuid(),
-                            t.primaryArtist(),
-                            t.name(),
-                            null,
-                            List.of(),
-                            List.of(),
-                            t.primaryLabel(),
-                            t.countryCode(),
-                            t.isrcValue(),
-                            List.of("soundcharts"),
-                            t.releaseYear(),
-                            null,
-                            t.durationMs(),
-                            null))
-                    .toList();
+            final var candidates = response.items().stream().filter(Objects::nonNull).toList();
+            if (candidates.isEmpty()) return List.of();
+
+            // Fetch détails en parallèle pour récupérer audio features, genres, labels
+            try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                final var futures = candidates.stream()
+                        .map(t -> CompletableFuture.supplyAsync(
+                                () -> fetchDetails(t.uuid()).orElse(t), executor))
+                        .toList();
+                return futures.stream()
+                        .map(CompletableFuture::join)
+                        .map(t -> map(t, t.primaryArtist(), t.name()))
+                        .toList();
+            }
         } catch (Exception e) {
             log.warn("Soundcharts searchByTerm failed for '{}': {}", term, e.getMessage());
             return List.of();
@@ -101,6 +113,17 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
             return java.util.Optional.empty();
         }
         return java.util.Optional.of(response.object());
+    }
+
+    private List<SoundchartsTrack> filterByArtist(List<SoundchartsTrack> items, String artist) {
+        final var key = normalize(artist);
+        return items.stream()
+                .filter(Objects::nonNull)
+                .filter(t -> {
+                    final var trackArtist = normalize(t.primaryArtist());
+                    return trackArtist.contains(key) || key.contains(trackArtist);
+                })
+                .toList();
     }
 
     private SoundchartsTrack selectBestMatch(List<SoundchartsTrack> items, String artist, String title) {
@@ -143,7 +166,9 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
                 track.releaseYear(),
                 null,
                 track.durationMs(),
-                toAudioFeatures(track.audio())
+                toAudioFeatures(track.audio()),
+                track.languageCode(),
+                track.explicit()
         );
     }
 
@@ -181,7 +206,9 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
                 audio.tempo(),
                 pitchClassName(audio.key()),
                 modeName(audio.mode()),
-                audio.timeSignature()
+                audio.timeSignature(),
+                audio.liveness(),
+                audio.loudness()
         );
     }
 
@@ -207,6 +234,11 @@ public class SoundchartsMusicMetadataAdapter implements MusicMetadataProvider {
 
     private String safeTrim(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    /** Supprime les caractères non-alphanumériques en début et fin (ex: "-Agolo-" → "Agolo"). */
+    private String sanitizeForSearch(String value) {
+        return value.replaceAll("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$", "").trim();
     }
 
     private String normalize(String value) {

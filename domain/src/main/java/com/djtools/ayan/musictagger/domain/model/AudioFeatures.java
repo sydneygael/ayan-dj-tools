@@ -14,7 +14,9 @@ public record AudioFeatures(
         Double bpm,
         String musicalKey,
         String mode,
-        Integer timeSignature
+        Integer timeSignature,
+        Double liveness,
+        Double loudness
 ) {
 
     public AudioFeatures {
@@ -49,7 +51,9 @@ public record AudioFeatures(
                 bpm != null ? bpm : other.bpm,
                 musicalKey != null ? musicalKey : other.musicalKey,
                 mode != null ? mode : other.mode,
-                timeSignature != null ? timeSignature : other.timeSignature
+                timeSignature != null ? timeSignature : other.timeSignature,
+                liveness != null ? liveness : other.liveness,
+                loudness != null ? loudness : other.loudness
         );
     }
 }

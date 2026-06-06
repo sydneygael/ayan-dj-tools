@@ -471,21 +471,21 @@ export class ChatPageComponent {
 
   async runDirectEnrich(): Promise<void> {
     const paths = this.prefs.selectedFiles();
-    this.addUserMessage('Enrichis les fichiers sélectionnés via Spotify.');
+    this.addUserMessage('Enrichis les fichiers sélectionnés via Soundcharts.');
     const idx = this.addPendingAssistant();
     const statusIdx = this.addStatusMessage(
-      'Enrichissement Spotify',
+      'Enrichissement Soundcharts',
       'Préparation de la requête HTTP...',
       'running'
     );
     this.isSending.set(true);
     try {
-      this.updateStatusMessage(statusIdx, 'Enrichissement Spotify', 'Recherche des métadonnées...', 'running');
+      this.updateStatusMessage(statusIdx, 'Enrichissement Soundcharts', 'Recherche des métadonnées...', 'running');
       const items = await firstValueFrom(this.api.enrichFiles(paths));
-      this.updateStatusMessage(statusIdx, 'Enrichissement Spotify', 'Enrichissement terminé.', 'done');
+      this.updateStatusMessage(statusIdx, 'Enrichissement Soundcharts', 'Enrichissement terminé.', 'done');
       this.replaceAssistant(idx, this.formatEnrichment(items));
     } catch (err) {
-      this.updateStatusMessage(statusIdx, 'Enrichissement Spotify', this.errorToMessage(err), 'error');
+      this.updateStatusMessage(statusIdx, 'Enrichissement Soundcharts', this.errorToMessage(err), 'error');
       this.replaceAssistant(idx, '');
       this.chatError.set(this.errorToMessage(err));
     } finally {

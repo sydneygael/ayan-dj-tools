@@ -112,27 +112,29 @@ public class AyanMusicTools {
     }
 
     /**
-     * Résultat d'un appel enrichWithSpotify retourné au LLM.
+     * Résultat d'un enrichissement retourné au LLM.
      * Status explicite pour que l'agent puisse toujours formuler une réponse claire à l'utilisateur.
      */
     record SpotifyEnrichmentResponse(String status, String message, EnrichedTrackMetadata metadata) {}
 
-    @Tool("Enrichit les métadonnées via Spotify et analyse audio locale, puis indexe dans le vector store")
+    @Tool("Enrichit les métadonnées via Soundcharts et analyse audio locale, puis indexe dans le vector store")
     public SpotifyEnrichmentResponse enrichWithSpotify(
             @P("Nom de l'artiste") String artist,
             @P("Titre du morceau") String title) {
         log.info("[tool] enrichWithSpotify artist='{}' title='{}'", artist, title);
         final var result = musicMetadataProvider.enrich(artist, title);
         if (result instanceof EnrichmentResult.Error err) {
+            log.warn("[tool] enrichWithSpotify ERROR '{}' – '{}': {}", artist, title, err.message());
             return new SpotifyEnrichmentResponse(
                     "ERROR",
-                    "Erreur lors de l'enrichissement Spotify pour « %s – %s » : %s".formatted(artist, title, err.message()),
+                    "Erreur lors de l'enrichissement pour « %s – %s » : %s".formatted(artist, title, err.message()),
                     null);
         }
         if (result instanceof EnrichmentResult.NotFound) {
+            log.info("[tool] enrichWithSpotify NOT_FOUND '{}' – '{}'", artist, title);
             return new SpotifyEnrichmentResponse(
                     "NOT_FOUND",
-                    "Aucun résultat trouvé sur Spotify pour « %s – %s ».".formatted(artist, title),
+                    "Aucun résultat trouvé sur Soundcharts pour « %s – %s ».".formatted(artist, title),
                     null);
         }
         final var data = result.data();
@@ -140,6 +142,10 @@ public class AyanMusicTools {
         if (data.audioFeatures() != null) {
             audioFeaturesCache.save(data.artist() + " - " + data.title(), data.audioFeatures());
         }
+        log.info("[tool] enrichWithSpotify OK '{}' – '{}' | album='{}' genres={} BPM={} key={}",
+                data.artist(), data.title(), data.album(), data.genres(),
+                data.audioFeatures() != null ? data.audioFeatures().bpm() : "—",
+                data.audioFeatures() != null ? data.audioFeatures().fullKey() : "—");
         return new SpotifyEnrichmentResponse(
                 "SUCCESS",
                 "Enrichissement réussi : album=%s, genres=%s, BPM=%s, tonalité=%s".formatted(
@@ -158,7 +164,7 @@ public class AyanMusicTools {
         return vectorizationService.findSimilarTracks(query, limit);
     }
 
-    @Tool("Suggestions intelligentes de tags basées sur Spotify + morceaux similaires (RAG)")
+    @Tool("Suggestions intelligentes de tags basées sur Soundcharts + morceaux similaires (RAG)")
     public SmartTagSuggestion smartSuggestTags(
             @P("Chemin absolu du fichier audio") String filepath) {
         log.info("[tool] smartSuggestTags filepath={}", filepath);
@@ -166,7 +172,7 @@ public class AyanMusicTools {
     }
 
     @Tool("Crée un plan de modifications de tags pour une liste de fichiers audio. " +
-            "Scanne chaque fichier, détecte les tags manquants, enrichit via Spotify, " +
+            "Scanne chaque fichier, détecte les tags manquants, enrichit via Soundcharts, " +
             "et retourne un plan avec toutes les modifications suggérées.")
     public TaggingPlan createPlanForFiles(
             @P("Liste des chemins absolus des fichiers audio") List<String> filePaths) {

@@ -2,16 +2,16 @@ server:
   port: 8000
 
 tavily:
-  api-key: ${TAVILY_API_KEY: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}
+  api-key: ${TAVILY_API_KEY:}
   max-results: 3
 
 soundcharts:
   # Soundcharts API — source primaire de métadonnées musicales
   # Credentials : https://soundcharts.com/
   # Sans credentials, Soundcharts est ignoré et Spotify prend le relais.
-  app-id:  ${SOUNDCHARTS_APP_ID:SA34-API_EA6FB274}
-  api-key: ${SOUNDCHARTS_API_KEY:ecdb29da90754c5a}
-  base-url: ${SOUNDCHARTS_BASE_URL:https://customer.soundcharts.com}
+  app-id:  ${SOUNDCHARTS_APP_ID:}
+  api-key: ${SOUNDCHARTS_API_KEY:}
+  base-url: ${SOUNDCHARTS_BASE_URL:https://customer.api.soundcharts.com}
   search-limit: 5
 
 
@@ -28,8 +28,8 @@ audio:
   supported-extensions: mp3,flac,wav,aiff,m4a,ogg
 
 spotify:
-  client-id: ${SPOTIFY_CLIENT_ID:3475fbed191c4e66a3767f3cf0314d12}
-  client-secret: ${SPOTIFY_CLIENT_SECRET:f9b0297135264fe3afba97ad87323be0}
+  client-id: ${SPOTIFY_CLIENT_ID:}
+  client-secret: ${SPOTIFY_CLIENT_SECRET:}
   auth-url: https://accounts.spotify.com/api/token
   rate-limit:
     requests-per-second: 10

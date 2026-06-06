@@ -266,3 +266,24 @@ export interface FileEnrichItem {
   message?: string | null;
   metadata?: EnrichedTrackMetadata | null;
 }
+
+export interface ApiKeyStatus {
+  configured: boolean;
+  masked: string | null;
+}
+
+export interface ApiKeysView {
+  soundchartsAppId: ApiKeyStatus;
+  soundchartsApiKey: ApiKeyStatus;
+  spotifyClientId: ApiKeyStatus;
+  spotifyClientSecret: ApiKeyStatus;
+  tavilyApiKey: ApiKeyStatus;
+}
+
+export interface ApiKeysSaveRequest {
+  soundchartsAppId?: string;
+  soundchartsApiKey?: string;
+  spotifyClientId?: string;
+  spotifyClientSecret?: string;
+  tavilyApiKey?: string;
+}

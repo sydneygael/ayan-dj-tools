@@ -1,6 +1,7 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.spotify;
 
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
+import com.djtools.ayan.musictagger.infrastructure.service.ApiKeysService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,11 +17,11 @@ import java.time.Duration;
 public class SpotifyConfig {
 
     @Bean
-    SpotifyTokenService spotifyTokenService(SpotifyProperties properties) {
+    SpotifyTokenService spotifyTokenService(SpotifyProperties properties, ApiKeysService apiKeysService) {
         return new SpotifyTokenService(
                 properties.authUrl(),
-                properties.clientId(),
-                properties.clientSecret()
+                apiKeysService::getSpotifyClientId,
+                apiKeysService::getSpotifyClientSecret
         );
     }
 

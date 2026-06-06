@@ -38,7 +38,13 @@ import { PlanProgressResponse, TagOperation, TaggingPlan } from '../core/models'
           <button (click)="planResource.reload()">Rafraichir</button>
           <button (click)="approve()" [disabled]="busy()">Approuver</button>
           <button class="primary" (click)="execute()" [disabled]="busy()">Executer</button>
-          <button class="primary" (click)="autoExecute()" [disabled]="busy()">Auto Execute</button>
+          <span class="danger-separator" aria-hidden="true">|</span>
+          <button class="danger"
+                  (click)="confirmAutoExecute()"
+                  [disabled]="busy()"
+                  title="Approuve et écrit tous les tags immédiatement sans relecture — irréversible sans rollback manuel">
+            ⚠ Auto Execute
+          </button>
         </div>
       </section>
 
@@ -93,6 +99,33 @@ import { PlanProgressResponse, TagOperation, TaggingPlan } from '../core/models'
   `,
   styles: `
     .row { margin-bottom: 8px; }
+
+    .danger-separator {
+      color: var(--border, #444);
+      margin: 0 4px;
+      user-select: none;
+    }
+
+    button.danger {
+      background: transparent;
+      color: #e57373;
+      border: 1px solid #e57373;
+      border-radius: 4px;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: inherit;
+      transition: background .15s, color .15s;
+    }
+
+    button.danger:hover:not(:disabled) {
+      background: #e57373;
+      color: #fff;
+    }
+
+    button.danger:disabled {
+      opacity: .45;
+      cursor: default;
+    }
   `
 })
 export class PlanPageComponent {
@@ -158,6 +191,14 @@ export class PlanPageComponent {
       this.planResource.reload();
       await this.refreshProgress(this.planId());
     });
+  }
+
+  async confirmAutoExecute(): Promise<void> {
+    const count = this.planResource.value()?.operations.length ?? 0;
+    const ok = window.confirm(
+      `Auto Execute va approuver et écrire immédiatement les tags de ${count} fichier(s) sans étape de relecture.\n\nContinuer ?`
+    );
+    if (ok) await this.autoExecute();
   }
 
   async autoExecute(): Promise<void> {

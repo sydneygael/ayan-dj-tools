@@ -23,8 +23,8 @@ class SpotifyTokenServiceTest {
         mockServer.start();
         tokenService = new SpotifyTokenService(
                 mockServer.url("/api/token").toString(),
-                "test-client-id",
-                "test-client-secret"
+                () -> "test-client-id",
+                () -> "test-client-secret"
         );
     }
 

@@ -1,9 +1,9 @@
 package com.djtools.ayan.musictagger.infrastructure.adapter.out.web;
 
+import com.djtools.ayan.musictagger.infrastructure.service.ApiKeysService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -22,26 +22,31 @@ public class TavilySearchAdapter {
 
     private final RestClient restClient;
     private final int maxResults;
-    private final boolean enabled;
+    private final ApiKeysService apiKeysService;
 
     public TavilySearchAdapter(
-            @Value("${tavily.api-key:}") String apiKey,
+            ApiKeysService apiKeysService,
             @Value("${tavily.max-results:3}") int maxResults) {
+        this.apiKeysService = apiKeysService;
         this.maxResults = maxResults;
-        this.enabled = apiKey != null && !apiKey.isBlank();
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(10));
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.tavily.com/search")
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .requestInterceptor((req, body, exec) -> {
+                    final var key = apiKeysService.getTavilyApiKey();
+                    req.getHeaders().setBearerAuth(key != null ? key : "");
+                    return exec.execute(req, body);
+                })
                 .requestFactory(factory)
                 .build();
     }
 
     public Optional<String> search(String query) {
         if (query == null || query.isBlank()) return Optional.empty();
-        if (!enabled) {
+        final var key = apiKeysService.getTavilyApiKey();
+        if (key == null || key.isBlank()) {
             log.warn("Tavily API key not configured — web search skipped");
             return Optional.empty();
         }

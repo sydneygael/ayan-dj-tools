@@ -2,6 +2,7 @@ package com.djtools.ayan.musictagger.infrastructure.adapter.out.soundcharts;
 
 import com.djtools.ayan.musictagger.domain.port.in.MusicMetadataProvider;
 import com.djtools.ayan.musictagger.domain.port.out.EnrichedMetadataCacheRepository;
+import com.djtools.ayan.musictagger.infrastructure.service.ApiKeysService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +20,7 @@ import java.time.Duration;
 public class SoundchartsConfig {
 
     @Bean
-    SoundchartsApiClient soundchartsApiClient(SoundchartsProperties properties) {
+    SoundchartsApiClient soundchartsApiClient(SoundchartsProperties properties, ApiKeysService apiKeysService) {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(15));
@@ -27,8 +28,8 @@ public class SoundchartsConfig {
                 .baseUrl(properties.baseUrl())
                 .requestFactory(factory)
                 .requestInterceptor((request, body, execution) -> {
-                    request.getHeaders().set("x-app-id", properties.appId());
-                    request.getHeaders().set("x-api-key", properties.apiKey());
+                    request.getHeaders().set("x-app-id", apiKeysService.getSoundchartsAppId());
+                    request.getHeaders().set("x-api-key", apiKeysService.getSoundchartsApiKey());
                     return execution.execute(request, body);
                 })
                 .build();

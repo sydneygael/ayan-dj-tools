@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.function.Supplier;
 
 public class SpotifyTokenService {
 
@@ -19,15 +20,15 @@ public class SpotifyTokenService {
     private static final int EXPIRY_BUFFER_SECONDS = 60;
 
     private final RestClient tokenClient;
-    private final String clientId;
-    private final String clientSecret;
+    private final Supplier<String> clientIdSupplier;
+    private final Supplier<String> clientSecretSupplier;
 
     private String cachedToken;
     private Instant tokenExpiry = Instant.MIN;
 
-    public SpotifyTokenService(String authUrl, String clientId, String clientSecret) {
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
+    public SpotifyTokenService(String authUrl, Supplier<String> clientIdSupplier, Supplier<String> clientSecretSupplier) {
+        this.clientIdSupplier = clientIdSupplier;
+        this.clientSecretSupplier = clientSecretSupplier;
         final var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(10));
@@ -46,8 +47,15 @@ public class SpotifyTokenService {
         return refreshToken();
     }
 
+    public synchronized void invalidateToken() {
+        this.cachedToken = null;
+        this.tokenExpiry = Instant.MIN;
+    }
+
     private String refreshToken() {
-        log.info("Refreshing Spotify access token (client_id={})", clientId);
+        log.info("Refreshing Spotify access token...");
+        final var clientId = clientIdSupplier.get();
+        final var clientSecret = clientSecretSupplier.get();
         final var credentials = clientId + ":" + clientSecret;
         final var encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 

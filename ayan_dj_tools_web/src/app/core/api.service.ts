@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   ActivityTimeline,
+  ApiKeysView,
+  ApiKeysSaveRequest,
   BackendHealth,
   BatchApplyResult,
   ChatMessage,
@@ -199,6 +201,14 @@ export class ApiService {
 
   enrichFiles(filePaths: string[]): Observable<FileEnrichItem[]> {
     return this.http.post<FileEnrichItem[]>(this.url('/api/files/enrich'), { filePaths });
+  }
+
+  getApiKeys(): Observable<ApiKeysView> {
+    return this.http.get<ApiKeysView>(this.url('/api/settings/keys'));
+  }
+
+  saveApiKeys(req: ApiKeysSaveRequest): Observable<void> {
+    return this.http.put<void>(this.url('/api/settings/keys'), req);
   }
 
   private url(path: string): string {

@@ -1,11 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, resource, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { OperatingMode } from '../core/models';
+import { firstValueFrom } from 'rxjs';
+import { ApiKeysView, ApiKeysSaveRequest, OperatingMode } from '../core/models';
+import { ApiService } from '../core/api.service';
 import { PreferencesStore } from '../core/preferences.store';
 import { FolderPickerComponent } from '../shared/folder-picker.component';
 
@@ -134,6 +136,64 @@ interface SettingsModel {
         }
       </mat-card-actions>
     </mat-card>
+
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>Clés API</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (apiKeysResource.isLoading()) {
+          <p class="hint">Chargement...</p>
+        } @else if (apiKeysResource.hasValue()) {
+          @for (field of apiKeyFields; track field.key) {
+            <div class="api-key-row">
+              <div class="api-key-label">
+                <span class="api-key-name">{{ field.label }}</span>
+                @if (apiKeysResource.value()![field.key].configured) {
+                  <span class="status ok">
+                    <mat-icon fontSet="material-symbols-rounded">check_circle</mat-icon>
+                    {{ apiKeysResource.value()![field.key].masked }}
+                  </span>
+                } @else {
+                  <span class="status missing">
+                    <mat-icon fontSet="material-symbols-rounded">cancel</mat-icon>
+                    Non configurée
+                  </span>
+                }
+              </div>
+              <mat-form-field class="full-width">
+                <mat-label>Nouvelle valeur</mat-label>
+                <input
+                  matInput
+                  type="password"
+                  [value]="getApiKeyValue(field.key)"
+                  (input)="setApiKey(field.key, $any($event.target).value)"
+                  autocomplete="new-password"
+                />
+                <mat-icon matSuffix fontSet="material-symbols-rounded">key</mat-icon>
+              </mat-form-field>
+            </div>
+          }
+        }
+      </mat-card-content>
+
+      <mat-card-actions>
+        <button mat-flat-button (click)="saveApiKeys()" [disabled]="apiKeysSaving()">
+          <mat-icon fontSet="material-symbols-rounded">save</mat-icon>
+          Sauvegarder les clés
+        </button>
+        @if (apiKeysSaved()) {
+          <span class="ok">
+            <mat-icon fontSet="material-symbols-rounded">check_circle</mat-icon>
+            Sauvegardé
+          </span>
+        }
+        @if (apiKeysError()) {
+          <p class="error">{{ apiKeysError() }}</p>
+        }
+      </mat-card-actions>
+    </mat-card>
   `,
   styles: `
     .settings-card {
@@ -170,13 +230,61 @@ interface SettingsModel {
       gap: 8px;
       flex-wrap: wrap;
     }
+
+    .api-key-row { margin-bottom: 12px; }
+    .api-key-label { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .api-key-name { font-weight: 500; font-size: .9rem; }
+    .status { display: inline-flex; align-items: center; gap: 3px; font-size: .8rem;
+      mat-icon { font-size: 14px; width: 14px; height: 14px; } }
+    .status.ok { color: var(--success, #4caf50); }
+    .status.missing { color: var(--muted, #888); }
   `
 })
 export class SettingsPageComponent {
   private readonly prefs = inject(PreferencesStore);
+  private readonly api = inject(ApiService);
 
   readonly saved = signal(false);
   readonly error = signal<string | null>(null);
+
+  readonly apiKeysResource = resource({ loader: () => firstValueFrom(this.api.getApiKeys()) });
+  readonly apiKeysModel = signal<Record<string, string>>({});
+  readonly apiKeysSaving = signal(false);
+  readonly apiKeysSaved = signal(false);
+  readonly apiKeysError = signal<string | null>(null);
+
+  readonly apiKeyFields: { key: keyof ApiKeysView; label: string }[] = [
+    { key: 'soundchartsAppId',    label: 'Soundcharts App ID' },
+    { key: 'soundchartsApiKey',   label: 'Soundcharts API Key' },
+    { key: 'spotifyClientId',     label: 'Spotify Client ID' },
+    { key: 'spotifyClientSecret', label: 'Spotify Client Secret' },
+    { key: 'tavilyApiKey',        label: 'Tavily API Key' },
+  ];
+
+  getApiKeyValue(key: string): string {
+    return this.apiKeysModel()[key] ?? '';
+  }
+
+  setApiKey(key: string, value: string): void {
+    this.apiKeysModel.update(m => ({ ...m, [key]: value }));
+  }
+
+  saveApiKeys(): void {
+    const m = this.apiKeysModel();
+    const hasValues = Object.values(m).some(v => v && v.trim());
+    if (!hasValues) return;
+    this.apiKeysSaving.set(true);
+    this.apiKeysError.set(null);
+    firstValueFrom(this.api.saveApiKeys(m as ApiKeysSaveRequest))
+      .then(() => {
+        this.apiKeysSaved.set(true);
+        this.apiKeysModel.set({});
+        this.apiKeysResource.reload();
+        setTimeout(() => this.apiKeysSaved.set(false), 2000);
+      })
+      .catch(() => this.apiKeysError.set('Erreur lors de la sauvegarde'))
+      .finally(() => this.apiKeysSaving.set(false));
+  }
 
   readonly model = signal<SettingsModel>({
     apiBaseUrl: this.prefs.apiBaseUrl(),

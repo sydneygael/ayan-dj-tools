@@ -10,7 +10,7 @@ Full specification: `SPEC.md`
 
 ## Tech Stack
 
-- **Backend**: Java 25, Spring Boot 4.0.6, Gradle 9.2 (Kotlin DSL)
+- **Backend**: Java 25, Spring Boot 4.1.0, Gradle 9.2 (Kotlin DSL)
 - **AI**: LangChain4j 0.36.0, Ollama (modèle `llama3.1:8b` par défaut, configurable via `OLLAMA_CHAT_MODEL`)
 - **Vector DB**: LangChain4j Qdrant integration (LangChain4j embedding store)
 - **Audio tags**: JAudiotagger 3.0.1
@@ -18,7 +18,7 @@ Full specification: `SPEC.md`
 - **Metadata API**: Soundcharts (primary) + Spotify (secondary/fallback) via `@HttpExchange` declarative client
 - **DB**: PostgreSQL 16 (`scanned_tracks`, `enriched_track_metadata`) + Redis 7 (conversations, plans, history)
 - **Frontend**: Angular 21 web UI (`ayan_dj_tools_web/`), Flutter Desktop 3.22 (`ayan_dj_tools_flutter/`)
-- **Docs**: SpringDoc OpenAPI 2.8.9 — Swagger UI `/swagger-ui`, Redoc `/docs/api-reference.html`, overview `/docs`
+- **Docs**: SpringDoc OpenAPI 3.0.3 — Swagger UI `/swagger-ui`, Redoc `/docs/api-reference.html`, overview `/docs`
 - **Language**: French project (comments, agent name, docs) but English code identifiers
 
 ## Build & Run Commands
@@ -247,7 +247,7 @@ Detailed implementation patterns live in `.claude/skills/` (auto-loaded when rel
 8. ✅ Frontend Modes & Plan Review (ModeService, ConfirmDialog, PlanReview, History, Settings)
 9. ✅ Mode MANUAL & APPLY (ManualModeView, ApplyModeView, usePlanProgress)
 10. ✅ Polish & UX
-11. ✅ Documentation API (SpringDoc 2.8.9, @Operation/@ApiResponse/@Schema, Redoc, overview Mermaid)
+11. ✅ Documentation API (SpringDoc 3.0.3, @Operation/@ApiResponse/@Schema, Redoc, overview Mermaid)
 
 **Current state**: Phases 1–11 complete.
 

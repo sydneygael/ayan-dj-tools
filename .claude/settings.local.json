@@ -12,7 +12,9 @@
       "Bash(flutter doctor:*)",
       "Bash(flutter create:*)",
       "Read(//c/Users/sydne/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/**)",
-      "Bash(python -m scripts.aggregate_benchmark \"C:\\\\repositories\\\\ayan-dj-tools\\\\.claude\\\\skills\\\\frontend-angular-workspace\\\\iteration-1\" --skill-name frontend-angular)"
+      "Bash(python -m scripts.aggregate_benchmark \"C:\\\\repositories\\\\ayan-dj-tools\\\\.claude\\\\skills\\\\frontend-angular-workspace\\\\iteration-1\" --skill-name frontend-angular)",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/springframework/boot/spring-boot/maven-metadata.xml\")",
+      "Bash(findstr /C:\"4.1\")"
     ],
     "deny": [
       "Read(./.env)",

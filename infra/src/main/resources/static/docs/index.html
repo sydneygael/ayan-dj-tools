@@ -430,7 +430,7 @@ flowchart LR
         UC --> MODEL
     end
 
-    subgraph INFRA["infra — Spring Boot 4.0.6"]
+    subgraph INFRA["infra — Spring Boot 4.1.0"]
         direction TB
         REST["11 @RestController"]
         MCP["6 fichiers @Tool\n(FileOps·Plan·Search·Playlist\nDiscovery·AyanMusicTools)"]
@@ -455,7 +455,7 @@ flowchart LR
           <thead><tr><th>Couche</th><th>Technologie</th><th>Version</th></tr></thead>
           <tbody>
             <tr><td>Langage / Runtime</td><td>Java</td><td>25</td></tr>
-            <tr><td>Framework</td><td>Spring Boot</td><td>4.0.6</td></tr>
+            <tr><td>Framework</td><td>Spring Boot</td><td>4.1.0</td></tr>
             <tr><td>Build</td><td>Gradle Kotlin DSL</td><td>9.2</td></tr>
             <tr><td>IA Agent</td><td>LangChain4j + Ollama</td><td>LangChain4j 0.36.0, modèle <code>llama3.1:8b</code> par défaut</td></tr>
             <tr><td>Embeddings</td><td>nomic-embed-text (Ollama)</td><td>768 dimensions</td></tr>
@@ -464,7 +464,7 @@ flowchart LR
             <tr><td>Base de données</td><td>PostgreSQL</td><td>16-alpine — <code>scanned_tracks</code>, <code>enriched_track_metadata</code></td></tr>
             <tr><td>Cache &amp; mémoire</td><td>Redis</td><td>7-alpine — conversations · plans · historique</td></tr>
             <tr><td>API metadata</td><td>Soundcharts + Spotify</td><td><code>@HttpExchange</code> déclaratif</td></tr>
-            <tr><td>Documentation API</td><td>SpringDoc OpenAPI</td><td>2.8.9</td></tr>
+            <tr><td>Documentation API</td><td>SpringDoc OpenAPI</td><td>3.0.3</td></tr>
           </tbody>
         </table>
       </div>

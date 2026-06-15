@@ -17,10 +17,12 @@ soundcharts:
 
 springdoc:
   swagger-ui:
-    path: /docs
+    path: /swagger-ui
     tags-sorter: alpha
     operations-sorter: alpha
     display-request-duration: true
+    try-it-out-enabled: true
+    filter: true
   api-docs:
     path: /api-docs
 
@@ -28,8 +30,8 @@ audio:
   supported-extensions: mp3,flac,wav,aiff,m4a,ogg
 
 spotify:
-  client-id: ${SPOTIFY_CLIENT_ID:}
-  client-secret: ${SPOTIFY_CLIENT_SECRET:}
+  client-id: ${SPOTIFY_CLIENT_ID:3475fbed191c4e66a3767f3cf0314d12}
+  client-secret: ${SPOTIFY_CLIENT_SECRET:f9b0297135264fe3afba97ad87323be0}
   auth-url: https://accounts.spotify.com/api/token
   rate-limit:
     requests-per-second: 10

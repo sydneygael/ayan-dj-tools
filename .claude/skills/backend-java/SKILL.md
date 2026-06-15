@@ -1,12 +1,12 @@
 ---
 name: backend-java
-description: Patterns Java 25 + Spring Boot 4.0.2 + Gradle 9.2. Records, services, controllers, Spring JDBC repositories, configuration, tests. Utiliser pour tout code backend Java.
+description: Patterns Java 25 + Spring Boot 4.1.0 + Gradle 9.2. Records, services, controllers, Spring JDBC repositories, configuration, tests. Utiliser pour tout code backend Java.
 user-invocable: false
 ---
 
 # Backend Java Skill
 
-Bonnes pratiques Java 25 + Spring Boot 4.0.2 + Gradle
+Bonnes pratiques Java 25 + Spring Boot 4.1.0 + Gradle
 
 > Patterns Spring JDBC Repository : voir [jdbc-patterns.md](./jdbc-patterns.md)
 > Reference rapide API : voir [reference.md](./reference.md)

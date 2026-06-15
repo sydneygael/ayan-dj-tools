@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -167,7 +168,7 @@ public class MusicLookupService {
 
     private MusicLookupResult cacheAndReturn(MusicLookupResult result, String cacheKey) {
         try {
-            stringRedis.opsForValue().set(cacheKey, result.toSummary(), CACHE_TTL_HOURS, TimeUnit.HOURS);
+            stringRedis.opsForValue().set(cacheKey, result.toSummary(), Duration.ofHours(CACHE_TTL_HOURS));
         } catch (Exception e) {
             log.warn("MusicLookup: cache write failed: {}", e.getMessage());
         }

@@ -96,7 +96,7 @@ Application desktop pour DJ permettant de gérer et enrichir automatiquement les
 
 ### Backend
 - **Java 25** (dernière version JDK)
-- **Spring Boot 4.0.2** (stable)
+- **Spring Boot 4.1.0** (stable)
 - **Spring AI 2.0.0-M2** avec support Ollama/Mistral et Structured Outputs
   - Source: https://spring.io/blog/2026/01/23/spring-ai-2-0-0-M2-available-now
   - 📖 Skill: `spring-ai.skill.md`
